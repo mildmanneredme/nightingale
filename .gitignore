@@ -1,1 +1,14 @@
 .claude/
+.envlocal
+.env
+.env.*
+*.env
+.aws/
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfstate.lock.info
+infra/terraform/terraform.exe
+infra/terraform/modules/**/*.zip

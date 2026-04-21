@@ -1,8 +1,9 @@
 # Project Nightingale — Master Roadmap
 
-> **Status:** Planning — April 2026
+> **Status:** In Progress — Sprint 0 underway
 > **Phase:** 1 MVP (Months 1–6)
 > **Target:** 100 beta patients, 200 consultations completed
+> **Last updated:** 2026-04-21
 
 ---
 
@@ -16,24 +17,34 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 
 ## PRD Index
 
-| PRD | Title | Phase | Sprint | Timeline |
-|-----|-------|-------|--------|----------|
-| [PRD-001](PRD-001-regulatory-prerequisites.md) | Regulatory & Legal Prerequisites | Pre-build | — | Before Week 1 |
-| [PRD-002](PRD-002-llm-voice-platform-evaluation.md) | LLM & Voice Platform Evaluation | Pre-build | — | Weeks 1–5 (concurrent) |
-| [PRD-003](PRD-003-infrastructure-devops.md) | Infrastructure & DevOps | Build | Sprint 0 | Week 1–2 |
-| [PRD-004](PRD-004-authentication-access-control.md) | Authentication & Access Control | Build | Sprint 0 | Week 1–2 |
-| [PRD-005](PRD-005-audit-log.md) | Audit Log & Compliance Infrastructure | Build | Sprint 0 | Week 1–2 |
-| [PRD-006](PRD-006-patient-registration.md) | Patient Registration & Profile | Build | Sprint 1 | Week 3–4 |
-| [PRD-007](PRD-007-payments-booking.md) | Payments & Consultation Booking | Build | Sprint 1 | Week 3–4 |
-| [PRD-008](PRD-008-ai-voice-consultation.md) | AI Voice Consultation | Build | Sprint 2 | Week 5–7 |
-| [PRD-009](PRD-009-text-chat-fallback.md) | Text-Chat Fallback | Build | Sprint 2 | Week 5–7 |
-| [PRD-010](PRD-010-photo-upload.md) | Photo Upload & Quality Guidance | Build | Sprint 3 | Week 7–8 |
-| [PRD-011](PRD-011-clinical-knowledge-base.md) | Clinical Knowledge Base & RAG Pipeline | Build | Sprint 3 | Week 7–8 |
-| [PRD-012](PRD-012-clinical-ai-engine.md) | Clinical AI Engine | Build | Sprint 4 | Week 8–10 |
-| [PRD-013](PRD-013-doctor-review-dashboard.md) | Doctor Review Dashboard | Build | Sprint 5 | Week 10–12 |
-| [PRD-014](PRD-014-patient-notifications.md) | Patient Notifications | Build | Sprint 5 | Week 10–12 |
-| [PRD-015](PRD-015-post-consultation-followup.md) | Post-Consultation Follow-Up | Build | Sprint 6 | Week 12–14 |
-| [PRD-016](PRD-016-beta-launch-readiness.md) | Beta Launch Readiness | Build | Sprint 6 | Week 12–14 |
+| PRD | Title | Phase | Sprint | Timeline | Status |
+|-----|-------|-------|--------|----------|--------|
+| [PRD-001](PRD-001-regulatory-prerequisites.md) | Regulatory & Legal Prerequisites | Pre-build | — | Before Week 1 | Not started |
+| [PRD-002](PRD-002-llm-voice-platform-evaluation.md) | LLM & Voice Platform Evaluation | Pre-build | — | Weeks 1–5 (concurrent) | Research in progress |
+| [PRD-003](../shipped/PRD-003-infrastructure-devops.md) | Infrastructure & DevOps | Build | Sprint 0 | Week 1–2 | **Shipped 2026-04-22** ✅ |
+| [PRD-004](../shipped/PRD-004-authentication-access-control.md) | Authentication & Access Control | Build | Sprint 0 | Week 1–2 | **Shipped 2026-04-21** ✅ |
+| [PRD-005](../shipped/PRD-005-audit-log.md) | Audit Log & Compliance Infrastructure | Build | Sprint 0 | Week 1–2 | **Shipped 2026-04-21** ✅ |
+| [PRD-006](PRD-006-patient-registration.md) | Patient Registration & Profile | Build | Sprint 1 | Week 3–4 | Not started |
+| [PRD-007](PRD-007-payments-booking.md) | Payments & Consultation Booking | Build | Sprint 1 | Week 3–4 | Not started |
+| [PRD-008](PRD-008-ai-voice-consultation.md) | AI Voice Consultation | Build | Sprint 2 | Week 5–7 | Not started |
+| [PRD-009](PRD-009-text-chat-fallback.md) | Text-Chat Fallback | Build | Sprint 2 | Week 5–7 | Not started |
+| [PRD-010](PRD-010-photo-upload.md) | Photo Upload & Quality Guidance | Build | Sprint 3 | Week 7–8 | Not started |
+| [PRD-011](PRD-011-clinical-knowledge-base.md) | Clinical Knowledge Base & RAG Pipeline | Build | Sprint 3 | Week 7–8 | Not started |
+| [PRD-012](PRD-012-clinical-ai-engine.md) | Clinical AI Engine | Build | Sprint 4 | Week 8–10 | Not started |
+| [PRD-013](PRD-013-doctor-review-dashboard.md) | Doctor Review Dashboard | Build | Sprint 5 | Week 10–12 | Not started |
+| [PRD-014](PRD-014-patient-notifications.md) | Patient Notifications | Build | Sprint 5 | Week 10–12 | Not started |
+| [PRD-015](PRD-015-post-consultation-followup.md) | Post-Consultation Follow-Up | Build | Sprint 6 | Week 12–14 | Not started |
+| [PRD-016](PRD-016-beta-launch-readiness.md) | Beta Launch Readiness | Build | Sprint 6 | Week 12–14 | Not started |
+
+---
+
+## Shipped
+
+| PRD | Title | Shipped | Notes |
+|-----|-------|---------|-------|
+| [PRD-003](../shipped/PRD-003-infrastructure-devops.md) | Infrastructure & DevOps | 2026-04-22 | TLS 1.3 pending domain + ACM cert; RDS on `db.t3.micro` pending account upgrade |
+| [PRD-004](../shipped/PRD-004-authentication-access-control.md) | Authentication & Access Control | 2026-04-21 | MFA enforcement for doctor/admin at app middleware layer; idle timeout via app middleware (Cognito limitation) |
+| [PRD-005](../shipped/PRD-005-audit-log.md) | Audit Log & Compliance Infrastructure | 2026-04-21 | DB migration pending (RDS in private subnet — requires ECS task or bastion); admin log viewer and gap alerting are app-layer work |
 
 ---
 
@@ -256,9 +267,9 @@ Without explicit Australian grounding, general-purpose LLMs default to US/UK gui
 | Decision | Status | Owner | Required By |
 |----------|--------|-------|-------------|
 | AWS Bedrock vs direct Anthropic API | **Recommended: AWS Bedrock** — research confirms this eliminates APP 8 cross-border risk; final sign-off with lawyer | CTO + Lawyer | Sprint 0 start |
-| Voice AI platform: Vapi vs Retell.ai | Open — evaluation in progress (criteria: AU accent accuracy, <500ms latency, healthcare vocabulary, data residency) | CTO | Sprint 2 start |
-| Clinical LLM: Claude vs GPT-4o vs Gemini vs Llama 3 | Open — formal evaluation underway (7-criteria weighted scorecard; blind GP review) | CTO + Medical Director | Sprint 4 start |
-| Auth provider: AWS Cognito vs Auth0 | Open | CTO | Sprint 0 start |
+| Voice AI platform | **Recommended: Gemini 2.5 Flash Live API (direct)** — native audio-in/out eliminates ASR→LLM→TTS lag; ~$0.024 AUD/consult vs $0.92 AUD (Retell) or $8.29 (Vapi). **Contingent on GCP `australia-southeast1` availability for Live API** — confirm with Google Cloud before Sprint 2. Fallback: Retell.ai. See PRD-002. | CTO | Sprint 2 start |
+| Clinical LLM: Claude vs GPT-4o vs Gemini vs Llama 3 | **Recommended: Claude Sonnet 4.6 via AWS Bedrock ap-southeast-2** — scores 4.70/5 on weighted scorecard; 92.3% MedQA; best hallucination profile; confirmed AU data residency on existing Bedrock infra. Hallucination trap test + Medical Director SOAP blind eval still required before Sprint 4. | CTO + Medical Director | Sprint 4 start |
+| Auth provider: AWS Cognito vs Auth0 | **Resolved: AWS Cognito** — ap-southeast-2 data residency, free tier, native IAM integration (PRD-004 shipped) | CTO | ✅ Done |
 | Clinical knowledge licensing: eTG / AMH / MIMS | Open — must contact each vendor for AI use agreement; RACGP + PBS/MBS available freely as fallback | Medical Director + Lawyer | Sprint 4 start |
 | AHPRA advertising language constraints | Open — draft in progress; requires sign-off from AHPRA advertising compliance reviewer | Regulatory Advisor | Sprint 4 start |
 | Medical Director partner confirmed | Open | Founder | Pre-build |
