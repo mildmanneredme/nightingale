@@ -125,11 +125,12 @@ CREATE TABLE audit_log (
 - [x] SQS DLQ (`nightingale-{env}-audit-export-dlq`, 14-day retention) receives failures; Lambda retries 2× before DLQ
 - [x] Lambda execution role has `sqs:SendMessage` on DLQ ARN
 - [x] Deployed to staging and prod via Terraform
+- [x] Migration `001_audit_log.sql` applied to staging and prod RDS via temporary SSM bastion (2026-04-22); immutability verified: `app_role` UPDATE and DELETE both correctly denied
+- [x] All 8 schema columns and 4 indexes confirmed present in both environments
 
-**Pending (requires running ECS app or bastion host):**
-- Migration `001_audit_log.sql` cannot be applied directly from this machine (RDS is in private subnet). Must be run via ECS migration task or bastion when app code exists.
-- F-007 Admin-facing log viewer: app layer work, not infrastructure
-- F-008 Sequence gap alerting: app layer work, not infrastructure
+**Remaining (app layer — not infrastructure):**
+- F-007 Admin-facing log viewer: app layer work (Sprint 5, PRD-013)
+- F-008 Sequence gap alerting: app layer work (Sprint 4+)
 
 ---
 
