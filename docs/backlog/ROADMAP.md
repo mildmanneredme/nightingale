@@ -1,0 +1,264 @@
+# Project Nightingale — Master Roadmap
+
+> **Status:** Planning — April 2026
+> **Phase:** 1 MVP (Months 1–6)
+> **Target:** 100 beta patients, 200 consultations completed
+
+---
+
+## What We're Building
+
+An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a structured clinical interview with an AI voice agent, upload photos if relevant, and receive a doctor-reviewed assessment within hours — all for ~$50 AUD per consultation.
+
+**Critical invariant:** No AI output reaches a patient without a credentialed GP reviewing and approving it.
+
+---
+
+## PRD Index
+
+| PRD | Title | Phase | Sprint | Timeline |
+|-----|-------|-------|--------|----------|
+| [PRD-001](PRD-001-regulatory-prerequisites.md) | Regulatory & Legal Prerequisites | Pre-build | — | Before Week 1 |
+| [PRD-002](PRD-002-llm-voice-platform-evaluation.md) | LLM & Voice Platform Evaluation | Pre-build | — | Weeks 1–5 (concurrent) |
+| [PRD-003](PRD-003-infrastructure-devops.md) | Infrastructure & DevOps | Build | Sprint 0 | Week 1–2 |
+| [PRD-004](PRD-004-authentication-access-control.md) | Authentication & Access Control | Build | Sprint 0 | Week 1–2 |
+| [PRD-005](PRD-005-audit-log.md) | Audit Log & Compliance Infrastructure | Build | Sprint 0 | Week 1–2 |
+| [PRD-006](PRD-006-patient-registration.md) | Patient Registration & Profile | Build | Sprint 1 | Week 3–4 |
+| [PRD-007](PRD-007-payments-booking.md) | Payments & Consultation Booking | Build | Sprint 1 | Week 3–4 |
+| [PRD-008](PRD-008-ai-voice-consultation.md) | AI Voice Consultation | Build | Sprint 2 | Week 5–7 |
+| [PRD-009](PRD-009-text-chat-fallback.md) | Text-Chat Fallback | Build | Sprint 2 | Week 5–7 |
+| [PRD-010](PRD-010-photo-upload.md) | Photo Upload & Quality Guidance | Build | Sprint 3 | Week 7–8 |
+| [PRD-011](PRD-011-clinical-knowledge-base.md) | Clinical Knowledge Base & RAG Pipeline | Build | Sprint 3 | Week 7–8 |
+| [PRD-012](PRD-012-clinical-ai-engine.md) | Clinical AI Engine | Build | Sprint 4 | Week 8–10 |
+| [PRD-013](PRD-013-doctor-review-dashboard.md) | Doctor Review Dashboard | Build | Sprint 5 | Week 10–12 |
+| [PRD-014](PRD-014-patient-notifications.md) | Patient Notifications | Build | Sprint 5 | Week 10–12 |
+| [PRD-015](PRD-015-post-consultation-followup.md) | Post-Consultation Follow-Up | Build | Sprint 6 | Week 12–14 |
+| [PRD-016](PRD-016-beta-launch-readiness.md) | Beta Launch Readiness | Build | Sprint 6 | Week 12–14 |
+
+---
+
+## Timeline Overview
+
+```
+PRE-BUILD          SPRINT 0       SPRINT 1       SPRINT 2       SPRINT 3       SPRINT 4       SPRINT 5       SPRINT 6
+(Before Week 1)    (Week 1–2)     (Week 3–4)     (Week 5–7)     (Week 7–8)     (Week 8–10)    (Week 10–12)   (Week 12–14)
+
+PRD-001            PRD-003        PRD-006        PRD-008        PRD-010        PRD-012        PRD-013        PRD-015
+Regulatory &       Infrastructure Patient        AI Voice       Photo Upload   Clinical AI    Doctor Review  Post-Consult
+Legal Prereqs      & DevOps       Registration   Consultation   & Quality      Engine         Dashboard      Follow-Up
+
+PRD-002 *          PRD-004        PRD-007        PRD-009        PRD-011                       PRD-014        PRD-016
+LLM & Voice        Auth &         Payments &     Text-Chat      Clinical                      Patient        Beta Launch
+Evaluation         Access         Booking        Fallback       Knowledge                     Notifications  Readiness
+(ongoing Wk 1–5)                                               Base & RAG
+
+                   PRD-005
+                   Audit Log
+```
+
+*PRD-002 runs concurrently from Week 1; voice platform decision gates Sprint 2 start; LLM decision gates Sprint 4 start.
+
+---
+
+## Dependency Graph
+
+```
+PRD-001 (Regulatory)
+  └─► All PRDs — legal sign-off required before beta launch
+
+PRD-002 (LLM & Voice Platform Evaluation)
+  └─► PRD-008 (voice platform decision gates Sprint 2 start)
+  └─► PRD-011, PRD-012 (LLM decision gates Sprint 3/4 start)
+
+PRD-003 (Infrastructure)
+  └─► PRD-004, PRD-005, PRD-006, PRD-007, PRD-008, PRD-009, PRD-010, PRD-011, PRD-012, PRD-013, PRD-014, PRD-015, PRD-016
+
+PRD-004 (Auth)
+  └─► PRD-006 (patient flows), PRD-007 (payment-gated), PRD-013 (doctor dashboard)
+
+PRD-005 (Audit Log)
+  └─► PRD-007 (payment events), PRD-008 (consultation start/end), PRD-012 (AI outputs), PRD-013 (doctor actions), PRD-014 (notifications)
+
+PRD-006 (Patient Registration)
+  └─► PRD-007 (booking requires profile), PRD-008 (profile context in AI interview)
+
+PRD-007 (Payments)
+  └─► PRD-008 (consultation only starts after payment confirmation)
+
+PRD-008 (AI Voice)
+  └─► PRD-012 (transcript fed to clinical AI engine)
+
+PRD-009 (Text Fallback)
+  └─► PRD-012 (transcript fed to clinical AI engine)
+
+PRD-010 (Photo Upload)
+  └─► PRD-012 (photos fed to photo analysis)
+
+PRD-011 (Clinical Knowledge Base & RAG)
+  └─► PRD-012 (knowledge base, pgvector, and system prompts required before Clinical AI Engine)
+
+PRD-012 (Clinical AI Engine)
+  └─► PRD-013 (SOAP + diff + draft surfaces in doctor dashboard)
+
+PRD-013 (Doctor Dashboard)
+  └─► PRD-014 (approval triggers patient notification)
+
+PRD-014 (Patient Notifications)
+  └─► PRD-015 (follow-up triggered after notification sent)
+
+PRD-015 (Follow-Up)
+  └─► PRD-016 (end-to-end test includes follow-up flow)
+```
+
+---
+
+## Research Findings & Architecture Decisions
+
+Three research tracks were initiated April 2026. Key findings and confirmed decisions are summarised below; full documents are in [docs/research/](../research/).
+
+### Data Storage & Security Compliance — Research Complete
+
+**Architecture decision confirmed: Use AWS Bedrock (ap-southeast-2) instead of the direct Anthropic API.** This is the single most impactful data sovereignty decision — it keeps AI inference in Sydney, eliminates the APP 8 cross-border data disclosure trigger, and removes the need for a standalone Anthropic DPA. Full rationale in [2026-04-21-data-storage-compliance.md](../research/2026-04-21-data-storage-compliance.md).
+
+**Note on data residency law:** There is no blanket legal requirement for health data to be stored in Australia for a private telehealth company (the My Health Records Act s77 restriction only applies if Nightingale integrates with the national MHR system, which is out of scope for Phase 1). The operative obligation is APP 8 — accountability for cross-border data disclosure remains with Nightingale regardless of DPAs.
+
+**Confirmed infrastructure requirements (Sprint 0):**
+
+| Requirement | Standard | Sprint |
+|------------|---------|--------|
+| Data residency | All patient data in AWS ap-southeast-2 (Sydney); backups to ap-southeast-4 (Melbourne) | Sprint 0 |
+| Encryption at rest | AES-256, AWS KMS customer-managed keys; RDS encryption must be enabled at creation (cannot be added later) | Sprint 0 |
+| Encryption in transit | TLS 1.3 minimum (not 1.2) enforced at load balancer and API gateway | Sprint 0 |
+| Immutable audit log | Append-only storage (S3 object lock or WORM table); 7-year retention for consultation events | Sprint 0 |
+| MFA | Mandatory for all doctor and admin accounts (TOTP minimum); hard gate, not optional | Sprint 0 |
+| RBAC | Doctor data scoped to assigned consultations only; no standing admin production access | Sprint 0 |
+| Medical photo storage | Separate S3 bucket, EXIF stripping on upload, short-lived signed URLs scoped to individual consultation | Sprint 3 |
+| Security baseline | ASD Essential Eight Maturity Level 2 before launch (ML1 is the minimum for cyber insurance) | Pre-launch |
+| Penetration testing | CREST-accredited pen test before first patient onboarded; scope covers web app, API, auth flows, photo pipeline | Pre-launch |
+| Notifiable Data Breaches | 30-day notification to affected individuals + OAIC after becoming aware of an eligible breach; AUD 3.3M penalty for serious/repeated breaches | Operational |
+
+**Third-party DPAs — must be executed before any patient data flows:**
+
+| Vendor | Data Exposure | Required Action |
+|--------|-------------|-----------------|
+| AWS Bedrock (ap-southeast-2) | AI inference on anonymised data | Standard AWS DPA; data stays in AU — preferred path |
+| Vapi / Retell.ai | Live audio, transcript fragments | Execute DPA; confirm AU data residency or no post-session data retention |
+| Twilio | Patient name, phone, SMS content | Execute DPA; use AU data residency option where available |
+| SendGrid | Patient name, email, doctor response content | Execute DPA |
+| Stripe | Payment data combined with consultation context | Execute DPA; confirm scope with healthcare lawyer |
+
+**Open legal questions requiring healthcare lawyer input before launch:**
+1. Does Nightingale's anonymisation layer constitute de-identification under the Privacy Act, or pseudonymisation (still personal information)? — determines whether APP 8 is triggered for all LLM API calls
+2. Do state health record laws (NSW HRIPA, VIC Health Records Act, etc.) impose storage or access obligations beyond the federal Privacy Act when a GP approves a consultation?
+3. Does the NDB scheme require notifying patients of a breach at a third-party vendor (e.g., a Twilio breach exposing SMS content)?
+4. Is a Stripe DPA sufficient for payment data combined with health consultation context, or does the combination create additional sensitivity?
+
+**Estimated Year 1 compliance costs (AUD):**
+
+| Item | Estimate |
+|------|----------|
+| Healthcare lawyer — DPAs + Privacy Policy | 5,000–10,000 |
+| TGA pre-submission advice + Class IIa documentation | 20,000–50,000 |
+| CREST penetration test (pre-launch) | 10,000–25,000 |
+| AWS KMS + CloudTrail + S3 (incremental) | ~1,000/year |
+| Cyber insurance (health sector) | 5,000–15,000/year |
+| Annual penetration test (ongoing) | 8,000–15,000/year |
+| **Year 1 total (estimate)** | **60,000–115,000** |
+
+---
+
+### Clinical AI Model Selection — Research In Progress
+
+**Decision required by:** Sprint 4 start (Week 8) | **Owner:** CTO + Medical Director | **Document:** [2026-04-21-llm-model-selection.md](../research/2026-04-21-llm-model-selection.md)
+
+Evaluation is underway across 7 weighted criteria. Candidates: Claude Sonnet/Opus (via Bedrock), GPT-4o, Gemini 1.5 Pro, Llama 3 70B.
+
+| Criterion | Weight | Rationale |
+|-----------|--------|-----------|
+| Medical reasoning accuracy (MedQA, ClinicalBench benchmarks) | 30% | Core clinical task quality |
+| Hallucination rate in medical context (drug names, dosages, contraindications) | 25% | Highest-risk failure mode |
+| Clinical note quality (SOAP structure, patient-facing readability) | 20% | Directly evaluated on AU GP presentations |
+| Multimodal medical imaging capability | 10% | Required for photo analysis subset |
+| Australian data sovereignty & DPA | 10% | APP 8 compliance |
+| Cost per consultation (target: < AUD $2 for all AI/infra) | 5% | Estimated ~4,800 tokens per consultation |
+| Latency & API reliability (target: SOAP generation < 30 seconds) | 5% | Doctor queue responsiveness |
+
+Clinical note quality is evaluated by blind GP review of outputs on 10 synthetic Australian GP presentations (URTI, UTI, skin rash, musculoskeletal, mental health).
+
+**Voice platform evaluation** (Vapi vs Retell.ai) runs in parallel — decision required by Sprint 2 start. Key criteria: sub-500ms response latency, Australian accent accuracy, healthcare vocabulary, AU data residency.
+
+**Research timeline:** Weeks 2–5 (benchmark review → blind SOAP evaluation → hallucination testing → data sovereignty check → cost modelling → final recommendation with Medical Director sign-off).
+
+---
+
+### Australian Clinical Knowledge Grounding — Research In Progress
+
+**Decision required by:** Sprint 2 start (question trees) and Sprint 4 start (AI engine) | **Owner:** CTO + Medical Director | **Document:** [2026-04-21-australian-medical-knowledge.md](../research/2026-04-21-australian-medical-knowledge.md)
+
+**Recommended approach confirmed: Hybrid RAG + structured system prompts.** Fine-tuning is not recommended for Phase 1 — cost, data privacy complications, and model staleness as guidelines update. NIGHTINGALE.md's version-controlled clinical prompt repository is extended with a RAG knowledge base grounded in Australian sources.
+
+Without explicit Australian grounding, general-purpose LLMs default to US/UK guidelines, US brand names, NICE/CDC rather than RACGP, and US emergency services (911 instead of 000) — all of which create clinical and regulatory risk.
+
+**Knowledge sources and licensing actions:**
+
+| Source | Tier | Status / Action Required |
+|--------|------|--------------------------|
+| eTG Complete (Therapeutic Guidelines) | 1 — authoritative | Contact Therapeutic Guidelines Ltd for AI licensing agreement before Sprint 4 |
+| AMH (Australian Medicines Handbook) | 1 — authoritative | Contact AMH for AI licensing agreement before Sprint 4 |
+| MIMS Australia | 1 — drug database | Contact MIMS for commercial AI integration agreement before Sprint 4 |
+| RACGP guidelines | 1 — GP standard of care | Freely available; attribution required; no blocker |
+| PBS / MBS data | 1 — prescribing + billing | Open Government Licence; no blocker |
+| Specialty college guidelines (RANZCP, ACD, etc.) | 2 — condition-specific | As needed per consultation categories |
+
+**Fallback:** If eTG or AMH prohibit AI use, build the knowledge base on RACGP + PBS/MBS open data, supplemented by Medical Director-authored summaries of eTG/AMH content.
+
+**Vector database (MVP):** pgvector on the existing RDS PostgreSQL instance — sufficient for Phase 1 volume (200 consultations/month), zero additional infrastructure. Migrate to AWS OpenSearch (ap-southeast-2) if query latency degrades at scale.
+
+**Hardcoded AHPRA regulatory language constraints** — applied to every system prompt, reviewed and signed off by regulatory advisor before Sprint 4:
+- Use "assess" (not "diagnose"), "recommend" (not "prescribe in patient-facing responses"), "may indicate" or "is consistent with" (not "you have [condition]")
+- Always include in patient-facing drafts: "This advice is not a substitute for in-person medical care" and emergency reference to 000
+- Never include: medication brand names unless PBS-listed, off-label uses, claims of diagnostic certainty, references to 911
+
+**Medical Director knowledge governance:** All question trees and system prompt changes require Medical Director PR approval before merge. Branch protection enforced on `question-trees/`, `regulatory/`, and system prompt templates. Monthly audit of AI output quality (amendment rate, rejection rate, confidence threshold performance).
+
+**Research timeline:** Weeks 1–7 (eTG/AMH/MIMS licensing contacts → AHPRA language draft → question trees v1 for 5 presentations → RAG pipeline prototype on synthetic consultations → Medical Director blind comparison → governance workflow documented).
+
+---
+
+## Phase 1 Success Metrics
+
+| Metric | Target |
+|--------|--------|
+| Consultations completed | 200 by Month 6 |
+| AI draft approval rate (no amendment) | Baseline established |
+| Patient satisfaction score | Baseline established |
+| Doctor rejection rate | Baseline established |
+| Average doctor review time | < 5 min per consultation |
+| Average time-to-response | Tracked — no SLA at launch |
+
+---
+
+## Explicitly Out of Scope (Phase 1)
+
+- Native mobile app (iOS/Android)
+- Video consultation
+- Electronic prescription (eScript) — Fred Dispense / ScriptPad
+- Medicare bulk billing
+- Chronic condition management programs
+- EMR integration
+- Southeast Asia localisation
+- Clinic white-label / SaaS licensing
+
+---
+
+## Key Open Decisions (Pre-Build)
+
+| Decision | Status | Owner | Required By |
+|----------|--------|-------|-------------|
+| AWS Bedrock vs direct Anthropic API | **Recommended: AWS Bedrock** — research confirms this eliminates APP 8 cross-border risk; final sign-off with lawyer | CTO + Lawyer | Sprint 0 start |
+| Voice AI platform: Vapi vs Retell.ai | Open — evaluation in progress (criteria: AU accent accuracy, <500ms latency, healthcare vocabulary, data residency) | CTO | Sprint 2 start |
+| Clinical LLM: Claude vs GPT-4o vs Gemini vs Llama 3 | Open — formal evaluation underway (7-criteria weighted scorecard; blind GP review) | CTO + Medical Director | Sprint 4 start |
+| Auth provider: AWS Cognito vs Auth0 | Open | CTO | Sprint 0 start |
+| Clinical knowledge licensing: eTG / AMH / MIMS | Open — must contact each vendor for AI use agreement; RACGP + PBS/MBS available freely as fallback | Medical Director + Lawyer | Sprint 4 start |
+| AHPRA advertising language constraints | Open — draft in progress; requires sign-off from AHPRA advertising compliance reviewer | Regulatory Advisor | Sprint 4 start |
+| Medical Director partner confirmed | Open | Founder | Pre-build |
