@@ -33,3 +33,27 @@ variable "ecr_repository_url" {
 variable "db_secret_arn" {
   type = string
 }
+
+variable "db_host" {
+  type = string
+}
+
+variable "db_name" {
+  type    = string
+  default = "nightingale"
+}
+
+variable "db_user" {
+  type    = string
+  default = "nightingale_admin"
+}
+
+variable "cognito_user_pool_id" {
+  type    = string
+  default = ""
+}
+
+variable "cognito_client_id" {
+  type    = string
+  default = ""
+}

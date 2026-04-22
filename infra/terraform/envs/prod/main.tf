@@ -82,6 +82,9 @@ module "ecs" {
   execution_role_arn    = module.iam.ecs_execution_role_arn
   ecr_repository_url    = data.aws_ecr_repository.api.repository_url
   db_secret_arn         = module.rds.secret_arn
+  db_host               = module.rds.db_host
+  cognito_user_pool_id  = module.cognito.user_pool_id
+  cognito_client_id     = module.cognito.web_client_id
 }
 
 module "waf" {

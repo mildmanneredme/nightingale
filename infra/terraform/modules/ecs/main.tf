@@ -39,8 +39,14 @@ resource "aws_ecs_task_definition" "api" {
     }]
 
     environment = [
-      { name = "APP_ENV", value = var.env },
-      { name = "PORT", value = "8080" }
+      { name = "APP_ENV",               value = var.env },
+      { name = "PORT",                   value = "8080" },
+      { name = "DB_HOST",               value = var.db_host },
+      { name = "DB_NAME",               value = var.db_name },
+      { name = "DB_USER",               value = var.db_user },
+      { name = "COGNITO_USER_POOL_ID",  value = var.cognito_user_pool_id },
+      { name = "COGNITO_CLIENT_ID",     value = var.cognito_client_id },
+      { name = "AWS_REGION",            value = "ap-southeast-2" },
     ]
 
     logConfiguration = {
