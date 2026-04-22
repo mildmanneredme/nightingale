@@ -5,6 +5,10 @@
 *.env
 .aws/
 
+# Node
+node_modules/
+dist/
+
 # Terraform
 **/.terraform/
 *.tfstate

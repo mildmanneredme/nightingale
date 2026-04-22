@@ -23,6 +23,16 @@ The Medical Director must review the minimum viable profile fields before Sprint
 
 ---
 
+## User Roles & Access
+
+| Role | Access |
+|------|--------|
+| Patient | Self-registers; can only access and modify their own profile and consultation history |
+| Doctor | No direct access to patient profiles; receives profile context as a snapshot embedded in their consultation tickets only |
+| Admin | No access to patient clinical profiles; operational data only |
+
+---
+
 ## Functional Requirements
 
 ### Registration Flow
@@ -84,6 +94,25 @@ The Medical Director must review the minimum viable profile fields before Sprint
 3. **Build Your Profile** (optional, skippable) — DOB, name, Medicare, allergies, medications, conditions
 4. **Dashboard** — Consultation history, "Start New Consultation" CTA, profile completeness nudge
 5. **Profile Edit** — Full profile management
+
+---
+
+## Compliance Notes
+
+**Privacy Act / APPs:** Health information collected at registration (DOB, allergies, medications, conditions) is sensitive information under the Privacy Act. The Collection Notice must be displayed and accepted before any data is collected; the acceptance timestamp is a legal record.
+
+**AHPRA:** No patient-facing copy in this PRD refers to diagnosis or clinical outcomes. Profile completion is framed as improving "consultation quality", not "accuracy of diagnosis".
+
+**Audit log events:**
+
+| Event | Trigger |
+|-------|---------|
+| `patient.registered` | Account created and email verified |
+| `privacy_policy_accepted` | Collection Notice accepted; stores policy version and timestamp |
+| `paediatric_consent_accepted` | Parent/guardian completes consent step for under-18 patient |
+| `account.deletion_requested` | Patient requests deletion; record deactivated, not deleted (7-year retention) |
+
+**Data residency:** All profile data stored in RDS ap-southeast-2. No patient data leaves Australia for this feature.
 
 ---
 

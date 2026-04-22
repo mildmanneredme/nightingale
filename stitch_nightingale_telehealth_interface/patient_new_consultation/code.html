@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Nightingale - New Consultation</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Public+Sans:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#455f88",
+                        "tertiary-fixed": "#ffddba",
+                        "tertiary-container": "#4f2e00",
+                        "on-tertiary-fixed-variant": "#633f0f",
+                        "surface-container-high": "#e9e7eb",
+                        "on-surface": "#1a1c1e",
+                        "background": "#faf9fd",
+                        "inverse-surface": "#2f3033",
+                        "error": "#ba1a1a",
+                        "on-primary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "primary": "#002045",
+                        "on-secondary-container": "#1a6d6e",
+                        "on-tertiary": "#ffffff",
+                        "on-background": "#1a1c1e",
+                        "on-primary-fixed": "#001b3c",
+                        "primary-fixed-dim": "#adc7f7",
+                        "tertiary": "#321b00",
+                        "on-primary-container": "#86a0cd",
+                        "on-secondary-fixed": "#002020",
+                        "surface-bright": "#faf9fd",
+                        "surface-container-low": "#f4f3f7",
+                        "tertiary-fixed-dim": "#f2bc82",
+                        "on-primary-fixed-variant": "#2d476f",
+                        "outline": "#74777f",
+                        "inverse-on-surface": "#f1f0f4",
+                        "surface-container": "#efedf1",
+                        "secondary": "#13696a",
+                        "on-secondary-fixed-variant": "#004f50",
+                        "on-error-container": "#93000a",
+                        "on-surface-variant": "#43474e",
+                        "surface-variant": "#e3e2e6",
+                        "primary-container": "#1a365d",
+                        "outline-variant": "#c4c6cf",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-fixed-dim": "#89d3d4",
+                        "primary-fixed": "#d6e3ff",
+                        "on-error": "#ffffff",
+                        "on-tertiary-fixed": "#2b1700",
+                        "surface": "#faf9fd",
+                        "on-secondary": "#ffffff",
+                        "surface-container-highest": "#e3e2e6",
+                        "secondary-fixed": "#a5eff0",
+                        "inverse-primary": "#adc7f7",
+                        "on-tertiary-container": "#c6955e",
+                        "secondary-container": "#a2eded",
+                        "surface-dim": "#dad9dd"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "8px",
+                        "stack-md": "16px",
+                        "patient-margin": "32px",
+                        "stack-lg": "32px",
+                        "gutter": "24px",
+                        "stack-sm": "8px",
+                        "doctor-margin": "16px"
+                    },
+                    "fontFamily": {
+                        "display-xl": ["Manrope"],
+                        "clinical-data": ["Public Sans"],
+                        "body-md": ["Public Sans"],
+                        "body-lg": ["Public Sans"],
+                        "label-sm": ["Public Sans"],
+                        "headline-md": ["Manrope"],
+                        "headline-lg": ["Manrope"]
+                    },
+                    "fontSize": {
+                        "display-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "clinical-data": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "label-sm": ["12px", {"lineHeight": "1", "fontWeight": "700"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .bg-glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen">
+<!-- TopAppBar -->
+<header class="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 h-16 border-b border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-none">
+<div class="flex items-center gap-4">
+<span class="text-xl font-bold tracking-tighter text-blue-900 dark:text-blue-50 font-manrope">Nightingale</span>
+</div>
+<nav class="hidden md:flex gap-8 items-center">
+<a class="font-manrope text-sm font-medium tracking-tight text-slate-500 dark:text-slate-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors" href="#">My Health</a>
+<a class="font-manrope text-sm font-medium tracking-tight text-blue-900 dark:text-blue-200 border-b-2 border-blue-900 dark:border-blue-200 pb-1" href="#">Appointments</a>
+<a class="font-manrope text-sm font-medium tracking-tight text-slate-500 dark:text-slate-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors" href="#">Records</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-on-surface-variant p-2 rounded-full hover:bg-surface-container transition-colors">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant p-2 rounded-full hover:bg-surface-container transition-colors">help_outline</button>
+<div class="w-8 h-8 rounded-full bg-primary-fixed overflow-hidden ring-2 ring-primary/10">
+<img alt="User avatar" data-alt="Close-up portrait of a professional woman with a warm expression and natural lighting in a bright modern environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCH7HnrT36W-BBa7PeUJVdO1eh2WjfVc3RtSw3-HBYoQbQslnpTQBwIwMZWYNE6F5DFtwS-09gwv85cA2lR03Zh565jOGAaSTH8E5leQZkVqlvWMqFBDTjrwJU_sKvONQ5ElApEeP8QaCKcybhOEGSHFffnJlR4g-GT5NJlPIE8owdfE9n2dOQABs8ZXM3ioLKzxyEJaCnVpy0lwRvYGGPlIUaExy6fZ3DR9sRQ3gWz8iTvnBvEW-5F4I4M1xIXATKgl0cIA_N7-QrP"/>
+</div>
+</div>
+</header>
+<main class="pt-24 pb-32 px-6 md:px-[32px] max-w-4xl mx-auto">
+<!-- Progress Stepper -->
+<div class="flex items-center gap-4 mb-stack-lg overflow-x-auto pb-2 scrollbar-hide">
+<div class="flex items-center gap-2 shrink-0">
+<span class="w-8 h-8 rounded-full bg-secondary text-on-secondary flex items-center justify-center font-bold text-xs">1</span>
+<span class="font-label-sm text-label-sm text-secondary uppercase tracking-widest">Description</span>
+</div>
+<div class="w-12 h-[2px] bg-outline-variant shrink-0"></div>
+<div class="flex items-center gap-2 shrink-0 opacity-50">
+<span class="w-8 h-8 rounded-full border-2 border-outline flex items-center justify-center font-bold text-xs">2</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Provider</span>
+</div>
+<div class="w-12 h-[2px] bg-outline-variant shrink-0"></div>
+<div class="flex items-center gap-2 shrink-0 opacity-50">
+<span class="w-8 h-8 rounded-full border-2 border-outline flex items-center justify-center font-bold text-xs">3</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Payment</span>
+</div>
+</div>
+<section class="space-y-stack-lg">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-primary mb-2">New Consultation</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Tell us what's happening so we can match you with the right specialist.</p>
+</div>
+<!-- Bento Grid Layout for Inputs -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<!-- Main Input Card -->
+<div class="md:col-span-8 bg-surface-container-lowest border border-slate-200 rounded-xl p-stack-md shadow-sm hover:shadow-md transition-shadow">
+<label class="block font-headline-md text-headline-md text-primary mb-4" for="reason">What brings you in today?</label>
+<div class="relative">
+<textarea class="w-full bg-surface-bright border-2 border-outline-variant focus:border-primary focus:ring-0 rounded-lg p-4 font-body-md text-on-surface transition-all resize-none" id="reason" maxlength="200" placeholder="Please describe your symptoms, duration, and any concerns..." rows="6"></textarea>
+<div class="absolute bottom-4 right-4 text-label-sm font-label-sm text-outline">
+                            0 / 200
+                        </div>
+</div>
+<div class="mt-4 flex items-center gap-2 text-on-secondary-container bg-secondary-container/30 p-3 rounded-lg">
+<span class="material-symbols-outlined text-[18px]">info</span>
+<p class="text-label-sm font-label-sm">Specific details help our doctors provide a faster assessment.</p>
+</div>
+</div>
+<!-- Mode Selection Sidebar Card -->
+<div class="md:col-span-4 flex flex-col gap-gutter">
+<div class="bg-surface-container-lowest border border-slate-200 rounded-xl p-stack-md shadow-sm">
+<h3 class="font-clinical-data text-clinical-data text-primary uppercase tracking-widest mb-4">Consultation Mode</h3>
+<div class="space-y-3">
+<!-- Voice Option (Active) -->
+<button class="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-secondary bg-secondary-container/20 text-on-secondary-container transition-all group">
+<div class="w-10 h-10 rounded-full bg-secondary text-on-secondary flex items-center justify-center">
+<span class="material-symbols-outlined">mic</span>
+</div>
+<div class="text-left">
+<p class="font-clinical-data text-clinical-data">Voice Call</p>
+<p class="text-[10px] font-bold opacity-70 uppercase tracking-tighter">Recommended</p>
+</div>
+<span class="material-symbols-outlined ml-auto" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</button>
+<!-- Text Option -->
+<button class="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-outline-variant hover:border-primary bg-surface-bright text-on-surface-variant transition-all group">
+<div class="w-10 h-10 rounded-full bg-surface-container-high text-on-surface-variant flex items-center justify-center group-hover:bg-primary-container group-hover:text-on-primary-container transition-colors">
+<span class="material-symbols-outlined">chat_bubble</span>
+</div>
+<div class="text-left">
+<p class="font-clinical-data text-clinical-data">Text Chat</p>
+<p class="text-[10px] font-bold opacity-70 uppercase tracking-tighter">Asynchronous</p>
+</div>
+</button>
+</div>
+</div>
+<!-- Fee Summary Card -->
+<div class="bg-primary text-on-primary rounded-xl p-stack-md shadow-lg overflow-hidden relative">
+<div class="absolute -top-4 -right-4 w-24 h-24 bg-on-primary/10 rounded-full blur-2xl"></div>
+<h3 class="font-label-sm text-label-sm uppercase tracking-widest text-on-primary-container mb-2">Estimated Fee</h3>
+<div class="text-display-xl font-display-xl mb-4">$50<span class="text-headline-md opacity-70">.00</span> <span class="text-label-sm font-label-sm align-middle">AUD</span></div>
+<div class="flex items-start gap-2 bg-on-primary/10 p-3 rounded-lg border border-on-primary/20">
+<span class="material-symbols-outlined text-secondary-fixed text-[18px]">verified_user</span>
+<p class="text-[11px] leading-relaxed font-body-md">Full refund if the doctor cannot assess your condition remotely.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Action Area -->
+<div class="flex flex-col md:flex-row items-center justify-between gap-6 pt-stack-md border-t border-slate-200">
+<div class="flex items-center gap-3">
+<div class="flex -space-x-3">
+<img alt="Doctor 1" class="w-10 h-10 rounded-full border-2 border-white" data-alt="Portrait of a male doctor in a white coat smiling with a medical background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuANlL9qRAGxPFslNzDFf6x-W4LMImXUV9dPD4hx0QFwMKCZYwBGXmQYyHi92OPoSD2fsJZNn5YtjunXLt3SEQYozc84XHQykU_yZNX2Movk_E3N_aOPwY-BTtahnU_l8fXZKsOG79GLeQ4loUnBGWVZ9zQDvQkqF-LpjytR2m_-QnJfafJ9KKSbX7HsacLKjoSZXsN1aKAHzWg7mFntMlCSWkeOS4GJl6BVX5dgyT5ljFmPbuyGrirM0soLKnnMbuN4OsuEiCyMpAix"/>
+<img alt="Doctor 2" class="w-10 h-10 rounded-full border-2 border-white" data-alt="Close-up portrait of a female physician in professional clinical attire" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC1CwHyyb4XHHqa3zSdimDsgNaLbHCHdKmGDLUtsvneKjk4oufGtAlluZ1c3sb9Zib5hGutFD61u_DeYCR3pfjBr95O-31GQd1nI8IRfTMxS4Csq9Mr5SH9u7rny8cDYcEK22OHdUFoUW-LVsW_Qd11a314DWoKJ-w3aL_JFVzcIcYDrvpkvqfN0xmeDAoA3dgbvIkk-mrwaPh-RnYSVL50FFc-kEtl8XFEs7EIXOtohOcz435_vlQbe7ufu7nnOydZKyt9Xj37m4vd"/>
+<div class="w-10 h-10 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">+12</div>
+</div>
+<div>
+<p class="text-clinical-data font-clinical-data text-primary">Available Practitioners</p>
+<p class="text-[11px] text-on-surface-variant">Typical wait time: <span class="text-secondary font-bold">~8 mins</span></p>
+</div>
+</div>
+<button class="w-full md:w-auto px-10 py-4 bg-primary text-on-primary font-manrope font-bold text-lg rounded-xl shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3">
+                    Continue to Payment
+                    <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</section>
+<!-- Clinical Guidelines Glass Card -->
+<div class="mt-stack-lg p-6 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col md:flex-row gap-6 items-center">
+<div class="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm shrink-0">
+<span class="material-symbols-outlined text-secondary text-3xl">medical_services</span>
+</div>
+<div class="space-y-1">
+<h4 class="font-headline-md text-primary">Clinical Safety Guarantee</h4>
+<p class="font-body-md text-on-surface-variant">Our triage system ensures you only pay for care that can be delivered safely online. If your case requires an in-person visit, we'll direct you to the nearest clinic at no cost.</p>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 md:hidden flex justify-around items-center px-4 pt-3 pb-6 bg-white border-t border-slate-100 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] rounded-t-2xl">
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-blue-900 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 rounded-xl px-4 py-1" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">medical_information</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest mt-1">Health</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest mt-1">History</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest mt-1">Profile</span>
+</a>
+</nav>
+</body></html>

@@ -147,16 +147,20 @@ The clinical AI engine runs after the voice consultation completes, so real-time
 
 Score each candidate 1–5 on each criterion, then apply weights to produce a weighted total.
 
-| Criterion | Weight | Claude | GPT-4o | Gemini | Med-PaLM 2 | Llama 3 |
-|-----------|--------|--------|--------|--------|------------|---------|
-| Medical reasoning accuracy | 30% | TBD | TBD | TBD | TBD | TBD |
-| Hallucination rate | 25% | TBD | TBD | TBD | TBD | TBD |
-| Clinical note quality | 20% | TBD | TBD | TBD | TBD | TBD |
-| Multimodal imaging | 10% | TBD | TBD | TBD | TBD | TBD |
-| AU data sovereignty | 10% | TBD | TBD | TBD | TBD | TBD |
-| Cost per consultation | 5% | TBD | TBD | TBD | TBD | TBD |
-| Latency & reliability | 5% | TBD | TBD | TBD | TBD | TBD |
-| **Weighted total** | | | | | | |
+Candidates updated to April 2026 available models: Claude Sonnet 4.6 (Bedrock), GPT-4o (Azure AU East), Gemini 2.5 Flash (GCP Vertex AI), Llama 3 70B (self-hosted). Med-PaLM 2 excluded — no general API access. Mistral excluded — no confirmed AU data residency.
+
+| Criterion | Weight | Claude Sonnet 4.6 | GPT-4o | Gemini 2.5 Flash | Llama 3 70B |
+|-----------|--------|:-----------------:|:------:|:----------------:|:-----------:|
+| Medical reasoning accuracy | 30% | 4.5 (92.3% MedQA) | 4.0 (~90.9% MedQA w/CoT) | 3.5 (~88% est.) | 3.0 (~75–80%) |
+| Hallucination rate | 25% | 4.5 | 3.5 (23.6 errors/SOAP case) | 4.0 (high Med-HALT resistance) | 3.0 |
+| Clinical note quality | 20% | 4.5 | 3.5 | 3.5 | 2.5 |
+| Multimodal imaging | 10% | 4.0 | 4.0 (67.8–88.3% dermatology) | 3.5 | 2.0 |
+| AU data sovereignty | 10% | 5.0 (Bedrock confirmed) | 4.0 | 4.0 | 5.0 (self-hosted) |
+| Cost per consultation | 5% | 4.5 (~AUD $0.043) | 4.5 (~AUD $0.029) | 5.0 (~AUD $0.005) | 1.5 (~AUD $18 at 200/mo) |
+| Latency & reliability | 5% | 4.0 | 4.0 | 4.5 | 3.0 |
+| **Weighted total** | | **4.70 / 5** | **4.00 / 5** | **3.98 / 5** | **3.08 / 5** |
+
+**Decision: Claude Sonnet 4.6 via AWS Bedrock ap-southeast-2.** Full rationale in PRD-002.
 
 ---
 

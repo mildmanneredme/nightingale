@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Public+Sans:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .tap-highlight-transparent {
+      -webkit-tap-highlight-color: transparent;
+    }
+  </style>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+                  "on-surface": "#1a1c1e",
+                  "surface-variant": "#e3e2e6",
+                  "secondary-fixed": "#a5eff0",
+                  "primary": "#002045",
+                  "secondary-container": "#a2eded",
+                  "surface-container-high": "#e9e7eb",
+                  "on-secondary-fixed-variant": "#004f50",
+                  "surface-dim": "#dad9dd",
+                  "surface-container": "#efedf1",
+                  "outline": "#74777f",
+                  "primary-fixed": "#d6e3ff",
+                  "on-tertiary-container": "#c6955e",
+                  "on-error-container": "#93000a",
+                  "on-primary-fixed": "#001b3c",
+                  "surface-container-highest": "#e3e2e6",
+                  "surface": "#faf9fd",
+                  "error-container": "#ffdad6",
+                  "surface-tint": "#455f88",
+                  "on-primary": "#ffffff",
+                  "surface-container-low": "#f4f3f7",
+                  "on-tertiary-fixed-variant": "#633f0f",
+                  "error": "#ba1a1a",
+                  "outline-variant": "#c4c6cf",
+                  "on-secondary-fixed": "#002020",
+                  "on-primary-container": "#86a0cd",
+                  "tertiary-container": "#4f2e00",
+                  "background": "#faf9fd",
+                  "on-surface-variant": "#43474e",
+                  "on-primary-fixed-variant": "#2d476f",
+                  "inverse-on-surface": "#f1f0f4",
+                  "primary-fixed-dim": "#adc7f7",
+                  "inverse-primary": "#adc7f7",
+                  "surface-bright": "#faf9fd",
+                  "on-tertiary-fixed": "#2b1700",
+                  "tertiary": "#321b00",
+                  "on-secondary": "#ffffff",
+                  "on-secondary-container": "#1a6d6e",
+                  "secondary-fixed-dim": "#89d3d4",
+                  "tertiary-fixed": "#ffddba",
+                  "on-background": "#1a1c1e",
+                  "inverse-surface": "#2f3033",
+                  "on-error": "#ffffff",
+                  "on-tertiary": "#ffffff",
+                  "primary-container": "#1a365d",
+                  "secondary": "#13696a",
+                  "surface-container-lowest": "#ffffff",
+                  "tertiary-fixed-dim": "#f2bc82"
+          },
+          "borderRadius": {
+                  "DEFAULT": "0.25rem",
+                  "lg": "0.5rem",
+                  "xl": "0.75rem",
+                  "full": "9999px"
+          },
+          "spacing": {
+                  "unit": "8px",
+                  "gutter": "24px",
+                  "stack-md": "16px",
+                  "stack-sm": "8px",
+                  "stack-lg": "32px",
+                  "patient-margin": "32px",
+                  "doctor-margin": "16px"
+          },
+          "fontFamily": {
+                  "body-md": ["Public Sans"],
+                  "headline-lg": ["Manrope"],
+                  "label-sm": ["Public Sans"],
+                  "display-xl": ["Manrope"],
+                  "headline-md": ["Manrope"],
+                  "clinical-data": ["Public Sans"],
+                  "body-lg": ["Public Sans"]
+          },
+          "fontSize": {
+                  "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                  "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                  "label-sm": ["12px", {"lineHeight": "1", "fontWeight": "700"}],
+                  "display-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                  "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                  "clinical-data": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                  "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}]
+          }
+        },
+      },
+    }
+  </script>
+</head>
+<body class="bg-surface font-body-md text-on-surface selection:bg-secondary-container">
+<!-- TopAppBar Shell -->
+<header class="fixed top-0 z-[60] w-full bg-white border-b border-slate-200 shadow-sm">
+<div class="flex justify-between items-center w-full px-6 py-3 max-w-7xl mx-auto">
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-slate-900 active:scale-95 transition-transform" data-icon="arrow_back">arrow_back</button>
+<span class="text-xl font-bold tracking-tight text-blue-900">Nightingale</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-slate-900 hover:bg-slate-50 transition-colors p-2 rounded-full" data-icon="notifications">notifications</button>
+<button class="material-symbols-outlined text-slate-900 hover:bg-slate-50 transition-colors p-2 rounded-full" data-icon="account_circle">account_circle</button>
+</div>
+</div>
+</header>
+<main class="pt-20 pb-32 max-w-4xl mx-auto px-patient-margin">
+<!-- Title and Status -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-stack-lg">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-primary">Consultation Result</h1>
+<p class="font-body-md text-on-surface-variant">Review your clinical summary and next steps</p>
+</div>
+<div class="inline-flex items-center gap-2 bg-secondary-container text-on-secondary-container px-4 py-2 rounded-full">
+<span class="material-symbols-outlined text-[20px]" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Approved</span>
+</div>
+</div>
+<!-- Main Content Layout (Asymmetric/Bento style) -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<!-- Doctor Info Card -->
+<div class="md:col-span-4 flex flex-col gap-stack-md">
+<div class="bg-white border border-outline-variant p-gutter rounded-xl shadow-sm">
+<div class="flex flex-col items-center text-center">
+<div class="relative mb-stack-md">
+<img alt="Dr. Sarah Jenkins" class="w-24 h-24 rounded-full object-cover border-4 border-secondary-fixed" data-alt="Professional headshot of a female doctor with friendly expression, wearing a white lab coat in a bright clinical setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCIXXZaugG7Ck-DWBC9jAeks9ljqOUGAQj8x-ns5B6Munkhi_mzGY9tokaYV4PZD3vgZ_KRC-VJR1WPsokamDcHjp-gOMt63jG_LfrZK5JSOIvUQXWnlxnGxfebYm9avFYBo4CRQ5CctxuFpxs4oEhP2lU5s9JBhfjSW8WiqlQ2SL6uX2ZpS2pr8MlQXrzsEx_Ii2NrScieWeLnSTkNr7fC6hZ7S34eJ5EZBuB9zFIwS8h5PmZEmyyCZyfj63IBW9xDuE7s4P0KRJl"/>
+<div class="absolute bottom-1 right-1 bg-green-500 w-4 h-4 rounded-full border-2 border-white"></div>
+</div>
+<h2 class="font-headline-md text-headline-md text-primary">Dr. Sarah Jenkins</h2>
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase mb-4">Senior Neurologist</p>
+<div class="flex items-center gap-2 text-secondary font-clinical-data">
+<span class="material-symbols-outlined text-[18px]" data-icon="verified">verified</span>
+              AHPRA Registered
+            </div>
+</div>
+</div>
+<div class="bg-primary-container p-gutter rounded-xl text-on-primary">
+<h3 class="font-headline-md text-headline-md text-on-primary-container mb-2">Next Steps</h3>
+<ul class="space-y-4">
+<li class="flex gap-3">
+<span class="material-symbols-outlined text-secondary-fixed" data-icon="calendar_month">calendar_month</span>
+<div>
+<p class="font-label-sm text-label-sm">Follow-up appointment</p>
+<p class="font-body-md text-white">In 4 weeks</p>
+</div>
+</li>
+<li class="flex gap-3">
+<span class="material-symbols-outlined text-secondary-fixed" data-icon="monitoring">monitoring</span>
+<div>
+<p class="font-label-sm text-label-sm">Track Symptoms</p>
+<p class="font-body-md text-white">Use the Daily Migraine Log</p>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<!-- Management Plan & Prescription -->
+<div class="md:col-span-8 flex flex-col gap-gutter">
+<!-- Management Plan (Bubble/Glass style) -->
+<div class="bg-white border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+<div class="bg-secondary-container/30 px-gutter py-4 border-b border-outline-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-on-secondary-container" data-icon="clinical_notes">clinical_notes</span>
+<h3 class="font-headline-md text-headline-md text-primary">Management Plan</h3>
+</div>
+<div class="p-gutter">
+<div class="bg-surface-container-low p-stack-lg rounded-lg border-l-4 border-secondary">
+<p class="font-body-lg text-on-surface leading-relaxed italic">
+                "Dear Sarah, based on your symptoms and the frequency of your migraine episodes, I recommend a dual approach focusing on both acute treatment for current flares and lifestyle modifications to identify triggers. Please monitor your sleep patterns and hydration as these appear to be significant factors."
+              </p>
+</div>
+</div>
+</div>
+<!-- Prescription Details -->
+<div class="bg-white border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+<div class="bg-primary/5 px-gutter py-4 border-b border-outline-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="medication">medication</span>
+<h3 class="font-headline-md text-headline-md text-primary">Prescription &amp; Dosage</h3>
+</div>
+<div class="p-gutter">
+<div class="flex items-center justify-between p-4 bg-surface rounded-lg border border-outline-variant">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-secondary-fixed rounded-full flex items-center justify-center text-on-secondary-fixed-variant">
+<span class="material-symbols-outlined" data-icon="pill">pill</span>
+</div>
+<div>
+<h4 class="font-headline-md text-headline-md text-primary">Sumatriptan</h4>
+<p class="font-body-md text-on-surface-variant">50mg Oral Tablets</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-label-sm text-label-sm text-primary uppercase">Dosage</p>
+<p class="font-clinical-data text-on-surface">1 tablet at onset</p>
+</div>
+</div>
+<p class="mt-4 text-label-sm text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]" data-icon="info">info</span>
+              Maximum 2 tablets in 24 hours. Do not exceed recommended dose.
+            </p>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex flex-col sm:flex-row gap-4 mt-stack-md">
+<button class="flex-1 bg-primary text-on-primary py-4 px-6 rounded-xl font-headline-md flex items-center justify-center gap-2 hover:bg-primary-container transition-all active:scale-95">
+<span class="material-symbols-outlined" data-icon="calendar_add_on">calendar_add_on</span>
+            Book Follow-up
+          </button>
+<button class="flex-1 bg-white border border-primary text-primary py-4 px-6 rounded-xl font-headline-md flex items-center justify-center gap-2 hover:bg-surface-container-low transition-all active:scale-95">
+<span class="material-symbols-outlined" data-icon="download">download</span>
+            Download PDF Summary
+          </button>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar Shell -->
+<nav class="fixed bottom-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-t border-slate-200 md:hidden">
+<div class="flex justify-around items-center px-4 pb-safe pt-2 w-full">
+<a class="flex flex-col items-center justify-center text-slate-500 px-4 py-1.5 tap-highlight-transparent active:scale-90 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-manrope text-[11px] font-medium">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-teal-700 bg-teal-50 rounded-2xl px-4 py-1.5 tap-highlight-transparent active:scale-90 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="medical_services" style="font-variation-settings: 'FILL' 1;">medical_services</span>
+<span class="font-manrope text-[11px] font-medium">Consults</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 px-4 py-1.5 tap-highlight-transparent active:scale-90 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span class="font-manrope text-[11px] font-medium">Health</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 px-4 py-1.5 tap-highlight-transparent active:scale-90 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-manrope text-[11px] font-medium">Profile</span>
+</a>
+</div>
+</nav>
+</body></html>

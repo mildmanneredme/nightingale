@@ -21,6 +21,17 @@ The doctor-approved response is attributed to the reviewing doctor in all patien
 
 ---
 
+## User Roles & Access
+
+| Role | Access |
+|------|--------|
+| Patient | Receives notifications at their registered email; cannot opt out of clinical response emails (these are the product deliverable) |
+| Doctor | Name and approved response content are used in the response email; no direct notification system access |
+| System | SendGrid API sends emails; delivery status tracked via webhook |
+| Admin | Can view notification audit log and delivery failure alerts |
+
+---
+
 ## Notification Types
 
 | Notification | Trigger | Template |
@@ -91,6 +102,24 @@ The doctor-approved response is attributed to the reviewing doctor in all patien
 - **Deliverability:** Target > 98% delivery rate on non-bounced addresses
 - **PII in transit:** SendGrid DPA must be signed; email content includes health information and is therefore sensitive information under the Privacy Act
 - **Timing:** Response delivery email sent within 60 seconds of doctor approval
+
+---
+
+## Compliance Notes
+
+**Privacy Act / APP 8:** SendGrid processes patient names and health consultation content on servers outside Australia. SendGrid DPA must be signed before any notification containing health information is sent (PREREQ-001 dependency). This gate applies even to the beta launch.
+
+**AI non-disclosure:** The response email must not reference AI, Claude, or Nightingale's AI engine in any form. This is both a product decision (patient trust) and consistent with the HITL model — the doctor is the attributed author of every response.
+
+**AHPRA language in response email:** Patient-facing response content is subject to AHPRA advertising constraints. The email must include: *"This advice is not a substitute for in-person medical care."* Any email containing emergency advice must reference 000.
+
+**Audit log events:**
+
+| Event | Trigger |
+|-------|---------|
+| `notification.sent` | Email dispatched via SendGrid; includes notification_type, consultation_id |
+| `notification.delivered` | SendGrid webhook confirms delivery |
+| `notification.delivery_failed` | SendGrid webhook reports bounce or permanent failure; triggers admin alert |
 
 ---
 

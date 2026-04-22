@@ -24,6 +24,16 @@ Text-chat is a fallback, not a downgraded product. The clinical output must be e
 
 ---
 
+## User Roles & Access
+
+| Role | Access |
+|------|--------|
+| Patient | Types responses in chat interface; must be authenticated with confirmed payment |
+| System | Clinical AI logic layer drives the question tree; same backend service as voice consultation |
+| Doctor | No direct involvement; receives transcript via Clinical AI Engine (PRD-012) |
+
+---
+
 ## Functional Requirements
 
 ### Fallback Trigger
@@ -73,6 +83,25 @@ Text-chat is a fallback, not a downgraded product. The clinical output must be e
 - **Mobile-first:** Chat interface must be fully functional on 375px mobile; keyboard must not obscure input field
 - **Accessibility:** Meets WCAG 2.1 AA for text contrast, focus states, keyboard navigation
 - **Latency:** AI text response delivered within 1.5 seconds of patient message submission
+
+---
+
+## Compliance Notes
+
+**No new third-party integrations:** Text-chat uses the same clinical AI infrastructure as voice consultation. No additional DPAs are required beyond those already covered.
+
+**AHPRA language:** Identical AHPRA constraints apply as in PRD-008. The text-chat system prompt must include the same hardcoded regulatory language constraints. Emergency escalation in text mode must render a tappable "Call 000" button on mobile — not just text.
+
+**Anchor-free responses:** Auto-suggestions and predictive text are explicitly disabled (F-009) to avoid anchoring patient symptom descriptions, which would compromise clinical data quality.
+
+**Audit log events:**
+
+| Event | Trigger |
+|-------|---------|
+| `consultation.ai_consultation_started` | Text-chat session initiated; `consultation_mode = text` stored |
+| `consultation.ai_consultation_ended` | Chat session complete; transcript committed to database |
+| `consultation.red_flag_detected` | Red flag phrase detected in a patient message |
+| `consultation.emergency_escalated` | Emergency instruction triggered in text-chat flow |
 
 ---
 

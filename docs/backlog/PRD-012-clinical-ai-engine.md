@@ -20,9 +20,18 @@ No Clinical AI Engine output ever reaches a patient without doctor review and ap
 
 ## Background
 
-### Open Decision: LLM Selection
+### LLM Selection — Resolved
 
-This sprint is blocked on the LLM model evaluation (see `research/2026-04-21-llm-model-selection.md`). The current plan assumes Claude (Anthropic) via AWS Bedrock, but formal evaluation is required. Key requirements:
+**Decision: Claude Sonnet 4.6 via AWS Bedrock ap-southeast-2** (confirmed 2026-04-21; see [RESEARCH-002](../research/archive/2026-04-21-llm-voice-platform-evaluation.md)).
+
+Claude Sonnet 4.6 scored 4.70/5 on the weighted evaluation criteria, led by medical reasoning accuracy (92.3% MedQA) and the strongest hallucination safety profile of all candidates. AWS Bedrock ap-southeast-2 provides confirmed Australian data residency on existing infrastructure with no additional DPA required. Escalation path to Claude Opus 4.7 for complex multi-system presentations, to be evaluated once volume data is available.
+
+**Pre-Sprint 4 validation tasks still required (owner: CTO + Medical Director):**
+- 20-question hallucination trap test against Claude Sonnet 4.6 on drug interaction prompts
+- Medical Director blind evaluation of SOAP outputs on 10 synthetic AU GP consultations
+- 20 clinical image samples submitted for photo analysis accuracy scoring
+
+These must be complete before this sprint starts. Key requirements that informed the model selection:
 
 | Requirement | Target |
 |-------------|--------|
@@ -47,6 +56,19 @@ The clinical AI system prompts must ground the model in Australian clinical guid
 - AMH (Australian Medicines Handbook)
 
 Medical Director must approve all system prompts before production deployment.
+
+---
+
+## User Roles & Access
+
+This PRD covers a backend processing service with no direct user interface. Inputs arrive from completed voice/text transcripts and photo S3 keys. Outputs are written to the database for display in the doctor review dashboard (PRD-013).
+
+| Actor | Interaction |
+|-------|------------|
+| Patient | Indirect — consultation transcript and photos from their session are the engine inputs |
+| Doctor | Indirect — SOAP note, differentials, and draft response are their primary review materials |
+| Medical Director | Reviews and approves all system prompts before production deployment; any prompt change requires Medical Director PR approval |
+| System | Engine invoked automatically when consultation status reaches `transcript_ready` |
 
 ---
 
@@ -126,6 +148,24 @@ Medical Director must approve all system prompts before production deployment.
 - **Cost:** < $2 AUD per consultation in API costs
 - **Privacy:** Automated test suite verifies PII is absent from API payloads before every deployment
 - **Auditability:** Every engine call logged with: model version, prompt hash, input hash, output hash
+
+---
+
+## Compliance Notes
+
+**Privacy Act / APP 8:** PII anonymisation is mandatory before any transcript or patient context is sent to AWS Bedrock. This is enforced by an automated test that runs before every production deployment — not a policy control. The test must confirm absence of: full names, DOBs, Medicare numbers, phone numbers, and email addresses in API payloads.
+
+**AHPRA language in outputs:** System prompt templates must include hardcoded AHPRA language constraints (managed in PRD-011). No patient-facing draft response may contain "diagnose", "cure", "you have [condition]", "prescribe" (in patient-facing context), or "911". The AHPRA constraints are always present regardless of what RAG retrieval returns.
+
+**HITL gate:** The engine produces drafts only. Engine output must never reach a patient without a `doctor_approved_at` timestamp and `doctor_id` present in the consultation record. This constraint is enforced at the notification layer (PRD-014) — the engine has no send capability.
+
+**Audit log events:**
+
+| Event | Trigger |
+|-------|---------|
+| `consultation.ai_output_generated` | SOAP note, differentials, and draft all committed to database; includes model_version and prompt_hash |
+| `consultation.doctor_queued` | Output validated and consultation placed in doctor review queue |
+| `consultation.ai_output_failed` | All retries exhausted; consultation flagged for manual triage; Medical Director notified |
 
 ---
 

@@ -23,6 +23,16 @@ At MVP, there is one doctor (the Medical Director). The dashboard must support m
 
 ---
 
+## User Roles & Access
+
+| Role | Access |
+|------|--------|
+| Doctor | Can only view and action consultations in their own assigned queue; MFA required; cannot see any other doctor's queue or patient records outside assigned consultations |
+| Admin | Can view all queues and reassign consultations between doctors; cannot view clinical content of individual consultations |
+| Patient | No access to doctor dashboard |
+
+---
+
 ## Functional Requirements
 
 ### Consultation Queue
@@ -118,6 +128,26 @@ PENDING CONSULTATIONS (4)              [ Filter ▼ ]
 │  Text Chat | No photos                     [ Open ]     │
 └─────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## Compliance Notes
+
+**AHPRA audit requirement:** Every doctor action — approve, amend, reject — must have the doctor's AHPRA registration number attached in the audit log. This is a medicolegal requirement linking each clinical decision to a licensed practitioner.
+
+**HITL gate enforcement:** The dashboard is the primary enforcement point for the HITL contract. The approve/amend/send flow is the only path by which an AI-generated response can reach a patient. Any code path that bypasses this flow is a P1 clinical safety incident, not a bug.
+
+**Amendment immutability:** Both the original AI draft and the doctor-amended version must be stored permanently. The diff is logged. Neither version may be deleted or overwritten. This is required for medicolegal review of clinical decisions.
+
+**Audit log events:**
+
+| Event | Trigger |
+|-------|---------|
+| `consultation.doctor_review_opened` | Doctor opens consultation detail view; includes doctor_id, ahpra_number, consultation_id, timestamp |
+| `consultation.approved` | Doctor sends AI draft unmodified; includes doctor_id, ahpra_number |
+| `consultation.amended` | Doctor sends edited draft; includes doctor_id, ahpra_number, amendment_diff_hash; both versions stored |
+| `consultation.rejected` | Doctor rejects; includes doctor_id, ahpra_number, reason_code, custom_message_hash |
+| `consultation.reassigned` | Admin reassigns consultation; includes admin_id, from_doctor_id, to_doctor_id |
 
 ---
 

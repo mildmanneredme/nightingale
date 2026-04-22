@@ -24,6 +24,16 @@ The follow-up is deliberately simple at MVP — three response options, not a fu
 
 ---
 
+## User Roles & Access
+
+| Role | Access |
+|------|--------|
+| Patient | Receives follow-up email; clicks response link; no login required to submit a response (tracked by unique URL) |
+| Doctor | Notified when a re-opened follow-up consultation appears in their queue; reviews it in the existing dashboard (PRD-013) |
+| System | Schedules and sends follow-up emails; handles response URL tracking and consultation re-opening |
+
+---
+
 ## Functional Requirements
 
 ### Scheduling
@@ -76,6 +86,25 @@ The follow-up is deliberately simple at MVP — three response options, not a fu
 - **Timing precision:** Follow-up emails must send within ±15 minutes of scheduled time
 - **Idempotency:** Follow-up email must not be sent twice for the same consultation (deduplication by consultation ID)
 - **No follow-up for rejections:** Rejected consultations must be excluded from follow-up scheduling (no reminder of a bad experience)
+
+---
+
+## Compliance Notes
+
+**Idempotency:** Follow-up email must not be sent twice for the same consultation. Deduplication is enforced by consultation ID at scheduling time and again at send time. Retry infrastructure must not produce a second email.
+
+**No charge for follow-up review:** Re-opened consultations triggered by a patient's "Feeling worse" response must not generate a new Stripe charge. The consultation state machine must prevent re-billing on follow-up re-opens.
+
+**Tracking URLs:** Response links are unique per consultation. Clicking records the response server-side. No cookies or client-side tracking required — the URL token is sufficient.
+
+**Audit log events:**
+
+| Event | Trigger |
+|-------|---------|
+| `follow_up.scheduled` | Follow-up email scheduled 36 hours after response delivery |
+| `follow_up.sent` | Follow-up email dispatched |
+| `follow_up.response_received` | Patient clicks a response option; includes response_option (better/same/worse), consultation_id |
+| `consultation.reopened_for_followup` | "Feeling worse" response received; consultation placed back in doctor queue with follow-up flag |
 
 ---
 

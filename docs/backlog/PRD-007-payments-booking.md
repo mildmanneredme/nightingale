@@ -29,6 +29,16 @@ Stripe is the chosen payment provider. Key considerations:
 
 ---
 
+## User Roles & Access
+
+| Role | Access |
+|------|--------|
+| Patient | Initiates payment; receives payment confirmation and refund notifications; card data never touches Nightingale servers (Stripe Elements) |
+| Doctor | Cannot view patient payment details; rejection action triggers automatic refund |
+| Admin | Can view payment audit log and revenue share records; cannot view card data |
+
+---
+
 ## Functional Requirements
 
 ### Consultation Booking
@@ -97,6 +107,24 @@ unpaid
           → follow_up_sent     (24–48hr follow-up email sent)
               → follow_up_concerning  (patient response flagged; re-opened for doctor)
 ```
+
+---
+
+## Compliance Notes
+
+**Privacy Act / APP 8:** Stripe processes payment data outside Australia. Stripe DPA must be signed before any live transaction is processed (PREREQ-001 dependency). Stripe Elements ensures card data never touches Nightingale servers, limiting PCI scope to SAQ A.
+
+**Idempotency:** Stripe idempotency keys are required on all payment intent API calls. Double-charging a patient for a clinical consultation is both a financial and reputational liability.
+
+**Audit log events:**
+
+| Event | Trigger |
+|-------|---------|
+| `consultation.created` | Patient initiates booking; chief complaint and consultation mode stored |
+| `payment.initiated` | Stripe payment intent created |
+| `payment.confirmed` | Stripe webhook confirms successful charge; includes Stripe payment intent ID |
+| `payment.failed` | Stripe webhook reports payment failure; consultation remains in `unpaid` state |
+| `consultation.refunded` | Doctor rejection triggers Stripe refund; includes consultation_id, doctor_id, AHPRA number, reason code |
 
 ---
 

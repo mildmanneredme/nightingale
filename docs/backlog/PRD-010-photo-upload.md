@@ -30,6 +30,17 @@ Medical photos are sensitive health information. Storage must meet:
 
 ---
 
+## User Roles & Access
+
+| Role | Access |
+|------|--------|
+| Patient | Uploads photos during consultation; cannot access photos after upload (photos are clinical records, not a personal gallery) |
+| Doctor | Accesses photos via short-lived pre-signed URLs during their assigned review window only |
+| Clinical AI Engine | Accesses photos via pre-signed URLs for visual analysis (PRD-012); read-only |
+| Admin | Can access via documented audit process only; access logged |
+
+---
+
 ## Functional Requirements
 
 ### Upload Trigger
@@ -91,6 +102,23 @@ Medical photos are sensitive health information. Storage must meet:
 | Wound | "Clean the area gently before photographing. Include a common object (e.g., a coin) for scale if possible." |
 | Rash | "Photograph the worst-affected area and, if possible, a second photo showing the spread pattern." |
 | Swelling | "Photograph both the swollen area and the same area on the other side of the body for comparison." |
+
+---
+
+## Compliance Notes
+
+**Privacy Act:** Medical photos are sensitive health information. EXIF stripping is a privacy requirement — EXIF data can contain GPS coordinates and device identifiers that would constitute PII.
+
+**Access control:** All photo access via pre-signed URLs with 15-minute expiry. No public S3 URLs at any point. Patient cannot access their own uploaded photos post-upload — this is intentional, not an oversight. Photos are clinical records held by the platform on behalf of the reviewing doctor.
+
+**7-year retention:** Medical photos must be retained for 7 years in line with health record requirements, even if the patient requests account deletion (account is deactivated, records retained).
+
+**Audit log events:**
+
+| Event | Trigger |
+|-------|---------|
+| `photo.uploaded` | Photo successfully stored in S3; includes consultation_id, quality_flag (pass/override) |
+| `photo.access_url_generated` | Pre-signed URL created; includes actor_role (doctor/engine/admin), consultation_id, expiry_time |
 
 ---
 

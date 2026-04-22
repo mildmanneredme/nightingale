@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Aura Clinical - Amend Mode</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Public+Sans:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "background": "#faf9fd",
+                        "inverse-surface": "#2f3033",
+                        "surface-variant": "#e3e2e6",
+                        "tertiary-container": "#4f2e00",
+                        "tertiary": "#321b00",
+                        "primary": "#002045",
+                        "inverse-on-surface": "#f1f0f4",
+                        "on-surface": "#1a1c1e",
+                        "surface-container-highest": "#e3e2e6",
+                        "on-secondary": "#ffffff",
+                        "primary-fixed": "#d6e3ff",
+                        "tertiary-fixed": "#ffddba",
+                        "primary-container": "#1a365d",
+                        "on-primary": "#ffffff",
+                        "on-secondary-fixed": "#002020",
+                        "surface-container": "#efedf1",
+                        "surface": "#faf9fd",
+                        "surface-container-high": "#e9e7eb",
+                        "primary-fixed-dim": "#adc7f7",
+                        "on-tertiary-container": "#c6955e",
+                        "surface-tint": "#455f88",
+                        "on-primary-fixed-variant": "#2d476f",
+                        "on-secondary-container": "#1a6d6e",
+                        "on-tertiary": "#ffffff",
+                        "surface-dim": "#dad9dd",
+                        "on-secondary-fixed-variant": "#004f50",
+                        "on-error": "#ffffff",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed": "#2b1700",
+                        "on-surface-variant": "#43474e",
+                        "secondary-fixed-dim": "#89d3d4",
+                        "surface-container-lowest": "#ffffff",
+                        "outline-variant": "#c4c6cf",
+                        "on-primary-fixed": "#001b3c",
+                        "error-container": "#ffdad6",
+                        "surface-container-low": "#f4f3f7",
+                        "outline": "#74777f",
+                        "tertiary-fixed-dim": "#f2bc82",
+                        "on-primary-container": "#86a0cd",
+                        "secondary-fixed": "#a5eff0",
+                        "secondary": "#13696a",
+                        "secondary-container": "#a2eded",
+                        "inverse-primary": "#adc7f7",
+                        "on-tertiary-fixed-variant": "#633f0f",
+                        "on-error-container": "#93000a",
+                        "on-background": "#1a1c1e",
+                        "surface-bright": "#faf9fd"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-lg": "32px",
+                        "stack-sm": "8px",
+                        "doctor-margin": "16px",
+                        "unit": "8px",
+                        "patient-margin": "32px",
+                        "stack-md": "16px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Manrope"],
+                        "label-sm": ["Public Sans"],
+                        "clinical-data": ["Public Sans"],
+                        "body-md": ["Public Sans"],
+                        "display-xl": ["Manrope"],
+                        "headline-md": ["Manrope"],
+                        "body-lg": ["Public Sans"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                        "label-sm": ["12px", {"lineHeight": "1", "fontWeight": "700"}],
+                        "clinical-data": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "display-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .clinical-shadow {
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md overflow-hidden">
+<div class="flex h-screen w-full">
+<!-- SideNavBar (Authority: JSON Component 2) -->
+<!-- Logic: Rendered in background/collapsed state for focus mode -->
+<aside class="fixed left-0 top-0 bottom-0 flex flex-col w-64 z-40 bg-slate-50 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 font-manrope text-xs antialiased opacity-40 pointer-events-none transition-opacity">
+<div class="p-4 mb-4">
+<div class="flex items-center gap-2 mb-6">
+<img alt="Clinic Logo" class="w-8 h-8 rounded" data-alt="Minimalist clinical logo featuring a stylized blue cross and clean geometric lines on a soft background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA8u-OI_juXNg2qnIc8SVlp0m7vzmRJIjoIlhIxANkAaUsRZMxxNMhRRp_OT73cG-pGww2e6EioRruvZ-h4J-O_GPH27v1gMgsJ8U7Rn7Pc-u71xngpGa7DLkE3aJx3S4XJ38LRnyal1-NJOM4Zs4QcVGucERvX857PCJuKd5zA50QwPDgFxTAeR4vLH81_tzixrXzYpQn-xSnH704VUrFZJQA2mw_2JTnAkCcQ9VYKOTMf5mQFn1V7chUT9d1Ki2wESPFp3m96XOVy"/>
+<div>
+<h1 class="text-lg font-bold text-blue-900 dark:text-blue-50">St. Andrews Medical</h1>
+<p class="text-[10px] text-slate-500">Practitioner Portal</p>
+</div>
+</div>
+<nav class="space-y-1">
+<div class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-3 bg-blue-50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-300 border-r-4 border-blue-900 dark:border-blue-400 font-semibold">
+<span class="material-symbols-outlined">folder_shared</span>
+<span>Patient Records</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400">
+<span class="material-symbols-outlined">edit_note</span>
+<span>Clinical Notes</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400">
+<span class="material-symbols-outlined">videocam</span>
+<span>Telehealth</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400">
+<span class="material-symbols-outlined">medication</span>
+<span>Pharmacy</span>
+</div>
+</nav>
+</div>
+<div class="mt-auto p-4 border-t border-slate-200">
+<div class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:text-blue-900">
+<span class="material-symbols-outlined">help</span>
+<span>Help Center</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:text-blue-900">
+<span class="material-symbols-outlined">logout</span>
+<span>Logout</span>
+</div>
+</div>
+</aside>
+<!-- Main Content Area: Focus Workspace -->
+<main class="flex-1 ml-64 flex flex-col bg-background relative z-50">
+<!-- Top Context Bar -->
+<header class="h-16 px-doctor-margin bg-white border-b border-surface-variant flex items-center justify-between sticky top-0 z-50">
+<div class="flex items-center gap-4">
+<button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-outline">arrow_back</span>
+</button>
+<div class="h-8 w-px bg-surface-variant"></div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-headline-md text-primary">Sarah Jenkins</span>
+<span class="text-label-sm bg-surface-container text-on-surface-variant px-2 py-0.5 rounded-full">F/29</span>
+</div>
+<p class="text-clinical-data text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">medical_information</span>
+                            Chief Complaint: Recurrent Migraines
+                        </p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<div class="flex items-center px-3 py-1 bg-secondary-container text-on-secondary-container rounded-full text-label-sm font-bold">
+<span class="material-symbols-outlined text-[16px] mr-1" style="font-variation-settings: 'FILL' 1;">edit_square</span>
+                        AMEND MODE
+                    </div>
+</div>
+</header>
+<!-- Workspace Body: Asymmetric Grid Layout -->
+<div class="flex-1 overflow-hidden grid grid-cols-12 gap-0">
+<!-- Large Rich Text Workspace (8 Columns) -->
+<section class="col-span-8 flex flex-col bg-white border-r border-surface-variant h-full overflow-y-auto">
+<!-- Subtle Toolbar -->
+<div class="sticky top-0 bg-surface-container-lowest px-doctor-margin py-3 border-b border-surface-variant flex items-center gap-4">
+<div class="flex items-center bg-surface-container rounded-lg p-1">
+<button class="p-2 hover:bg-white rounded transition-all text-on-surface-variant"><span class="material-symbols-outlined">format_bold</span></button>
+<button class="p-2 hover:bg-white rounded transition-all text-on-surface-variant"><span class="material-symbols-outlined">format_italic</span></button>
+<div class="w-px h-4 bg-outline-variant mx-1"></div>
+<button class="p-2 hover:bg-white rounded transition-all text-on-surface-variant"><span class="material-symbols-outlined">format_list_bulleted</span></button>
+<button class="p-2 hover:bg-white rounded transition-all text-on-surface-variant"><span class="material-symbols-outlined">format_list_numbered</span></button>
+</div>
+<div class="flex items-center bg-surface-container rounded-lg p-1">
+<button class="p-2 hover:bg-white rounded transition-all text-on-surface-variant"><span class="material-symbols-outlined">format_align_left</span></button>
+<button class="p-2 hover:bg-white rounded transition-all text-on-surface-variant"><span class="material-symbols-outlined">format_paragraph</span></button>
+</div>
+<div class="ml-auto flex items-center gap-2 text-label-sm text-outline">
+<span class="material-symbols-outlined text-[16px]">sync</span>
+                            Autosaved 2m ago
+                        </div>
+</div>
+<!-- Editor Canvas -->
+<div class="p-patient-margin max-w-4xl mx-auto w-full flex-1">
+<div class="prose prose-slate max-w-none">
+<div class="text-label-sm uppercase tracking-wider text-outline mb-4">Patient Response Draft</div>
+<h2 class="font-headline-md text-primary mb-6">Management Plan: Migraine Management</h2>
+<div class="font-body-md text-on-surface leading-relaxed space-y-6">
+<p>Dear Sarah,</p>
+<p>Thank you for sharing the detailed history of your migraines. Based on the frequency and severity you described (occurring 3-4 times per month), I recommend a dual approach focusing on both acute treatment and identifying triggers.</p>
+<div class="bg-secondary-container/20 border-l-4 border-secondary p-4 my-6">
+<h4 class="font-clinical-data text-secondary uppercase mb-2">Prescription &amp; Dosage</h4>
+<p class="font-clinical-data">Sumatriptan 50mg tablets. Take ONE tablet at the first sign of a migraine. May repeat once after 2 hours if required. Do not exceed 100mg in 24 hours.</p>
+</div>
+<p>It is crucial to maintain a headache diary for the next month. Please record:</p>
+<ul class="list-disc pl-6 space-y-2">
+<li>Date and time of onset</li>
+<li>Potential triggers (dietary, stress, sleep patterns)</li>
+<li>Effectiveness of the medication</li>
+</ul>
+<p>If you notice any "red flag" symptoms such as sudden onset "thunderclap" headache, fever, or neck stiffness, please seek immediate emergency care.</p>
+<p>I have scheduled a follow-up telehealth appointment in 4 weeks to review your diary and adjust the plan if necessary.</p>
+<p>Best regards,<br/><strong>Dr. Nightingale Clinical Team</strong></p>
+</div>
+</div>
+<!-- Placeholder for cursor -->
+<div class="w-0.5 h-6 bg-secondary animate-pulse mt-1"></div>
+</div>
+</section>
+<!-- Comparison Side Panel (4 Columns) -->
+<section class="col-span-4 bg-surface-container-low h-full flex flex-col">
+<div class="p-doctor-margin border-b border-surface-variant bg-white flex items-center justify-between">
+<h3 class="font-clinical-data text-primary uppercase">Reference Panel</h3>
+<div class="flex items-center gap-1 bg-surface-container rounded-full px-2 py-1">
+<span class="text-[10px] font-bold text-on-surface-variant">AI DRAFT</span>
+<span class="material-symbols-outlined text-[14px] text-secondary" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+</div>
+</div>
+<div class="p-doctor-margin overflow-y-auto flex-1 space-y-4">
+<div class="bg-white p-4 rounded-lg border border-surface-variant clinical-shadow">
+<div class="flex items-center justify-between mb-3">
+<span class="text-label-sm text-outline">Original AI Insight</span>
+<span class="text-[10px] text-secondary font-bold">100% MATCH</span>
+</div>
+<p class="text-clinical-data text-on-surface-variant italic leading-snug">
+                                "The patient specifically mentioned sensitivity to light and nausea. The draft includes a recommendation for Sumatriptan based on Australian Clinical Guidelines for moderate to severe migraine."
+                            </p>
+</div>
+<div class="bg-surface-variant/30 p-4 rounded-lg border border-dashed border-outline-variant">
+<h4 class="text-label-sm text-primary mb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+                                Clinical Nuance Check
+                            </h4>
+<ul class="text-[13px] space-y-3 text-on-surface-variant">
+<li class="flex gap-2">
+<span class="material-symbols-outlined text-secondary text-[16px]">check_circle</span>
+<span>Medication dosage matches patient weight/age profile.</span>
+</li>
+<li class="flex gap-2">
+<span class="material-symbols-outlined text-secondary text-[16px]">check_circle</span>
+<span>Red flag warnings included per safety protocol.</span>
+</li>
+<li class="flex gap-2">
+<span class="material-symbols-outlined text-on-tertiary-container text-[16px]">warning</span>
+<span>Ensure patient is aware of potential 'rebound' headaches from over-use of triptans.</span>
+</li>
+</ul>
+</div>
+<div class="mt-6">
+<div class="text-label-sm text-outline mb-3 flex items-center justify-between">
+<span>Patient History Context</span>
+<button class="text-secondary font-bold hover:underline">View File</button>
+</div>
+<img class="w-full rounded border border-surface-variant" data-alt="High-density medical chart showing headache frequency over a six-month period with seasonal spikes and medication efficacy markers" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJcddQfEy6-3gK_gS50AGvfw0DnEvGASayByCMXLe-36NB1sU5U3AImdNzEPKeJ423urOQXScKOlIgPu4SG1P0lWzay8e_9CxlPw60enkeFsGGLJzv0-1UGBit4cA2wEbrNab4m7yl_cpYSkJGUZF1qOMQwfvQtdIdnWh-bKuEOr1FpsEO31Z4jNiA84mb6qbvPsqq7KRcTOSIWLRKVqj5iuHcc-oyWP6w5lD4x75LR4UpOWgBfnp7Ui55RxWlWCbhUunTKpxVdpT4"/>
+</div>
+</div>
+</section>
+</div>
+<!-- Sticky Action Footer -->
+<footer class="h-20 bg-white border-t border-surface-variant px-doctor-margin flex items-center justify-between sticky bottom-0 z-50">
+<div class="flex items-center gap-4 text-clinical-data text-on-surface-variant">
+<span class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+                        342 Words
+                    </span>
+<span class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-tertiary-fixed-dim"></span>
+                        Grade 8 Readability
+                    </span>
+</div>
+<div class="flex items-center gap-3">
+<button class="px-6 py-2 border border-outline text-primary font-clinical-data rounded hover:bg-surface-container transition-all active:opacity-80">
+                        Cancel
+                    </button>
+<button class="px-8 py-3 bg-primary text-white font-clinical-data rounded-lg shadow-lg hover:shadow-xl transition-all flex items-center gap-2 active:scale-95">
+<span class="material-symbols-outlined text-[20px]">send</span>
+                        Send Amended Response
+                    </button>
+</div>
+</footer>
+<!-- Floating Context Indicator -->
+<div class="absolute bottom-24 right-8 bg-inverse-surface text-inverse-on-surface px-4 py-2 rounded-full shadow-2xl flex items-center gap-3 text-label-sm z-50 border border-white/10">
+<div class="w-2 h-2 bg-secondary rounded-full animate-pulse"></div>
+                Editing as Dr. Julian Thorne
+                <div class="w-px h-4 bg-white/20"></div>
+<span class="material-symbols-outlined text-[16px]">history</span>
+                V2.1
+            </div>
+</main>
+</div>
+</body></html>

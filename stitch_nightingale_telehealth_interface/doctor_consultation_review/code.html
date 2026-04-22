@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Nightingale | Consultation Detail</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-highest": "#e3e2e6",
+                    "secondary-fixed-dim": "#89d3d4",
+                    "on-primary-container": "#86a0cd",
+                    "on-surface": "#1a1c1e",
+                    "secondary-container": "#a2eded",
+                    "on-primary": "#ffffff",
+                    "tertiary-fixed-dim": "#f2bc82",
+                    "secondary-fixed": "#a5eff0",
+                    "inverse-on-surface": "#f1f0f4",
+                    "on-tertiary-fixed": "#2b1700",
+                    "on-secondary-fixed-variant": "#004f50",
+                    "outline-variant": "#c4c6cf",
+                    "tertiary-fixed": "#ffddba",
+                    "surface-variant": "#e3e2e6",
+                    "error": "#ba1a1a",
+                    "background": "#faf9fd",
+                    "on-error": "#ffffff",
+                    "on-background": "#1a1c1e",
+                    "tertiary-container": "#4f2e00",
+                    "on-tertiary-container": "#c6955e",
+                    "primary-fixed-dim": "#adc7f7",
+                    "on-tertiary": "#ffffff",
+                    "surface-container-low": "#f4f3f7",
+                    "error-container": "#ffdad6",
+                    "surface-tint": "#455f88",
+                    "secondary": "#13696a",
+                    "on-primary-fixed": "#001b3c",
+                    "inverse-primary": "#adc7f7",
+                    "surface": "#faf9fd",
+                    "surface-bright": "#faf9fd",
+                    "surface-container-high": "#e9e7eb",
+                    "primary": "#002045",
+                    "surface-container-lowest": "#ffffff",
+                    "on-secondary-container": "#1a6d6e",
+                    "on-primary-fixed-variant": "#2d476f",
+                    "outline": "#74777f",
+                    "surface-dim": "#dad9dd",
+                    "inverse-surface": "#2f3033",
+                    "on-surface-variant": "#43474e",
+                    "on-secondary-fixed": "#002020",
+                    "tertiary": "#321b00",
+                    "surface-container": "#efedf1",
+                    "primary-container": "#1a365d",
+                    "on-error-container": "#93000a",
+                    "primary-fixed": "#d6e3ff",
+                    "on-tertiary-fixed-variant": "#633f0f",
+                    "on-secondary": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "doctor-margin": "16px",
+                    "stack-sm": "8px",
+                    "unit": "8px",
+                    "patient-margin": "32px",
+                    "stack-lg": "32px",
+                    "stack-md": "16px",
+                    "gutter": "24px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Public Sans"],
+                    "headline-lg": ["Manrope"],
+                    "display-xl": ["Manrope"],
+                    "body-md": ["Public Sans"],
+                    "clinical-data": ["Public Sans"],
+                    "label-sm": ["Public Sans"],
+                    "headline-md": ["Manrope"]
+            },
+            "fontSize": {
+                    "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                    "display-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "clinical-data": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                    "label-sm": ["12px", {"lineHeight": "1", "fontWeight": "700"}],
+                    "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md">
+<!-- SideNavBar (Authority: JSON & Context) -->
+<aside class="fixed left-0 top-0 h-full flex flex-col pt-4 pb-8 z-40 bg-slate-50 dark:bg-slate-900 text-blue-900 dark:text-blue-400 font-manrope text-xs font-semibold uppercase tracking-wider docked h-screen w-64 border-r border-slate-200 dark:border-slate-800 flat no shadows">
+<div class="px-6 mb-8">
+<h1 class="text-lg font-black text-blue-900 dark:text-white">Nightingale</h1>
+<p class="text-[10px] opacity-70">Doctor Portal</p>
+</div>
+<nav class="flex-1 space-y-1">
+<!-- Consultations is the Active Tab -->
+<a class="flex items-center px-6 py-3 transition-all duration-150 ease-in-out text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="dashboard">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center px-6 py-3 transition-all duration-150 ease-in-out text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="group">group</span>
+                Patients
+            </a>
+<a class="flex items-center px-6 py-3 transition-all duration-150 ease-in-out bg-white dark:bg-slate-800 text-blue-900 dark:text-blue-300 border-r-4 border-blue-900 dark:border-blue-400" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="medical_services">medical_services</span>
+                Consultations
+            </a>
+<a class="flex items-center px-6 py-3 transition-all duration-150 ease-in-out text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="calendar_today">calendar_today</span>
+                Schedule
+            </a>
+<a class="flex items-center px-6 py-3 transition-all duration-150 ease-in-out text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="folder_managed">folder_managed</span>
+                Medical Records
+            </a>
+<a class="flex items-center px-6 py-3 transition-all duration-150 ease-in-out text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="analytics">analytics</span>
+                Analytics
+            </a>
+</nav>
+<div class="mt-auto border-t border-slate-200 pt-4">
+<a class="flex items-center px-6 py-3 text-slate-600 hover:bg-slate-200 transition-all" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="contact_support">contact_support</span>
+                Support
+            </a>
+<a class="flex items-center px-6 py-3 text-slate-600 hover:bg-slate-200 transition-all" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="logout">logout</span>
+                Logout
+            </a>
+</div>
+</aside>
+<!-- TopAppBar & Main Content Wrapper -->
+<main class="ml-64 min-h-screen flex flex-col">
+<!-- TopAppBar (Authority: JSON) -->
+<header class="flex justify-between items-center h-14 px-4 w-full sticky top-0 z-50 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 font-manrope text-sm font-medium flat no shadows">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-slate-400 cursor-pointer" data-icon="arrow_back">arrow_back</span>
+<div class="flex items-center gap-3">
+<img alt="Sarah Jenkins" class="w-8 h-8 rounded-full object-cover" data-alt="professional headshot of a 29 year old woman with light brown hair and a kind expression in a bright studio" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAoeiBfo2AetXpOazithGQfexqzJx9RvD_y-3AIKdPjhlRSWdnW8LNddY7zOYhrz0dw9-wE8MTGtn4juVO_EUHc14ZLA-dN78i--SoIAGwyoBdvx29EOCXGrs1MbvxVRfQrG4LRkoytj50Ap2jF6OHtZlz9ciyHlEwUXXvjC55XaSl764F9R8eScGuWikpXvWE4GK7YBr8iRV1eZsVEtUrvJRTs_ga_ZpojAYNUrLEQkxDC9nE8RBKI9qtCfXKe6zmHVaU2XbWFDmZs"/>
+<div>
+<span class="font-bold text-primary">Sarah Jenkins</span>
+<span class="mx-2 text-slate-300">|</span>
+<span class="text-slate-500">F/29</span>
+<span class="mx-2 text-slate-300">|</span>
+<span class="text-slate-700 font-semibold">Mild upper respiratory symptoms</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-slate-500" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined text-slate-500" data-icon="settings">settings</span>
+<img alt="Doctor profile" class="w-8 h-8 rounded-full border border-slate-200 object-cover" data-alt="close-up of a professional male doctor with glasses and a white coat looking confident and friendly" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB-pTjfoQtKNKyZafTeadnSIB2IzwN9Tj1GhLVGMb0jHu3tvcHVS04OHXhQreonW8seXEflktQ9wr3Y22rINHyZDiNuLjNVXz1UovHJIK_27vq2jKb2mORkV8JfUxvGbvTTEkRq6QUi87eTpwHxF3HSp5XhTuSUjdr1iEerVAs9sm3D5ScbAmT-Z-1MUaVDTH224uX5e0QTl61JCtJ4QIOLcb6bXGcxTdMHn5U2pxM5TPp9P4Pts_hFlbzyphAAjpWNaVb-Ltn_SWAh"/>
+</div>
+</header>
+<!-- Main Content Area -->
+<div class="p-doctor-margin grid grid-cols-12 gap-gutter flex-1 mb-20">
+<!-- Column 1: Patient Medical History (2 Cols) -->
+<section class="col-span-12 lg:col-span-2 space-y-stack-md">
+<div class="bg-surface-container-lowest border border-slate-200 rounded-lg p-4">
+<h3 class="font-headline-md text-[14px] text-primary uppercase tracking-wider mb-4 border-b border-slate-100 pb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="history">history</span>
+                        History
+                    </h3>
+<div class="space-y-4">
+<div>
+<label class="text-[10px] font-bold text-error uppercase">Allergies</label>
+<ul class="mt-1 space-y-1">
+<li class="text-clinical-data text-on-surface bg-error-container/30 px-2 py-1 rounded">Penicillin (Severe)</li>
+</ul>
+</div>
+<div>
+<label class="text-[10px] font-bold text-slate-500 uppercase">Medications</label>
+<ul class="mt-1 space-y-1">
+<li class="text-clinical-data text-on-surface">Escitalopram 10mg daily</li>
+<li class="text-clinical-data text-on-surface">Oral Contraceptive Pill</li>
+</ul>
+</div>
+<div>
+<label class="text-[10px] font-bold text-slate-500 uppercase">Conditions</label>
+<ul class="mt-1 space-y-1">
+<li class="text-clinical-data text-on-surface">Generalized Anxiety Disorder</li>
+<li class="text-clinical-data text-on-surface">Mild Asthma (Childhood)</li>
+</ul>
+</div>
+</div>
+</div>
+<!-- Red Flags Widget -->
+<div class="bg-secondary-container/20 border border-secondary/20 rounded-lg p-4">
+<div class="flex items-center gap-2 text-secondary mb-2">
+<span class="material-symbols-outlined text-sm" data-icon="check_circle">check_circle</span>
+<span class="text-label-sm uppercase">Red Flags</span>
+</div>
+<p class="text-clinical-data text-secondary font-medium">No clinical red flags detected. Fever &lt;38°C, no shortness of breath reported.</p>
+</div>
+</section>
+<!-- Column 2: Transcript Panel (4 Cols) -->
+<section class="col-span-12 lg:col-span-4 bg-white border border-slate-200 rounded-lg flex flex-col shadow-sm h-[calc(100vh-180px)]">
+<div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 rounded-t-lg">
+<h3 class="font-headline-md text-[14px] text-primary uppercase tracking-wider flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="forum">forum</span>
+                        AI Consultation
+                    </h3>
+<span class="text-[11px] text-slate-400 font-mono">ID: CN-8821</span>
+</div>
+<div class="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
+<!-- AI Assistant Bubble -->
+<div class="flex flex-col items-start max-w-[90%]">
+<span class="text-[10px] font-bold text-secondary mb-1 ml-1">AI ASSISTANT</span>
+<div class="bg-surface-container rounded-lg rounded-tl-none p-3 text-clinical-data">
+                            Hello Sarah. I'm the Nightingale assistant. I see you've reported a sore throat. Could you tell me more about how long it's been present?
+                        </div>
+</div>
+<!-- Patient Bubble -->
+<div class="flex flex-col items-end ml-auto max-w-[90%]">
+<span class="text-[10px] font-bold text-slate-500 mb-1 mr-1">SARAH JENKINS</span>
+<div class="bg-primary text-white rounded-lg rounded-tr-none p-3 text-clinical-data">
+                            It started about <span class="bg-primary-container text-on-primary-container px-1 rounded">two days ago</span>. It's very painful when I swallow.
+                        </div>
+</div>
+<!-- AI Assistant Bubble -->
+<div class="flex flex-col items-start max-w-[90%]">
+<span class="text-[10px] font-bold text-secondary mb-1 ml-1">AI ASSISTANT</span>
+<div class="bg-surface-container rounded-lg rounded-tl-none p-3 text-clinical-data">
+                            Have you noticed any other symptoms like a cough, fever, or rash?
+                        </div>
+</div>
+<!-- Patient Bubble -->
+<div class="flex flex-col items-end ml-auto max-w-[90%]">
+<span class="text-[10px] font-bold text-slate-500 mb-1 mr-1">SARAH JENKINS</span>
+<div class="bg-primary text-white rounded-lg rounded-tr-none p-3 text-clinical-data">
+                            A bit of a dry cough, but <span class="bg-primary-container text-on-primary-container px-1 rounded">no fever</span>. I feel quite tired though.
+                        </div>
+</div>
+<!-- AI Assistant Bubble -->
+<div class="flex flex-col items-start max-w-[90%]">
+<span class="text-[10px] font-bold text-secondary mb-1 ml-1">AI ASSISTANT</span>
+<div class="bg-surface-container rounded-lg rounded-tl-none p-3 text-clinical-data">
+                            Could you please take a photo of the back of your throat using your phone's camera?
+                        </div>
+</div>
+<!-- Patient Bubble (Image Upload) -->
+<div class="flex flex-col items-end ml-auto max-w-[90%]">
+<span class="text-[10px] font-bold text-slate-500 mb-1 mr-1">SARAH JENKINS</span>
+<div class="bg-primary text-white rounded-lg rounded-tr-none p-2 text-clinical-data">
+<div class="rounded-md overflow-hidden mb-1">
+<img alt="Throat Photo" class="w-full h-32 object-cover grayscale opacity-80" data-alt="medical close-up of a human throat with slight redness on the tonsils under clear bright light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDHoHc_IUSegSiSGm9a-cHYdiR-hca1LgP68VdVZKzkjShLwHd-jUUWRhepLhZr1uGgMXKwerNjnaeWWw4G6bWoAk_AZ4vLcNA96tFMmf9PX2cwchLYmjE-0Rd5rI6A1lklz1m-_A2f4X6-xoid5THK8LzTUF1H6S0zOZCQMLGhWt-LlUJThFjbSbvs9JSb8o8227zav0kTzsos9M-1-GJgpswK10r71A84FgsIw5-s6lwZIVU5ecNarzG2kIhT6bXK2aWw3ohwkOfN"/>
+</div>
+                            Uploaded "throat_view_1.jpg"
+                        </div>
+</div>
+</div>
+<div class="p-3 border-t border-slate-100 bg-slate-50/30">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-secondary animate-pulse"></div>
+<span class="text-[11px] text-secondary font-semibold italic">AI Summary: Viral origin suspected based on lack of exudate and presence of cough.</span>
+</div>
+</div>
+</section>
+<!-- Column 3: Clinical Decision Support (6 Cols) -->
+<section class="col-span-12 lg:col-span-6 space-y-gutter">
+<!-- SOAP & Differential Grid -->
+<div class="grid grid-cols-2 gap-gutter">
+<!-- SOAP Notes -->
+<div class="col-span-2 md:col-span-1 bg-white border border-slate-200 rounded-lg shadow-sm">
+<div class="p-3 border-b border-slate-100 bg-slate-50/50 flex justify-between">
+<h3 class="font-label-sm text-primary uppercase">SOAP Review</h3>
+<button class="text-[10px] font-bold text-secondary hover:underline">AUTO-FILL</button>
+</div>
+<div class="p-4 space-y-4 max-h-[500px] overflow-y-auto no-scrollbar">
+<div class="border-l-2 border-slate-100 pl-3">
+<p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Subjective</p>
+<textarea class="w-full text-clinical-data p-2 border border-slate-200 rounded focus:ring-1 focus:ring-primary outline-none" rows="3">Patient reports 2-day history of sore throat, pain on swallowing (odynophagia). Associated dry cough and fatigue. Denies fever or SOB.</textarea>
+</div>
+<div class="border-l-2 border-slate-100 pl-3">
+<p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Objective</p>
+<div class="flex gap-2 mb-2">
+<img class="w-12 h-12 rounded object-cover cursor-pointer hover:border-2 border-primary" data-alt="clinical closeup of throat with redness" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD2D3LhJf8PFG9kaDjYB8Q1jHaofzIqjj24a4yOVdWFQn4WoGM_M7gwfrE13ImJkX8k3JAtSr3_aiZc_VUf5I5_f5BMOD8SWKHF_7nnff0qxlikpI_xebzN4U8_EZjOnzlJfCoCApDrtwrnjEJQs7gcqn3qnxugLe8ZzHpxQqNyXsl_bbkAtOWkyQPMSlHqG7Fj2l_OlxaN1VyuQIekcftTXgHmKtOP6fiX3UA73NzO7iSsbyBFXHYV57kuqyuda2e7u6dQ_0ZH_MyB"/>
+<div class="w-12 h-12 border-2 border-dashed border-slate-200 rounded flex items-center justify-center cursor-pointer hover:bg-slate-50">
+<span class="material-symbols-outlined text-slate-400 text-sm" data-icon="add">add</span>
+</div>
+</div>
+<textarea class="w-full text-clinical-data p-2 border border-slate-200 rounded focus:ring-1 focus:ring-primary outline-none" rows="2">Oropharynx: Erythematous posterior pharynx. No tonsillar exudates visible. No cervical lymphadenopathy reported by patient palpation.</textarea>
+</div>
+<div class="border-l-2 border-slate-100 pl-3">
+<p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Assessment</p>
+<textarea class="w-full text-clinical-data p-2 border border-slate-200 rounded focus:ring-1 focus:ring-primary outline-none" rows="2">Likely viral pharyngitis. Centor Score: 1 (Cough present +1, No fever 0, No exudate 0, No LAD 0).</textarea>
+</div>
+</div>
+</div>
+<!-- Differential Diagnosis -->
+<div class="col-span-2 md:col-span-1 space-y-4">
+<div class="bg-white border border-slate-200 rounded-lg shadow-sm p-4">
+<h3 class="font-label-sm text-primary uppercase mb-4">Differential Diagnosis</h3>
+<div class="space-y-2">
+<div class="flex items-center justify-between p-2 bg-secondary-container/10 rounded">
+<span class="text-clinical-data font-bold">Viral Pharyngitis</span>
+<span class="text-clinical-data font-bold text-secondary">85%</span>
+</div>
+<div class="flex items-center justify-between p-2 border border-slate-100 rounded">
+<span class="text-clinical-data">Group A Strep</span>
+<span class="text-clinical-data text-slate-500">12%</span>
+</div>
+<div class="flex items-center justify-between p-2 border border-slate-100 rounded">
+<span class="text-clinical-data">Infectious Mononucleosis</span>
+<span class="text-clinical-data text-slate-500">3%</span>
+</div>
+</div>
+</div>
+<!-- Audio Review Mockup -->
+<div class="bg-white border border-slate-200 rounded-lg shadow-sm p-4">
+<div class="flex items-center justify-between mb-3">
+<h3 class="font-label-sm text-primary uppercase">Recorded Cough</h3>
+<span class="text-[10px] text-slate-400">0:04s</span>
+</div>
+<div class="flex items-end gap-[2px] h-12 bg-slate-50 rounded p-2">
+<div class="flex-1 bg-secondary opacity-30 h-[20%]"></div>
+<div class="flex-1 bg-secondary opacity-60 h-[40%]"></div>
+<div class="flex-1 bg-secondary h-[80%]"></div>
+<div class="flex-1 bg-secondary h-[100%]"></div>
+<div class="flex-1 bg-secondary opacity-60 h-[50%]"></div>
+<div class="flex-1 bg-secondary opacity-20 h-[10%]"></div>
+<div class="flex-1 bg-secondary opacity-50 h-[30%]"></div>
+<div class="flex-1 bg-secondary h-[90%]"></div>
+<div class="flex-1 bg-secondary h-[70%]"></div>
+<div class="flex-1 bg-secondary opacity-40 h-[20%]"></div>
+</div>
+<button class="mt-3 w-full py-1 border border-slate-200 rounded text-[11px] font-bold flex items-center justify-center gap-2 hover:bg-slate-50">
+<span class="material-symbols-outlined text-sm" data-icon="play_arrow" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+                                LISTEN TO SAMPLE
+                            </button>
+</div>
+</div>
+</div>
+<!-- Draft Patient Response -->
+<div class="bg-white border border-slate-200 rounded-lg shadow-sm">
+<div class="p-3 border-b border-slate-100 bg-primary/5 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="auto_awesome">auto_awesome</span>
+<h3 class="font-label-sm text-primary uppercase">Draft Patient Response</h3>
+</div>
+<div class="p-4">
+<div class="mb-4 text-clinical-data leading-relaxed bg-slate-50 p-4 rounded-lg border-l-4 border-primary/20">
+                            "Hi Sarah, based on your symptoms and the photo provided, it appears you have a viral sore throat. Since you have a cough and no fever, antibiotics are not required as they don't work on viruses. I recommend resting, staying hydrated, and using paracetamol or throat lozenges for the pain. If you develop a high fever or find it difficult to breathe, please contact us immediately or visit urgent care."
+                        </div>
+<div class="flex items-center gap-4">
+<button class="flex items-center gap-1 text-[11px] text-secondary font-bold">
+<span class="material-symbols-outlined text-sm" data-icon="edit">edit</span>
+                                CUSTOMIZE RESPONSE
+                            </button>
+<button class="flex items-center gap-1 text-[11px] text-slate-500 font-bold">
+<span class="material-symbols-outlined text-sm" data-icon="history">history</span>
+                                VIEW PREVIOUS VERSIONS
+                            </button>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Sticky Bottom Action Bar -->
+<footer class="fixed bottom-0 right-0 left-64 bg-white border-t border-slate-200 px-6 py-4 flex justify-between items-center z-50 shadow-[0_-4px_10px_rgba(0,0,0,0.03)]">
+<div class="flex items-center gap-2 text-slate-500 text-xs font-medium">
+<span class="material-symbols-outlined text-sm" data-icon="visibility">visibility</span>
+                Consultation viewed by Dr. Julian Miller
+            </div>
+<div class="flex items-center gap-3">
+<button class="px-4 py-2 border border-error text-error text-xs font-bold rounded-lg hover:bg-error/5 transition-colors uppercase tracking-wide">
+                    Reject — Cannot Assess Remotely
+                </button>
+<button class="px-6 py-2 border border-primary text-primary text-xs font-bold rounded-lg hover:bg-slate-50 transition-colors uppercase tracking-wide">
+                    Amend Response
+                </button>
+<button class="px-8 py-2 bg-primary text-white text-xs font-bold rounded-lg hover:bg-blue-900 transition-all scale-100 active:scale-95 uppercase tracking-wide shadow-md">
+                    Approve &amp; Send to Patient
+                </button>
+</div>
+</footer>
+</main>
+<!-- FAB Suppression Rule Applied: No FAB on clinical details page -->
+</body></html>

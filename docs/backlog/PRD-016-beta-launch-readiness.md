@@ -21,6 +21,16 @@ The beta cohort is the Medical Director's existing patient network — people wh
 
 ---
 
+## User Roles & Access
+
+| Role | Access |
+|------|--------|
+| Admin / CTO | Runs E2E test scenarios; configures monitoring and alerting; manages beta cohort onboarding |
+| Medical Director | Reviews AI output quality across all 5 presentations; signs off all clinical governance items |
+| Beta Patients | First 100 real users; recruited from the Medical Director's existing patient network |
+
+---
+
 ## Functional Requirements
 
 ### End-to-End Testing
@@ -79,6 +89,20 @@ The beta cohort is the Medical Director's existing patient network — people wh
 | F-030 | On-call contact established: CTO for technical issues, Medical Director for clinical issues |
 | F-031 | Monitoring alerts active: CloudWatch alarms, failed payment rate, queue depth (consultations waiting > 4 hours), SendGrid bounce rate |
 | F-032 | Data backup verified: RDS snapshot restored and tested in staging environment |
+
+---
+
+## Compliance Notes
+
+**Launch gate dependency:** All deliverables from PREREQ-001 must be complete before this PRD can be signed off. PREREQ-001 is where compliance work happens; this PRD validates that it is done.
+
+**Penetration testing:** A CREST-accredited firm is required — internal testing does not satisfy this requirement. All critical and high findings must be remediated and re-verified before any real patient creates an account.
+
+**Privacy Policy timing:** The Privacy Policy must be published at a public URL before the registration form goes live — not just before beta invitations are sent.
+
+**No patient safety exceptions at launch gate:** If E2E testing reveals a red flag detection failure or a HITL bypass scenario, beta launch is blocked until the issue is remediated. There is no "ship and monitor" tolerance for clinical safety failures.
+
+**Audit log events:** This PRD introduces no new audit events. It validates end-to-end that all prior audit log implementations are functioning correctly.
 
 ---
 

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Public+Sans:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-secondary": "#ffffff",
+            "secondary-fixed": "#a5eff0",
+            "on-tertiary": "#ffffff",
+            "error": "#ba1a1a",
+            "primary": "#002045",
+            "primary-fixed-dim": "#adc7f7",
+            "on-tertiary-fixed": "#2b1700",
+            "inverse-surface": "#2f3033",
+            "tertiary-fixed": "#ffddba",
+            "secondary-container": "#a2eded",
+            "on-error-container": "#93000a",
+            "primary-container": "#1a365d",
+            "error-container": "#ffdad6",
+            "surface-container": "#efedf1",
+            "on-surface-variant": "#43474e",
+            "on-surface": "#1a1c1e",
+            "outline": "#74777f",
+            "on-secondary-fixed": "#002020",
+            "on-secondary-container": "#1a6d6e",
+            "on-primary": "#ffffff",
+            "background": "#faf9fd",
+            "on-primary-fixed": "#001b3c",
+            "primary-fixed": "#d6e3ff",
+            "on-tertiary-container": "#c6955e",
+            "on-primary-container": "#86a0cd",
+            "inverse-on-surface": "#f1f0f4",
+            "surface-variant": "#e3e2e6",
+            "on-error": "#ffffff",
+            "tertiary-fixed-dim": "#f2bc82",
+            "surface-tint": "#455f88",
+            "secondary": "#13696a",
+            "surface-container-lowest": "#ffffff",
+            "tertiary": "#321b00",
+            "surface": "#faf9fd",
+            "on-secondary-fixed-variant": "#004f50",
+            "on-primary-fixed-variant": "#2d476f",
+            "on-background": "#1a1c1e",
+            "surface-dim": "#dad9dd",
+            "inverse-primary": "#adc7f7",
+            "surface-bright": "#faf9fd",
+            "tertiary-container": "#4f2e00",
+            "surface-container-low": "#f4f3f7",
+            "outline-variant": "#c4c6cf",
+            "secondary-fixed-dim": "#89d3d4",
+            "surface-container-highest": "#e3e2e6",
+            "surface-container-high": "#e9e7eb",
+            "on-tertiary-fixed-variant": "#633f0f"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "doctor-margin": "16px",
+            "stack-sm": "8px",
+            "unit": "8px",
+            "patient-margin": "32px",
+            "stack-lg": "32px",
+            "stack-md": "16px",
+            "gutter": "24px"
+          },
+          "fontFamily": {
+            "body-lg": ["Public Sans"],
+            "label-sm": ["Public Sans"],
+            "headline-lg": ["Manrope"],
+            "headline-md": ["Manrope"],
+            "clinical-data": ["Public Sans"],
+            "body-md": ["Public Sans"],
+            "display-xl": ["Manrope"]
+          },
+          "fontSize": {
+            "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+            "label-sm": ["12px", {"lineHeight": "1", "fontWeight": "700"}],
+            "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "600"}],
+            "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+            "clinical-data": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "600"}],
+            "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+            "display-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .waveform-bar {
+      width: 4px;
+      border-radius: 4px;
+      background-color: #13696a;
+      transition: height 0.3s ease;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="bg-white dark:bg-slate-900 shadow-sm border-b border-slate-200 dark:border-slate-800 flex justify-between items-center w-full px-4 h-16 fixed top-0 z-50">
+<div class="text-xl font-bold tracking-tight text-blue-900 dark:text-blue-400">Nightingale</div>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-full hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-slate-500 dark:text-slate-400">
+<span class="material-symbols-outlined">help</span>
+</button>
+<button class="p-2 rounded-full hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-slate-500 dark:text-slate-400">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-slate-200 overflow-hidden">
+<img alt="User Profile" data-alt="Portrait of a friendly middle-aged woman with a warm smile, soft natural lighting, professional medical profile style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnz2vesX34OWDjtg5OLr4VUP_4OtbRz6tWlkzeAwYpR-pgbRTqcNlU-sPCt7pUfj288Dd0fDu3pb_AkrFhetHP13WxPr2iaxWCuCKq9W3k4RioEq3HEy99jf2z1OX7WVV8QKAHH1lXAsn5oGPU3qKcv2NGePWYR_Dy79Rw5QFCIdBW1VJX_Cw-mm1fhGEP0vov7cySApnZjrmvezTo9HU9dp-jwyfJlZ9pNO8iL08t8kmBXiU8b8ZGG3tot_FjYtLl_i79hEyZy-aH"/>
+</div>
+</div>
+</header>
+<!-- Emergency Banner (Hidden by default, shown for layout demonstration) -->
+<div class="mt-16 w-full bg-error-container text-on-error-container px-6 py-3 flex flex-col md:flex-row items-center justify-between gap-4 hidden">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-error" style="font-variation-settings: 'FILL' 1;">report</span>
+<p class="font-clinical-data text-clinical-data">This sounds like a medical emergency — Call 000 immediately</p>
+</div>
+<button class="bg-error text-white px-6 py-2 rounded-full font-label-sm text-label-sm hover:opacity-90 active:scale-95 transition-all uppercase tracking-wider">
+      Call Emergency Services
+    </button>
+</div>
+<!-- Main Content Canvas -->
+<main class="flex-grow flex flex-col items-center justify-center px-patient-margin pt-24 pb-32">
+<!-- AI Identity & Status -->
+<div class="text-center mb-stack-lg">
+<p class="text-secondary font-clinical-data text-clinical-data mb-2 tracking-widest uppercase">Live Voice Consultation</p>
+<h1 class="font-headline-lg text-headline-lg text-primary">Nightingale AI</h1>
+<div class="flex items-center justify-center gap-2 mt-4">
+<div class="w-2 h-2 rounded-full bg-secondary animate-pulse"></div>
+<span class="font-clinical-data text-clinical-data text-on-surface-variant">03:45</span>
+</div>
+</div>
+<!-- Central Waveform Pulse -->
+<div class="relative w-full max-w-md h-64 flex items-center justify-center bg-white/50 rounded-3xl border border-slate-100 shadow-sm overflow-hidden mb-stack-lg">
+<div class="absolute inset-0 bg-gradient-to-b from-secondary/5 to-transparent"></div>
+<div class="flex items-end gap-1.5 h-32 relative z-10">
+<!-- Static representation of an active waveform -->
+<div class="waveform-bar h-8"></div>
+<div class="waveform-bar h-12"></div>
+<div class="waveform-bar h-20"></div>
+<div class="waveform-bar h-32"></div>
+<div class="waveform-bar h-48"></div>
+<div class="waveform-bar h-28"></div>
+<div class="waveform-bar h-40"></div>
+<div class="waveform-bar h-16"></div>
+<div class="waveform-bar h-24"></div>
+<div class="waveform-bar h-36"></div>
+<div class="waveform-bar h-20"></div>
+<div class="waveform-bar h-12"></div>
+<div class="waveform-bar h-8"></div>
+</div>
+<!-- Aura Glow -->
+<div class="absolute w-48 h-48 bg-secondary/10 rounded-full blur-3xl"></div>
+</div>
+<!-- Active Call Controls -->
+<div class="flex items-center gap-gutter">
+<div class="flex flex-col items-center gap-2">
+<button class="w-16 h-16 flex items-center justify-center rounded-full bg-surface-container hover:bg-surface-container-high transition-colors text-on-surface shadow-sm active:scale-95">
+<span class="material-symbols-outlined text-2xl">mic_off</span>
+</button>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Mute</span>
+</div>
+<div class="flex flex-col items-center gap-2">
+<button class="w-20 h-20 flex items-center justify-center rounded-full bg-error text-white shadow-lg hover:opacity-90 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">call_end</span>
+</button>
+<span class="font-label-sm text-label-sm text-error font-bold">End Consultation</span>
+</div>
+<div class="flex flex-col items-center gap-2">
+<button class="w-16 h-16 flex items-center justify-center rounded-full bg-surface-container hover:bg-surface-container-high transition-colors text-on-surface shadow-sm active:scale-95">
+<span class="material-symbols-outlined text-2xl">volume_up</span>
+</button>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Speaker</span>
+</div>
+</div>
+<!-- Security Information Card -->
+<div class="mt-stack-lg max-w-sm text-center p-4 rounded-2xl bg-secondary/5 border border-secondary/10">
+<div class="flex items-center justify-center gap-2 text-secondary mb-1">
+<span class="material-symbols-outlined text-[18px]">verified_user</span>
+<span class="font-label-sm text-label-sm">Secure Session</span>
+</div>
+<p class="text-[13px] text-on-surface-variant font-body-md leading-relaxed">
+        Your responses are being recorded securely using healthcare-grade encryption for clinical review.
+      </p>
+</div>
+</main>
+<!-- BottomNavBar (Hidden in this focused sub-page but available for reference) -->
+<!-- We suppress the full nav to prioritize the consultation canvas as per "Destination Rule" -->
+<div class="fixed bottom-0 left-0 w-full z-50 bg-white/90 backdrop-blur-md px-4 py-6 text-center border-t border-slate-100 md:hidden">
+<p class="font-label-sm text-label-sm text-slate-400">Session in progress • Patient Privacy Shield Active</p>
+</div>
+</body></html>

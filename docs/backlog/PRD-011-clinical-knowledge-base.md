@@ -31,6 +31,17 @@ Fine-tuning is explicitly ruled out for Phase 1: it is expensive, creates data p
 
 ---
 
+## User Roles & Access
+
+| Role | Access |
+|------|--------|
+| Medical Director | Reviews and approves all knowledge base content and system prompt templates via Git PR; sole approver on the clinical prompt repository branch |
+| CTO | Authors and maintains knowledge base content; proposes changes via PR |
+| Regulatory Advisor | Reviews and signs off AHPRA advertising language constraints |
+| Clinical AI Engine | Queries pgvector at runtime; read-only access to indexed knowledge base |
+
+---
+
 ## Functional Requirements
 
 ### Knowledge Source Licensing
@@ -114,6 +125,25 @@ Fine-tuning is explicitly ruled out for Phase 1: it is expensive, creates data p
 - **Auditability:** Every RAG retrieval is logged with: query keywords, top-K sources retrieved, consultation ID — so any output can be traced back to the guideline excerpts that informed it
 - **Freshness:** Knowledge base update process ensures content is reviewed within 30 days of a material eTG or RACGP guideline change
 - **Sovereignty:** pgvector runs on the existing RDS instance in ap-southeast-2; no knowledge base content leaves Australia
+
+---
+
+## Compliance Notes
+
+**Content licensing:** eTG, AMH, and MIMS content requires a commercial AI use agreement before indexing. RACGP and PBS/MBS data is freely available with attribution. If licensing is refused, the Medical Director-authored fallback strategy (RACGP + PBS/MBS + MD summaries) must be documented and approved before Sprint 4 start.
+
+**Medical Director authority:** All knowledge base content and system prompt templates require Medical Director PR approval before merge. This is a TGA SaMD compliance requirement — the Medical Director is the designated clinical authority over all AI clinical content.
+
+**AHPRA constraints are hardcoded, not retrieved:** Regulatory language constraints are injected into every system prompt as a static block, not as a RAG result. This prevents them from being omitted or diluted by retrieval ranking.
+
+**Data sovereignty:** pgvector runs on the existing RDS instance in ap-southeast-2. No knowledge base content leaves Australia during retrieval or indexing.
+
+**Audit log events:**
+
+| Event | Trigger |
+|-------|---------|
+| `rag.retrieval_performed` | RAG query executed; includes query_keywords, top_k_sources, consultation_id (for output traceability) |
+| `knowledge_base.updated` | New content merged and re-indexed; includes PR reference and Medical Director approval date |
 
 ---
 

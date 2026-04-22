@@ -19,8 +19,8 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 
 | PRD | Title | Phase | Sprint | Timeline | Status |
 |-----|-------|-------|--------|----------|--------|
-| [PRD-001](PRD-001-regulatory-prerequisites.md) | Regulatory & Legal Prerequisites | Pre-build | — | Before Week 1 | Not started |
-| [PRD-002](PRD-002-llm-voice-platform-evaluation.md) | LLM & Voice Platform Evaluation | Pre-build | — | Weeks 1–5 (concurrent) | Research in progress |
+| [PREREQ-001](PREREQ-001-regulatory-legal-prerequisites.md) | Regulatory & Legal Prerequisites | Pre-build | — | Before Week 1 | Not started |
+| [RESEARCH-002](../research/archive/2026-04-21-llm-voice-platform-evaluation.md) | LLM & Voice Platform Evaluation | Pre-build | — | Weeks 1–5 (concurrent) | **Complete — archived** ✅ |
 | [PRD-003](../shipped/PRD-003-infrastructure-devops.md) | Infrastructure & DevOps | Build | Sprint 0 | Week 1–2 | **Shipped 2026-04-22** ✅ |
 | [PRD-004](../shipped/PRD-004-authentication-access-control.md) | Authentication & Access Control | Build | Sprint 0 | Week 1–2 | **Shipped 2026-04-21** ✅ |
 | [PRD-005](../shipped/PRD-005-audit-log.md) | Audit Log & Compliance Infrastructure | Build | Sprint 0 | Week 1–2 | **Shipped 2026-04-21** ✅ |
@@ -74,12 +74,12 @@ Evaluation         Access         Booking        Fallback       Knowledge       
 ## Dependency Graph
 
 ```
-PRD-001 (Regulatory)
+PREREQ-001 (Regulatory & Legal Prerequisites)
   └─► All PRDs — legal sign-off required before beta launch
 
-PRD-002 (LLM & Voice Platform Evaluation)
-  └─► PRD-008 (voice platform decision gates Sprint 2 start)
-  └─► PRD-011, PRD-012 (LLM decision gates Sprint 3/4 start)
+RESEARCH-002 (LLM & Voice Platform Evaluation — complete)
+  └─► PRD-008 (voice platform decision: Gemini Live API / Retell.ai fallback)
+  └─► PRD-011, PRD-012 (LLM decision: Claude Sonnet 4.6 via Bedrock — confirmed)
 
 PRD-003 (Infrastructure)
   └─► PRD-004, PRD-005, PRD-006, PRD-007, PRD-008, PRD-009, PRD-010, PRD-011, PRD-012, PRD-013, PRD-014, PRD-015, PRD-016
@@ -266,9 +266,9 @@ Without explicit Australian grounding, general-purpose LLMs default to US/UK gui
 
 | Decision | Status | Owner | Required By |
 |----------|--------|-------|-------------|
-| AWS Bedrock vs direct Anthropic API | **Recommended: AWS Bedrock** — research confirms this eliminates APP 8 cross-border risk; final sign-off with lawyer | CTO + Lawyer | Sprint 0 start |
-| Voice AI platform | **Recommended: Gemini 2.5 Flash Live API (direct)** — native audio-in/out eliminates ASR→LLM→TTS lag; ~$0.024 AUD/consult vs $0.92 AUD (Retell) or $8.29 (Vapi). **Contingent on GCP `australia-southeast1` availability for Live API** — confirm with Google Cloud before Sprint 2. Fallback: Retell.ai. See PRD-002. | CTO | Sprint 2 start |
-| Clinical LLM: Claude vs GPT-4o vs Gemini vs Llama 3 | **Recommended: Claude Sonnet 4.6 via AWS Bedrock ap-southeast-2** — scores 4.70/5 on weighted scorecard; 92.3% MedQA; best hallucination profile; confirmed AU data residency on existing Bedrock infra. Hallucination trap test + Medical Director SOAP blind eval still required before Sprint 4. | CTO + Medical Director | Sprint 4 start |
+| AWS Bedrock vs direct Anthropic API | **Resolved: AWS Bedrock** — eliminates APP 8 cross-border risk; data stays in AU. Final sign-off with lawyer still required. See [RESEARCH-002](../research/archive/2026-04-21-llm-voice-platform-evaluation.md). | CTO + Lawyer | Sprint 0 start |
+| Voice AI platform | **Resolved: Gemini 2.5 Flash Live API (direct)** — native audio-in/out; ~$0.024 AUD/consult. **Contingent on GCP `australia-southeast1` Live API availability** — confirm before Sprint 2. Fallback: Retell.ai. See [RESEARCH-002](../research/archive/2026-04-21-llm-voice-platform-evaluation.md). | CTO | Sprint 2 start |
+| Clinical LLM: Claude vs GPT-4o vs Gemini vs Llama 3 | **Resolved: Claude Sonnet 4.6 via AWS Bedrock ap-southeast-2** — 4.70/5 weighted score; 92.3% MedQA; best hallucination profile. Hallucination trap test + Medical Director SOAP blind eval still required before Sprint 4. See [RESEARCH-002](../research/archive/2026-04-21-llm-voice-platform-evaluation.md). | CTO + Medical Director | Sprint 4 start |
 | Auth provider: AWS Cognito vs Auth0 | **Resolved: AWS Cognito** — ap-southeast-2 data residency, free tier, native IAM integration (PRD-004 shipped) | CTO | ✅ Done |
 | Clinical knowledge licensing: eTG / AMH / MIMS | Open — must contact each vendor for AI use agreement; RACGP + PBS/MBS available freely as fallback | Medical Director + Lawyer | Sprint 4 start |
 | AHPRA advertising language constraints | Open — draft in progress; requires sign-off from AHPRA advertising compliance reviewer | Regulatory Advisor | Sprint 4 start |

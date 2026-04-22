@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Public+Sans:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-secondary": "#ffffff",
+            "secondary-fixed": "#a5eff0",
+            "on-tertiary": "#ffffff",
+            "error": "#ba1a1a",
+            "primary": "#002045",
+            "primary-fixed-dim": "#adc7f7",
+            "on-tertiary-fixed": "#2b1700",
+            "inverse-surface": "#2f3033",
+            "tertiary-fixed": "#ffddba",
+            "secondary-container": "#a2eded",
+            "on-error-container": "#93000a",
+            "primary-container": "#1a365d",
+            "error-container": "#ffdad6",
+            "surface-container": "#efedf1",
+            "on-surface-variant": "#43474e",
+            "on-surface": "#1a1c1e",
+            "outline": "#74777f",
+            "on-secondary-fixed": "#002020",
+            "on-secondary-container": "#1a6d6e",
+            "on-primary": "#ffffff",
+            "background": "#faf9fd",
+            "on-primary-fixed": "#001b3c",
+            "primary-fixed": "#d6e3ff",
+            "on-tertiary-container": "#c6955e",
+            "on-primary-container": "#86a0cd",
+            "inverse-on-surface": "#f1f0f4",
+            "surface-variant": "#e3e2e6",
+            "on-error": "#ffffff",
+            "tertiary-fixed-dim": "#f2bc82",
+            "surface-tint": "#455f88",
+            "secondary": "#13696a",
+            "surface-container-lowest": "#ffffff",
+            "tertiary": "#321b00",
+            "surface": "#faf9fd",
+            "on-secondary-fixed-variant": "#004f50",
+            "on-primary-fixed-variant": "#2d476f",
+            "on-background": "#1a1c1e",
+            "surface-dim": "#dad9dd",
+            "inverse-primary": "#adc7f7",
+            "surface-bright": "#faf9fd",
+            "tertiary-container": "#4f2e00",
+            "surface-container-low": "#f4f3f7",
+            "outline-variant": "#c4c6cf",
+            "secondary-fixed-dim": "#89d3d4",
+            "surface-container-highest": "#e3e2e6",
+            "surface-container-high": "#e9e7eb",
+            "on-tertiary-fixed-variant": "#633f0f"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "doctor-margin": "16px",
+            "stack-sm": "8px",
+            "unit": "8px",
+            "patient-margin": "32px",
+            "stack-lg": "32px",
+            "stack-md": "16px",
+            "gutter": "24px"
+          },
+          "fontFamily": {
+            "body-lg": ["Public Sans"],
+            "label-sm": ["Public Sans"],
+            "headline-lg": ["Manrope"],
+            "headline-md": ["Manrope"],
+            "clinical-data": ["Public Sans"],
+            "body-md": ["Public Sans"],
+            "display-xl": ["Manrope"]
+          },
+          "fontSize": {
+            "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+            "label-sm": ["12px", {"lineHeight": "1", "fontWeight": "700"}],
+            "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "600"}],
+            "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+            "clinical-data": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "600"}],
+            "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+            "display-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+  </style>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased min-h-screen">
+<header class="bg-white dark:bg-slate-900 shadow-sm border-b border-slate-200 dark:border-slate-800 fixed top-0 w-full z-50 h-16 flex justify-between items-center px-4">
+<div class="flex items-center gap-3">
+<button class="p-2 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors rounded-full">
+<span class="material-symbols-outlined text-slate-900 dark:text-slate-100">arrow_back</span>
+</button>
+<span class="text-xl font-bold tracking-tight text-blue-900 dark:text-blue-400 font-headline-md">Nightingale</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-500 dark:text-slate-400 p-2">help</span>
+<span class="material-symbols-outlined text-slate-500 dark:text-slate-400 p-2">notifications</span>
+<div class="w-8 h-8 rounded-full bg-slate-200 overflow-hidden ml-2">
+<img class="w-full h-full object-cover" data-alt="Portrait of a user for medical profile avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuACqKRe3XtQDrJBrfx_oxHaX3Gagw7ftZZTCnxyeZKr4KkvpFkXsEp9hSsflxBTg0OxGyO1-QN3dllikuLc3eNvyp7BdBXSmZOU9EW82Ikbw0Csy2o1FLJ2MwpEufySdypAS_3KZo_vlDwNR6tU2J4fvJdeMr7YO5GB15sSFFDWzZO9Zh8bqV5GbulFNZGEnDfdsT4KOf4LpQ3PDxZxf3lSHY3_CqKLPcm6sT4MV3dY0D0HcxNH7Y26Lz2IALwmeMCECHY6CON24wgh"/>
+</div>
+</div>
+</header>
+<main class="pt-24 pb-32 px-patient-margin max-w-4xl mx-auto">
+<div class="mb-stack-lg">
+<h1 class="font-headline-lg text-headline-lg text-primary mb-2">Photo Upload</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Please provide clear photos of the affected area for your practitioner to review. Max 5 photos.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter mb-stack-lg">
+<button class="flex flex-col items-center justify-center p-8 bg-primary-container border-2 border-dashed border-on-primary-container/30 rounded-xl hover:bg-primary-container/90 transition-all group">
+<div class="w-16 h-16 rounded-full bg-on-primary-fixed-variant flex items-center justify-center mb-4 group-active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-white text-3xl">photo_camera</span>
+</div>
+<span class="font-headline-md text-white">Take Photo</span>
+<span class="font-label-sm text-on-primary-container/80 mt-1">Use your device camera</span>
+</button>
+<button class="flex flex-col items-center justify-center p-8 bg-white border-2 border-dashed border-outline-variant rounded-xl hover:bg-surface-container-low transition-all group">
+<div class="w-16 h-16 rounded-full bg-secondary-container flex items-center justify-center mb-4 group-active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-on-secondary-container text-3xl">file_upload</span>
+</div>
+<span class="font-headline-md text-primary">Upload from Device</span>
+<span class="font-label-sm text-on-surface-variant mt-1">Select from gallery</span>
+</button>
+</div>
+<div class="space-y-stack-md">
+<div class="flex justify-between items-center">
+<h2 class="font-headline-md text-primary">Uploaded Photos (3/5)</h2>
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+<div class="relative group aspect-square rounded-xl overflow-hidden bg-surface-container shadow-sm border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="Close up medical photo of a clear skin texture for diagnostic review" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCpO9ogRkhsuy4NviNtkB-_MI5ADG_MCSEVs0T7uImYWBOlLzIgmo4WnJe0bJ94OB_dUz3ILTpfrYxoGE3WbkjRucM6Y2k2J_3rggecMPfq55FY7kfzvKMpYPYVY5aLv8bhC3SvuAjVDqijJ6xjuF2u8BCJu2isi6gShHnwBgiOYM_dTxRF_OAGvwmYpae8OdmhsDit5gzvpBwBubsgvwJjmH9nzx2M9iZ_XZgvPnFmnjjxt2u6FIchcILxGZqlCGz5_ZTpFm0U4XbI"/>
+<div class="absolute top-2 right-2 flex flex-col gap-1">
+<button class="bg-white/90 backdrop-blur p-1 rounded-lg text-error hover:bg-white transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+<button class="bg-white/90 backdrop-blur p-1 rounded-lg text-primary hover:bg-white transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]">replay</span>
+</button>
+</div>
+<div class="absolute bottom-0 left-0 right-0 bg-secondary/90 backdrop-blur py-1.5 px-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-white" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-label-sm text-white">Clear</span>
+</div>
+</div>
+<div class="relative group aspect-square rounded-xl overflow-hidden bg-surface-container shadow-sm border border-outline-variant">
+<img class="w-full h-full object-cover grayscale opacity-80" data-alt="Slightly blurry close-up medical photo of skin area for diagnostic check" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCo_-TiTydfUetH4kGfJvJzl20O0sGygyl_bcw3plJmGCfrBlmBos0cJIImFVjKvkCbwV8Up1S_0C1zCoYHb_BBEyp7NxQiuaSVHlc8yG8qrPKcRFBmFji8R_Q52IFu7PJwyud-euwsPVMqrqr0jv2DcLf3eXcmKIfgmXK4WX_1l52Jx3LNqeU8r3flHK3TwCZ3J8rwyB39xpVL5vX5YHsasMBGVW2-l4wdibtWjrRqHtjBciZq16OzV7XsOyonOT8lK9I-Z6hkafks"/>
+<div class="absolute top-2 right-2 flex flex-col gap-1">
+<button class="bg-white/90 backdrop-blur p-1 rounded-lg text-error hover:bg-white transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+<button class="bg-white/90 backdrop-blur p-1 rounded-lg text-primary hover:bg-white transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]">replay</span>
+</button>
+</div>
+<div class="absolute bottom-0 left-0 right-0 bg-tertiary-fixed-dim/90 backdrop-blur py-1.5 px-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-tertiary-container" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span class="font-label-sm text-tertiary-container">Blurry</span>
+</div>
+</div>
+<div class="relative group aspect-square rounded-xl overflow-hidden bg-surface-container shadow-sm border border-outline-variant">
+<div class="absolute inset-0 bg-black/40 flex items-center justify-center flex-col p-4">
+<span class="font-label-sm text-white mb-2">Uploading 75%</span>
+<div class="w-full bg-white/30 h-1.5 rounded-full overflow-hidden">
+<div class="bg-secondary h-full rounded-full w-3/4"></div>
+</div>
+</div>
+<img class="w-full h-full object-cover" data-alt="Underexposed medical photo showing dark lighting conditions on skin" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAkXIe_S_QjWYxxarnD4lCfoucdYG3N4_amIHOjv-6YvPzRbhq8NGuR6k4Q-iwY6kkeakbhaH51yf4cy7A7quMc8eZIxPsmJA7JXq4WbgzoDWjdfdroDW3oltWAojZmWLyC4Lq3kSHoRfuRi3129EjBnAbfww5zTkLXkOr4OcuLUS3jBJ_HBqWvepKXtiuXZPH00f75MVbFz36YwZ8-N-VlxpDnQXcMF5JAlHgnkePM1nHqucTowV_s1yUNk4cbHK-K9sE-KXPWrdKM"/>
+<div class="absolute top-2 right-2">
+<button class="bg-white/90 backdrop-blur p-1 rounded-lg text-error hover:bg-white transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+</div>
+<div class="aspect-square rounded-xl border-2 border-dashed border-outline-variant bg-surface-container-low flex items-center justify-center">
+<span class="material-symbols-outlined text-outline text-3xl">add</span>
+</div>
+<div class="aspect-square rounded-xl border-2 border-dashed border-outline-variant bg-surface-container-low flex items-center justify-center">
+<span class="material-symbols-outlined text-outline text-3xl">add</span>
+</div>
+</div>
+</div>
+<div class="mt-stack-lg p-6 bg-surface-container rounded-xl border border-outline-variant/30">
+<div class="flex items-start gap-3 mb-4">
+<span class="material-symbols-outlined text-tertiary-fixed-dim text-2xl">info</span>
+<div>
+<p class="font-clinical-data text-primary mb-1">Quality Alert</p>
+<p class="font-body-md text-on-surface-variant">One or more photos were flagged as 'Blurry'. High-quality images help your doctor provide a more accurate diagnosis.</p>
+</div>
+</div>
+<div class="flex flex-col sm:flex-row gap-4 items-center">
+<button class="w-full sm:w-auto px-6 py-3 bg-primary text-white rounded-xl font-headline-md hover:bg-primary/90 transition-all active:scale-95">
+          Finish Upload
+        </button>
+<button class="w-full sm:w-auto px-6 py-3 text-secondary font-headline-md hover:bg-secondary/10 rounded-xl transition-all">
+          Override and upload anyway
+        </button>
+</div>
+</div>
+</main>
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-3 pb-safe bg-white/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 md:hidden">
+<div class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 hover:text-blue-700 transition-colors">
+<span class="material-symbols-outlined">medical_services</span>
+<span class="font-manrope text-[11px] font-medium">Consult</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 hover:text-blue-700 transition-colors">
+<span class="material-symbols-outlined">history_edu</span>
+<span class="font-manrope text-[11px] font-medium">Records</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 hover:text-blue-700 transition-colors">
+<span class="material-symbols-outlined">chat</span>
+<span class="font-manrope text-[11px] font-medium">Inbox</span>
+</div>
+<div class="flex flex-col items-center justify-center text-blue-900 dark:text-blue-300 bg-blue-50/50 dark:bg-blue-900/20 rounded-xl px-3 py-1">
+<span class="material-symbols-outlined">person</span>
+<span class="font-manrope text-[11px] font-medium">Profile</span>
+</div>
+</nav>
+</body></html>

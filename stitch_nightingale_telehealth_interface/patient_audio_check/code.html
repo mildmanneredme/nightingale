@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Public+Sans:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+                  "on-secondary": "#ffffff",
+                  "secondary-fixed": "#a5eff0",
+                  "on-tertiary": "#ffffff",
+                  "error": "#ba1a1a",
+                  "primary": "#002045",
+                  "primary-fixed-dim": "#adc7f7",
+                  "on-tertiary-fixed": "#2b1700",
+                  "inverse-surface": "#2f3033",
+                  "tertiary-fixed": "#ffddba",
+                  "secondary-container": "#a2eded",
+                  "on-error-container": "#93000a",
+                  "primary-container": "#1a365d",
+                  "error-container": "#ffdad6",
+                  "surface-container": "#efedf1",
+                  "on-surface-variant": "#43474e",
+                  "on-surface": "#1a1c1e",
+                  "outline": "#74777f",
+                  "on-secondary-fixed": "#002020",
+                  "on-secondary-container": "#1a6d6e",
+                  "on-primary": "#ffffff",
+                  "background": "#faf9fd",
+                  "on-primary-fixed": "#001b3c",
+                  "primary-fixed": "#d6e3ff",
+                  "on-tertiary-container": "#c6955e",
+                  "on-primary-container": "#86a0cd",
+                  "inverse-on-surface": "#f1f0f4",
+                  "surface-variant": "#e3e2e6",
+                  "on-error": "#ffffff",
+                  "tertiary-fixed-dim": "#f2bc82",
+                  "surface-tint": "#455f88",
+                  "secondary": "#13696a",
+                  "surface-container-lowest": "#ffffff",
+                  "tertiary": "#321b00",
+                  "surface": "#faf9fd",
+                  "on-secondary-fixed-variant": "#004f50",
+                  "on-primary-fixed-variant": "#2d476f",
+                  "on-background": "#1a1c1e",
+                  "surface-dim": "#dad9dd",
+                  "inverse-primary": "#adc7f7",
+                  "surface-bright": "#faf9fd",
+                  "tertiary-container": "#4f2e00",
+                  "surface-container-low": "#f4f3f7",
+                  "outline-variant": "#c4c6cf",
+                  "secondary-fixed-dim": "#89d3d4",
+                  "surface-container-highest": "#e3e2e6",
+                  "surface-container-high": "#e9e7eb",
+                  "on-tertiary-fixed-variant": "#633f0f"
+          },
+          "borderRadius": {
+                  "DEFAULT": "0.25rem",
+                  "lg": "0.5rem",
+                  "xl": "0.75rem",
+                  "full": "9999px"
+          },
+          "spacing": {
+                  "doctor-margin": "16px",
+                  "stack-sm": "8px",
+                  "unit": "8px",
+                  "patient-margin": "32px",
+                  "stack-lg": "32px",
+                  "stack-md": "16px",
+                  "gutter": "24px"
+          },
+          "fontFamily": {
+                  "body-lg": ["Public Sans"],
+                  "label-sm": ["Public Sans"],
+                  "headline-lg": ["Manrope"],
+                  "headline-md": ["Manrope"],
+                  "clinical-data": ["Public Sans"],
+                  "body-md": ["Public Sans"],
+                  "display-xl": ["Manrope"]
+          },
+          "fontSize": {
+                  "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                  "label-sm": ["12px", {"lineHeight": "1", "fontWeight": "700"}],
+                  "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                  "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                  "clinical-data": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                  "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                  "display-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .waveform-bar {
+      transition: height 0.2s ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col">
+<!-- Top Navigation Shell -->
+<header class="bg-white dark:bg-slate-900 shadow-sm border-b border-slate-200 dark:border-slate-800 flex justify-between items-center w-full px-4 h-16 sticky top-0 z-50">
+<div class="flex items-center gap-2">
+<span class="text-xl font-bold tracking-tight text-blue-900 dark:text-blue-400">Nightingale</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors p-2 rounded-full">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+<button class="text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors p-2 rounded-full relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border-2 border-white"></span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-slate-200">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="Close-up professional portrait of a woman with a kind expression, soft natural lighting, minimalist studio background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5LyxDsRc_zpyITPEsNy4l05Pj_bhWALKtm9NmMohZCk04GpRfZeVcoMDmrnvGBqlRc4sO3C6xrlmkzGx0u-VaSbxkrfnE1lnfd9wtWfGTDoul-rAWD8U_tNJMFGhJtm2EscvcEpqtLzW1YjQJAo9hPZh2pdyjQnlWweR19pd1lzBABg9qFTp80HHCnBLtw4f5vFlclpG-3z3kLKT_mvtJFn87B4VnP6Bq6yU18mQZbBUW8j15Yf7cXle_s7WqEbf73ujuQQ3XFe4D"/>
+</div>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-grow flex items-center justify-center px-patient-margin py-stack-lg max-w-4xl mx-auto w-full">
+<div class="w-full space-y-stack-md">
+<!-- Browser-Style Permission Visual -->
+<div class="flex justify-center mb-stack-md">
+<div class="bg-surface-container-highest rounded-xl px-4 py-2 flex items-center gap-3 shadow-sm border border-outline-variant animate-pulse-subtle">
+<span class="material-symbols-outlined text-secondary" data-icon="mic" style="font-variation-settings: 'FILL' 1;">mic</span>
+<span class="font-label-sm text-on-surface">nightingale.health wants to use your microphone</span>
+<div class="flex gap-2">
+<span class="text-secondary font-bold text-[12px] px-2 py-0.5 rounded bg-secondary-fixed/30 cursor-default">Allowing</span>
+</div>
+</div>
+</div>
+<!-- Clinical Empathy Focused Card -->
+<section class="bg-white rounded-3xl shadow-[0_4px_24px_rgba(0,32,69,0.06)] border border-slate-100 p-8 md:p-12 text-center flex flex-col items-center">
+<div class="mb-stack-lg">
+<div class="relative w-24 h-24 mb-4 mx-auto">
+<div class="absolute inset-0 bg-secondary-container/30 rounded-full animate-ping opacity-20"></div>
+<div class="relative z-10 w-full h-full bg-secondary-container/50 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary text-4xl" data-icon="keyboard_voice" style="font-variation-settings: 'FILL' 1;">keyboard_voice</span>
+</div>
+</div>
+<h1 class="font-headline-lg text-primary mb-2">Ready when you are</h1>
+<p class="font-body-lg text-on-surface-variant max-w-md">We’re checking your audio to ensure your doctor can hear you clearly.</p>
+</div>
+<!-- Live Audio Level Indicator -->
+<div class="w-full max-w-sm h-24 flex items-center justify-center gap-1.5 mb-stack-lg">
+<!-- Animated Waveform Bars -->
+<div class="waveform-bar w-2 h-4 bg-secondary-fixed-dim rounded-full" style="height: 15%"></div>
+<div class="waveform-bar w-2 h-8 bg-secondary-fixed-dim rounded-full" style="height: 40%"></div>
+<div class="waveform-bar w-2 h-12 bg-secondary rounded-full" style="height: 70%"></div>
+<div class="waveform-bar w-2 h-16 bg-secondary rounded-full" style="height: 85%"></div>
+<div class="waveform-bar w-2 h-20 bg-secondary rounded-full" style="height: 60%"></div>
+<div class="waveform-bar w-2 h-24 bg-secondary rounded-full" style="height: 95%"></div>
+<div class="waveform-bar w-2 h-16 bg-secondary rounded-full" style="height: 75%"></div>
+<div class="waveform-bar w-2 h-12 bg-secondary rounded-full" style="height: 80%"></div>
+<div class="waveform-bar w-2 h-8 bg-secondary-fixed-dim rounded-full" style="height: 35%"></div>
+<div class="waveform-bar w-2 h-4 bg-secondary-fixed-dim rounded-full" style="height: 20%"></div>
+</div>
+<!-- Success Message -->
+<div class="bg-secondary-fixed/20 border border-secondary-fixed px-6 py-4 rounded-2xl inline-flex items-center gap-3 mb-stack-md">
+<div class="w-6 h-6 bg-secondary rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-xs" data-icon="check" style="font-variation-settings: 'wght' 700;">check</span>
+</div>
+<p class="font-clinical-data text-on-secondary-container">Connection looks good — Starting your consultation</p>
+</div>
+<!-- Primary Action -->
+<button class="w-full max-w-xs bg-primary text-on-primary py-4 rounded-xl font-headline-md shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all mb-stack-sm">
+          Join Consultation
+        </button>
+<!-- Failure Fallback -->
+<a class="font-label-sm text-secondary hover:underline flex items-center gap-1 justify-center mt-4" href="#">
+          Audio not detected? Switch to Text Chat
+          <span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
+</a>
+</section>
+<!-- Supportive Context Bento Card -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<div class="bg-surface-container-low p-6 rounded-2xl border border-outline-variant flex items-start gap-4">
+<div class="bg-white p-2 rounded-lg shadow-sm">
+<span class="material-symbols-outlined text-primary" data-icon="lock" style="font-variation-settings: 'FILL' 1;">lock</span>
+</div>
+<div>
+<h3 class="font-clinical-data text-primary">Private &amp; Encrypted</h3>
+<p class="text-sm text-on-surface-variant">Your voice data is end-to-end encrypted and never stored on our servers.</p>
+</div>
+</div>
+<div class="bg-surface-container-low p-6 rounded-2xl border border-outline-variant flex items-start gap-4">
+<div class="bg-white p-2 rounded-lg shadow-sm">
+<span class="material-symbols-outlined text-primary" data-icon="volume_up">volume_up</span>
+</div>
+<div>
+<h3 class="font-clinical-data text-primary">Check Speakers</h3>
+<p class="text-sm text-on-surface-variant">Ensure your device volume is up so you can hear your practitioner clearly.</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Shell (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-3 pb-safe bg-white/90 backdrop-blur-md border-t border-slate-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] rounded-t-xl">
+<div class="flex flex-col items-center justify-center text-blue-900 dark:text-blue-300 bg-blue-50/50 dark:bg-blue-900/20 rounded-xl px-3 py-1">
+<span class="material-symbols-outlined" data-icon="medical_services">medical_services</span>
+<span class="font-manrope text-[11px] font-medium">Consult</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500">
+<span class="material-symbols-outlined" data-icon="history_edu">history_edu</span>
+<span class="font-manrope text-[11px] font-medium">Records</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500">
+<span class="material-symbols-outlined" data-icon="chat">chat</span>
+<span class="font-manrope text-[11px] font-medium">Inbox</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-manrope text-[11px] font-medium">Profile</span>
+</div>
+</nav>
+</body></html>

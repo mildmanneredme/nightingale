@@ -1,8 +1,8 @@
-# PRD-001 — Regulatory & Legal Prerequisites
+# PREREQ-001 — Regulatory & Legal Prerequisites
 
 > **Status:** Not Started
 > **Phase:** Pre-Build (Before Week 1)
-> **Type:** Non-Technical / Operational
+> **Document type:** Pre-build prerequisite checklist — no code deliverables; gates all build sprints
 > **Owner:** Founder + Regulatory Advisor
 
 ---
@@ -11,7 +11,7 @@
 
 Before writing a single line of code, Nightingale must engage legal and regulatory advisors, confirm its clinical governance structure, and complete foundational compliance work. These are not optional steps — operating an AI-assisted telehealth service without this groundwork exposes the business to TGA enforcement action, AHPRA complaints, Privacy Act breaches, and unlimited personal liability.
 
-This PRD tracks the non-technical deliverables that gate the build.
+This document tracks the non-technical deliverables that gate the build. It is not a PRD — there is no code to ship. It is a compliance checklist that must be completed in parallel with Sprint 0.
 
 ---
 
@@ -97,7 +97,7 @@ The Medical Director bears clinical liability for all approved consultations. A 
 
 ## Dependencies
 
-- None — this PRD has no upstream dependencies and gates everything else.
+- None — this document has no upstream dependencies and gates everything else.
 
 ---
 
