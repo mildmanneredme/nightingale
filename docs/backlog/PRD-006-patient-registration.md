@@ -51,7 +51,8 @@ The Medical Director must review the minimum viable profile fields before Sprint
 
 | # | Requirement |
 |---|-------------|
-| F-008 | Patient can set and update: full name, date of birth, sex, Medicare number (optional), phone number (optional) |
+| F-008 | Patient can set and update: full name, date of birth, biological sex, Medicare number (optional, free-text only), phone number (optional), residential address |
+| F-008a | IHI (Individual Healthcare Identifier) field displayed as optional; Phase 1 accepts free-text entry only — no live HI Service lookup. Field labelled "AUSTRALIA ONLY" and explained as used for future health record linkage. Full HI Service verification is post-Phase 1. |
 | F-009 | Patient can add/edit/remove: known allergies (free text + severity: mild/moderate/severe) |
 | F-010 | Patient can add/edit/remove: current medications (name + dose + frequency) |
 | F-011 | Patient can add/edit/remove: existing conditions/diagnoses (free text) |
@@ -140,6 +141,7 @@ The Medical Director must review the minimum viable profile fields before Sprint
 ## Out of Scope
 
 - Identity verification / ID document upload (anonymous mode is intentional; Phase 2)
+- IHI verification via HI Service (live lookup, identity matching) — Phase 2; requires ADHA conformance
 - Integration with Medicare / MyGov for auto-population of profile
-- My Health Record integration (Phase 2)
+- My Health Record integration — explicitly out of scope Phase 1; see ROADMAP
 - Repeat prescription management (Phase 2)

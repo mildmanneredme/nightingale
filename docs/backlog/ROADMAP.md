@@ -25,7 +25,7 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | [PRD-004](../shipped/PRD-004-authentication-access-control.md) | Authentication & Access Control | Build | Sprint 0 | Week 1–2 | **Shipped 2026-04-21** ✅ |
 | [PRD-005](../shipped/PRD-005-audit-log.md) | Audit Log & Compliance Infrastructure | Build | Sprint 0 | Week 1–2 | **Shipped 2026-04-21** ✅ |
 | [PRD-006](PRD-006-patient-registration.md) | Patient Registration & Profile | Build | Sprint 1 | Week 3–4 | Not started |
-| [PRD-007](PRD-007-payments-booking.md) | Payments & Consultation Booking | Build | Sprint 1 | Week 3–4 | Not started |
+| [PRD-007](PRD-007-payments-booking.md) | Payments & Consultation Booking | Build | Pre-beta | Deferred | **Deferred — not required for MVP functional testing** |
 | [PRD-008](PRD-008-ai-voice-consultation.md) | AI Voice Consultation | Build | Sprint 2 | Week 5–7 | Not started |
 | [PRD-009](PRD-009-text-chat-fallback.md) | Text-Chat Fallback | Build | Sprint 2 | Week 5–7 | Not started |
 | [PRD-010](PRD-010-photo-upload.md) | Photo Upload & Quality Guidance | Build | Sprint 3 | Week 7–8 | Not started |
@@ -35,6 +35,8 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | [PRD-014](PRD-014-patient-notifications.md) | Patient Notifications | Build | Sprint 5 | Week 10–12 | Not started |
 | [PRD-015](PRD-015-post-consultation-followup.md) | Post-Consultation Follow-Up | Build | Sprint 6 | Week 12–14 | Not started |
 | [PRD-016](PRD-016-beta-launch-readiness.md) | Beta Launch Readiness | Build | Sprint 6 | Week 12–14 | Not started |
+| [PRD-017](PRD-017-doctor-scheduling-availability.md) | Doctor Scheduling & Availability | Build | Sprint 5 | Week 10–12 | Not started |
+| [PRD-018](PRD-018-script-renewals.md) | Script Renewal Workflow | Build | Sprint 5 | Week 10–12 | Not started |
 
 ---
 
@@ -58,10 +60,10 @@ PRD-001            PRD-003        PRD-006        PRD-008        PRD-010        P
 Regulatory &       Infrastructure Patient        AI Voice       Photo Upload   Clinical AI    Doctor Review  Post-Consult
 Legal Prereqs      & DevOps       Registration   Consultation   & Quality      Engine         Dashboard      Follow-Up
 
-PRD-002 *          PRD-004        PRD-007        PRD-009        PRD-011                       PRD-014        PRD-016
-LLM & Voice        Auth &         Payments &     Text-Chat      Clinical                      Patient        Beta Launch
-Evaluation         Access         Booking        Fallback       Knowledge                     Notifications  Readiness
-(ongoing Wk 1–5)                                               Base & RAG
+PRD-002 *          PRD-004        —              PRD-009        PRD-011                       PRD-014        PRD-016
+LLM & Voice        Auth &         (PRD-007       Text-Chat      Clinical                      Patient        Beta Launch
+Evaluation         Access         deferred —     Fallback       Knowledge                     Notifications  Readiness
+(ongoing Wk 1–5)                 pre-beta)                     Base & RAG
 
                    PRD-005
                    Audit Log
@@ -91,10 +93,10 @@ PRD-005 (Audit Log)
   └─► PRD-007 (payment events), PRD-008 (consultation start/end), PRD-012 (AI outputs), PRD-013 (doctor actions), PRD-014 (notifications)
 
 PRD-006 (Patient Registration)
-  └─► PRD-007 (booking requires profile), PRD-008 (profile context in AI interview)
+  └─► PRD-008 (profile context in AI interview)
 
-PRD-007 (Payments)
-  └─► PRD-008 (consultation only starts after payment confirmation)
+PRD-007 (Payments — deferred, pre-beta)
+  └─► PRD-008 prod (consultation payment gate — required before real patient billing, not for MVP testing)
 
 PRD-008 (AI Voice)
   └─► PRD-012 (transcript fed to clinical AI engine)
@@ -259,6 +261,9 @@ Without explicit Australian grounding, general-purpose LLMs default to US/UK gui
 - EMR integration
 - Southeast Asia localisation
 - Clinic white-label / SaaS licensing
+- My Health Record sync — ADHA registration + conformance testing required; post-Phase 1
+- Vitals / health monitoring integration — wearable or Apple Health data; post-Phase 1
+- 24/7 live clinical support chat — human staffing model not in scope for MVP
 
 ---
 
@@ -273,3 +278,5 @@ Without explicit Australian grounding, general-purpose LLMs default to US/UK gui
 | Clinical knowledge licensing: eTG / AMH / MIMS | Open — must contact each vendor for AI use agreement; RACGP + PBS/MBS available freely as fallback | Medical Director + Lawyer | Sprint 4 start |
 | AHPRA advertising language constraints | Open — draft in progress; requires sign-off from AHPRA advertising compliance reviewer | Regulatory Advisor | Sprint 4 start |
 | Medical Director partner confirmed | Open | Founder | Pre-build |
+| Prescription language in consultation results | **Open — must resolve before Sprint 4.** Design shows "Prescription & Dosage" but eScript is out of scope. Determine whether output is a formal recommendation or a GP-signed letter; confirm AHPRA-compliant language with lawyer. | CTO + Lawyer + Medical Director | Sprint 4 start |
+| IHI / Medicare verification in patient profile | Open — design shows IHI verified via HI Service. Confirm whether Phase 1 collects Medicare number as optional free-text only (no HI Service lookup), or requires full IHI verification. HI Service integration is significant scope. | CTO + Lawyer | Sprint 1 start (PRD-006) |

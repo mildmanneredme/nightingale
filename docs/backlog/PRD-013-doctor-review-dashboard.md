@@ -40,8 +40,10 @@ At MVP, there is one doctor (the Medical Director). The dashboard must support m
 | # | Requirement |
 |---|-------------|
 | F-001 | Doctor sees a list of pending consultations in their queue, sorted by submission time (oldest first) |
-| F-002 | Queue item shows: patient age + sex (no name for privacy until consultation opened), chief complaint, submission time, consultation mode (voice/text), photo count, any flags (low confidence, incomplete interview, poor photo quality) |
-| F-003 | Flagged consultations displayed prominently with a visual indicator |
+| F-002 | Queue item shows: patient age + sex (no name for privacy until consultation opened), chief complaint, submission time, consultation mode (voice/text), photo count, and priority flags |
+| F-002a | Priority flags displayed as coloured badges on queue items: `LOW_CONFIDENCE` (orange), `POOR_PHOTO` (orange), `INCOMPLETE_INTERVIEW` (orange), `CANNOT_ASSESS` (red), `PEDIATRIC` (blue), `CHRONIC_CARE` (teal), `ROUTINE` (grey) |
+| F-002b | `LOW_CONFIDENCE` and `CANNOT_ASSESS` consultations are sorted above routine items in the queue regardless of submission time |
+| F-003 | Doctor can filter queue by: all / voice / text, and by flag type |
 | F-004 | Doctor can filter queue by: flag status, consultation mode, date range |
 | F-005 | Queue updates in real-time (polling or WebSocket); new consultations appear without page refresh |
 | F-006 | Doctor sees only consultations in their assigned queue, never another doctor's queue |
@@ -54,7 +56,8 @@ At MVP, there is one doctor (the Medical Director). The dashboard must support m
 | F-008 | Chief complaint displayed prominently at top of detail view |
 | F-009 | Full transcript displayed in conversation format: AI utterances and patient utterances clearly differentiated |
 | F-010 | AI-generated SOAP note displayed in full (Subjective, Objective, Assessment, Plan sections) |
-| F-011 | Differential diagnosis list displayed: ranked by likelihood, each with rationale and confidence level |
+| F-011 | Differential diagnosis list displayed: ranked by likelihood percentage (highest first), each with percentage score and 1–2 sentence rationale |
+| F-011a | If audio clinical samples were recorded during the consultation (e.g., cough), they are displayed in the SOAP Objective section with a playback control |
 | F-012 | Red flags section: any symptoms flagged by AI during interview displayed in a distinct warning block |
 | F-013 | Photos displayed inline with the SOAP note's "Objective" section; click to enlarge |
 | F-014 | Draft patient response displayed in full, with word count |
@@ -77,6 +80,9 @@ At MVP, there is one doctor (the Medical Director). The dashboard must support m
 |---|-------------|
 | F-020 | "Amend" enters an edit mode on the draft patient response |
 | F-021 | Doctor edits in a rich-text editor (bold, bullet points, paragraph breaks only; no image insertion) |
+| F-021a | Amend view shows a reference panel alongside the editor containing: the original AI draft, relevant patient history context, and red flag warnings from the consultation |
+| F-021b | Response readability is calculated in real time as the doctor edits; displayed as a reading grade level (target: Grade 8 or below). Shown as an informational indicator — not a blocker on sending |
+| F-021c | Clinical nuance check runs on the amended draft before sending: checks medication dosage references against patient weight/age profile where available, flags any AHPRA-restricted language (e.g., "diagnose", "cure"), and surfaces any red flags mentioned in the consultation that are not addressed in the draft. Displayed as a warning panel — doctor may override |
 | F-022 | AI draft and edited version are both stored; diff is logged to audit trail |
 | F-023 | "Send Amended Response" button confirms and triggers patient notification with the edited version |
 | F-024 | Amendment logs: doctor ID, AHPRA number, consultation ID, timestamp, amendment diff hash |
@@ -178,5 +184,5 @@ PENDING CONSULTATIONS (4)              [ Filter ▼ ]
 
 - Doctor mobile app (Phase 2)
 - In-app messaging between doctor and patient
-- Doctor performance analytics dashboard (Phase 2)
+- Doctor performance analytics dashboard (covered in PRD-017)
 - Multi-clinic queue management (Phase 2 white-label)

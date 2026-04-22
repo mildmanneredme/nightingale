@@ -100,9 +100,9 @@ This PRD covers a backend processing service with no direct user interface. Inpu
 | # | Requirement |
 |---|-------------|
 | F-012 | Differential diagnosis list generated: minimum 2, maximum 5 differentials |
-| F-013 | Each differential includes: diagnosis name, likelihood rating (high/medium/low), and 1–2 sentence clinical rationale |
-| F-014 | Differentials are ranked by likelihood (most likely first) |
-| F-015 | Confidence levels for each differential must be calibrated: "high" = AI has strong evidence from transcript; "low" = speculative, limited information |
+| F-013 | Each differential includes: diagnosis name, likelihood percentage (0–100%, must sum to 100% across all differentials), and 1–2 sentence clinical rationale |
+| F-014 | Differentials are ranked by likelihood percentage (highest first) |
+| F-015 | Confidence calibration: ≥ 60% = high confidence; 20–59% = medium; < 20% = low. The `LOW_CONFIDENCE` flag is set if the top differential scores < 50% |
 | F-016 | Differentials reference Australian medication and treatment norms (not US/UK defaults) |
 
 ### Draft Patient Response
@@ -119,9 +119,23 @@ This PRD covers a backend processing service with no direct user interface. Inpu
 
 | # | Requirement |
 |---|-------------|
-| F-022 | If all differentials are rated "low" confidence: consultation is flagged as "low confidence" in doctor dashboard |
-| F-023 | If transcript is < 3 minutes (insufficient information): consultation is flagged as "incomplete interview" in doctor dashboard |
-| F-024 | Flagged consultations appear at top of doctor review queue with flag indicator |
+| F-022 | If all differentials are rated "low" confidence: consultation is flagged `LOW_CONFIDENCE` in doctor dashboard |
+| F-023 | If transcript is < 3 minutes (insufficient information): consultation is flagged `INCOMPLETE_INTERVIEW` in doctor dashboard |
+| F-024 | Paediatric flag on patient record propagates to consultation; consultation is tagged `PEDIATRIC` in doctor queue |
+| F-025 | If patient has one or more chronic conditions in profile and the presenting complaint is plausibly related: consultation is tagged `CHRONIC_CARE` in doctor queue |
+| F-026 | If photo quality was flagged poor at upload (PRD-010): consultation is tagged `POOR_PHOTO` in doctor queue |
+| F-027 | Flag logic is deterministic and rule-based (not LLM-generated); flags are computed by the application server after engine output is received |
+| F-028 | `LOW_CONFIDENCE` and `INCOMPLETE_INTERVIEW` flagged consultations are sorted to the top of the doctor queue; other flags are informational |
+
+### "Cannot Assess Remotely" Triage
+
+| # | Requirement |
+|---|-------------|
+| F-029 | Engine evaluates whether the presentation can be safely assessed via telehealth, based on Medical Director-defined criteria encoded in the system prompt |
+| F-030 | Cannot-assess triggers include (Medical Director to approve full list before Sprint 4): suspected acute abdomen, localised abdominal tenderness with fever, acute vision changes, significant trauma, presentations requiring physical examination (e.g., auscultation, palpation) |
+| F-031 | If cannot-assess: SOAP note is still generated for the doctor's reference, but the draft patient response is replaced with a cannot-assess template stating: reason the case cannot be managed remotely, instruction to seek in-person care, emergency contact (000), link to HealthDirect (1800 022 222), and refund notice |
+| F-032 | Cannot-assess consultations are flagged `CANNOT_ASSESS` and placed in a separate doctor queue section; doctor must confirm (one-click) before the cannot-assess response is sent to the patient |
+| F-033 | Refund is automatically initiated on cannot-assess confirmation; fee is not withheld |
 
 ### Photo Analysis
 

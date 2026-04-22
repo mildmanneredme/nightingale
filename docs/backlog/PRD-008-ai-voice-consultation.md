@@ -113,6 +113,8 @@ MVP covers 5 initial presentations:
 | F-008 | AI incorporates patient profile in questioning: confirms known allergies and current medications in context of the presenting complaint |
 | F-009 | AI asks about: self-treatment attempts, prior medical history relevant to presenting complaint |
 | F-010 | AI prompts patient to prepare for photo upload if applicable to the presentation (skin, throat, wound) |
+| F-010a | AI can prompt patient to record a specific audio sample during the interview when clinically relevant (e.g., "Can you cough once so I can hear it?"). The recorded audio clip is stored as a named clinical data attachment on the consultation, distinct from the conversation transcript. The doctor can play it back from the review dashboard. |
+| F-010b | Audio clinical samples are stored in S3 (ap-southeast-2) with the same access controls as medical photos — short-lived signed URLs, scoped to the individual consultation, no public access. |
 | F-011 | Interview target duration: 5–10 minutes; server enforces minimum 3 minutes and maximum 15 minutes; AI is instructed to wrap up if approaching the limit |
 | F-012 | AI communicates in plain, accessible Australian English; no medical jargon in patient-facing speech; uses "assess" not "diagnose"; references 000 for emergencies |
 
@@ -181,6 +183,7 @@ Medical Director must sign off on each tree before it is deployed. Changes to pr
 | `consultation.ai_consultation_ended` | Session closed; full transcript committed to database |
 | `consultation.red_flag_detected` | Red flag phrase triggers server-side; written immediately, does not wait for session end |
 | `consultation.emergency_escalated` | 000 instruction issued; fee waiver and refund triggered |
+| `consultation.audio_sample_recorded` | Patient audio clinical sample (e.g., cough) captured and stored to S3 |
 
 ---
 

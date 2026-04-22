@@ -129,9 +129,27 @@ The follow-up is deliberately simple at MVP — three response options, not a fu
 
 ---
 
+## PDF Clinical Summary
+
+The approved consultation result screen (see design) shows a "Download PDF Summary" button. This generates a downloadable PDF of the doctor-approved consultation response for the patient's records.
+
+| # | Requirement |
+|---|-------------|
+| F-021 | Patient can download a PDF summary of their consultation result from the consultation result screen and from their inbox |
+| F-022 | PDF includes: consultation date, chief complaint, doctor name, AHPRA registration number, the full approved/amended response, prescription/dosage section (if included by doctor), and next steps |
+| F-023 | PDF is generated server-side on demand (not pre-generated); includes Nightingale branding and a "Reviewed and approved by [Doctor Name] AHPRA [number] on [date]" footer |
+| F-024 | PDF is generated in-memory and streamed directly to the patient's browser; not stored on Nightingale servers (avoids creating a duplicate copy of clinical records outside the audit-controlled database) |
+| F-025 | PDF is only available for consultations with status "approved" or "amended"; rejected consultations do not have a downloadable summary |
+| F-026 | PDF download is logged to the audit trail: patient_id, consultation_id, timestamp |
+
+> **Note on "Prescription & Dosage" in PDF:** The design shows a "Prescription & Dosage" section in the consultation result. Since eScript integration is out of scope, this section renders the doctor's medication *recommendation* as free text (as written in the amended response), not a formal prescription. The PDF header must clearly state "Clinical Assessment Summary" not "Prescription" to avoid regulatory misrepresentation. This language must be confirmed with the healthcare lawyer before Sprint 6. See ROADMAP open decisions.
+
+---
+
 ## Out of Scope
 
 - Full re-consultation for "About the same" patients (Phase 2 — could trigger a discounted repeat consult)
 - SMS follow-up (Phase 2)
 - Patient-initiated follow-up questions after receiving response (Phase 2)
 - Multi-step follow-up sequences (e.g., follow-up again if no response — Phase 2)
+- Formal eScript generation (Phase 2 — Fred Dispense / ScriptPad integration)

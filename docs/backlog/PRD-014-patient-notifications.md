@@ -144,9 +144,22 @@ The doctor-approved response is attributed to the reviewing doctor in all patien
 
 ---
 
+## Patient Inbox
+
+The patient app design shows an "Inbox" tab — a persistent in-app message centre separate from active consultations, surfacing completed results and notifications without requiring email navigation.
+
+| # | Requirement |
+|---|-------------|
+| F-024 | Patient inbox displays a chronological list of all consultation results, rejection messages, and follow-up check-ins for the authenticated patient |
+| F-025 | Each inbox item shows: date, doctor name, consultation status (approved / rejected / pending), and a preview of the first line of the response |
+| F-026 | Tapping an inbox item opens the full consultation result view |
+| F-027 | Unread inbox items are indicated with a badge count on the Inbox tab |
+| F-028 | Inbox items are read-only — patients cannot reply; follow-up requires booking a new consultation |
+
+---
+
 ## Out of Scope
 
 - SMS notifications (Twilio infrastructure may be set up but not enabled at MVP launch)
 - Push notifications (no native app at MVP)
-- In-app notification centre
 - Patient email preference management (unsubscribe only, no granular preferences at MVP)
