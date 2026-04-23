@@ -36,4 +36,33 @@ export const config = {
     region: optional("GEMINI_REGION", "us-central1"),
     model: optional("GEMINI_LIVE_MODEL", "gemini-3.1-flash-live-preview"),
   },
+
+  anthropic: {
+    // Direct Anthropic API — used for local dev and testing.
+    // Set ANTHROPIC_API_KEY to use direct API. Leave blank to use Bedrock.
+    apiKey: optional("ANTHROPIC_API_KEY", ""),
+
+    // AWS Bedrock — used in production (ap-southeast-2) for APP 8 compliance.
+    // Set USE_BEDROCK=true and AWS credentials/role must be available via IAM.
+    useBedrock: optional("USE_BEDROCK", "false") === "true",
+    bedrockRegion: optional("BEDROCK_REGION", "ap-southeast-2"),
+    // Model ID on Bedrock: https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids.html
+    bedrockModelId: optional(
+      "BEDROCK_MODEL_ID",
+      "anthropic.claude-sonnet-4-6-20251001-v1:0"
+    ),
+    // Model ID for direct API
+    directModelId: optional("ANTHROPIC_MODEL_ID", "claude-sonnet-4-6"),
+
+    maxTokens: 4096,
+  },
+
+  s3: {
+    region: optional("AWS_REGION", "ap-southeast-2"),
+    photosBucket: optional("S3_PHOTOS_BUCKET", "nightingale-photos-dev"),
+    // KMS key ARN or alias for SSE-KMS. Falls back to aws/s3 managed key in dev.
+    kmsKeyId: optional("S3_PHOTOS_KMS_KEY_ID", ""),
+    // Pre-signed URL expiry in seconds (15 minutes)
+    presignedUrlExpiry: 900,
+  },
 } as const;

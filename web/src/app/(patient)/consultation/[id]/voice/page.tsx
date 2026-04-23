@@ -42,7 +42,7 @@ export default function VoiceConsultationPage() {
         onEmergency: () => setIsEmergency(true),
         onEnded: () => {
           setEnded(true);
-          router.push(`/consultation/${id}/result`);
+          router.push(`/consultation/${id}/photos`);
         },
       }
     );

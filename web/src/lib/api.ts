@@ -241,6 +241,69 @@ export function sendChatMessage(
 }
 
 // ---------------------------------------------------------------------------
+// Photo upload
+// ---------------------------------------------------------------------------
+
+export interface PhotoQualityCheck {
+  passed: boolean;
+  issues: Array<"blurry" | "too_dark" | "overexposed" | "low_resolution">;
+  overridden: boolean;
+}
+
+export interface ConsultationPhoto {
+  id: string;
+  consultationId: string;
+  mimeType: string;
+  sizeBytes: number;
+  widthPx: number;
+  heightPx: number;
+  qualityPassed: boolean;
+  qualityIssues: string[];
+  qualityOverridden: boolean;
+  createdAt: string;
+}
+
+export async function uploadConsultationPhoto(
+  consultationId: string,
+  file: File,
+  quality: PhotoQualityCheck
+): Promise<ConsultationPhoto> {
+  if (!_token) throw new ApiError(401, "Not authenticated");
+
+  const form = new FormData();
+  form.append("photo", file);
+  form.append("qualityPassed", String(quality.passed));
+  form.append("qualityOverridden", String(quality.overridden));
+  form.append("qualityIssues", JSON.stringify(quality.issues));
+
+  const res = await fetch(
+    `${apiUrl()}/api/v1/consultations/${consultationId}/photos`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${_token}` },
+      body: form,
+    }
+  );
+
+  if (!res.ok) {
+    let message = "Upload failed";
+    try {
+      const body = await res.json();
+      message = body.error ?? message;
+    } catch {}
+    throw new ApiError(res.status, message);
+  }
+
+  return res.json();
+}
+
+export function getConsultationPhotoCount(
+  consultationId: string
+): Promise<{ count: number }> {
+  return apiFetch(`/api/v1/consultations/${consultationId}/photos`);
+}
+
+// ---------------------------------------------------------------------------
 // Doctor portal
 // ---------------------------------------------------------------------------
 

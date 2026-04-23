@@ -54,7 +54,7 @@ export default function TextConsultationPage() {
           text: "Thank you — I have enough information to prepare your assessment. A doctor will review your consultation shortly.",
           options: null,
         }]);
-        setTimeout(() => router.push(`/consultation/${id}/result`), 2000);
+        setTimeout(() => router.push(`/consultation/${id}/photos`), 2000);
       } else {
         setTurns((prev) => [...prev, {
           role: "ai",

@@ -8,10 +8,12 @@ import * as path from "path";
 export default async function globalSetup() {
   const url = process.env.TEST_DB_URL;
   if (!url) {
-    throw new Error(
-      "TEST_DB_URL must be set to run integration tests.\n" +
-        "Example: TEST_DB_URL=postgres://nightingale_admin:password@localhost:5432/nightingale_test"
+    // Unit tests (e.g. piiAnonymiser) don't need a DB — skip migrations silently.
+    // Integration tests will fail at runtime when they try to connect.
+    console.warn(
+      "TEST_DB_URL not set — skipping DB migrations. Integration tests will fail without it."
     );
+    return;
   }
 
   const pool = new Pool({ connectionString: url });

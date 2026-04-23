@@ -1,8 +1,18 @@
 import { Router, RequestHandler } from "express";
 import WebSocket from "ws";
 import { pool } from "../db";
+import { logger } from "../logger";
 import { GeminiLiveSession } from "../services/geminiLive";
 import { sendTextMessage, TextTurn } from "../services/textConsultation";
+import { runEngine } from "../services/clinicalAiEngine";
+
+// Fire-and-forget engine trigger. Errors are logged but never bubble to the
+// HTTP response — the patient's consultation end is acknowledged immediately.
+function triggerEngine(consultationId: string): void {
+  runEngine(consultationId).catch((err) => {
+    logger.error({ err, consultationId }, "consultations: clinical AI engine failed");
+  });
+}
 
 // Called from index.ts WebSocket upgrade handler (no Express auth middleware here —
 // the consultation ID acts as an unguessable session token; Cognito auth over WS
@@ -181,6 +191,9 @@ router.post("/:id/end", async (req, res, next) => {
       return;
     }
 
+    // Trigger the clinical AI engine in the background
+    triggerEngine(rows[0].id);
+
     res.status(200).json(rows[0]);
   } catch (err) {
     next(err);
@@ -250,6 +263,11 @@ router.post("/:id/chat", async (req, res, next) => {
        WHERE id = $3`,
       [newStatus, JSON.stringify(finalHistory), req.params.id]
     );
+
+    // Trigger the clinical AI engine when the text consultation reaches transcript_ready
+    if (newStatus === "transcript_ready") {
+      triggerEngine(req.params.id);
+    }
 
     res.status(200).json({
       consultationId: req.params.id,

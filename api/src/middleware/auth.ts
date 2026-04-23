@@ -21,10 +21,10 @@ function getVerifier() {
   return verifier;
 }
 
-export function requireRole(role: string): RequestHandler {
+export function requireRole(...roles: string[]): RequestHandler {
   return (req, res, next) => {
     const groups: string[] = (req as any).user?.["cognito:groups"] ?? [];
-    if (!groups.includes(role)) {
+    if (!roles.some((r) => groups.includes(r))) {
       res.status(403).json({ error: "Insufficient permissions" });
       return;
     }
