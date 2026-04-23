@@ -37,6 +37,7 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | [PRD-016](PRD-016-beta-launch-readiness.md) | Beta Launch Readiness | Build | Sprint 6 | Week 12–14 | Not started |
 | [PRD-017](PRD-017-doctor-scheduling-availability.md) | Doctor Scheduling & Availability | Build | Sprint 5 | Week 10–12 | Not started |
 | [PRD-018](PRD-018-script-renewals.md) | Script Renewal Workflow | Build | Sprint 5 | Week 10–12 | Not started |
+| [PRD-019](PRD-019-clinical-knowledge-base-proprietary.md) | Clinical Knowledge Base: Proprietary Extensions (eTG, AMH, MIMS) | Phase 2 | Post-Beta | After PRD-011 in production | Not started |
 
 ---
 
@@ -214,18 +215,23 @@ Clinical note quality is evaluated by blind GP review of outputs on 10 synthetic
 
 Without explicit Australian grounding, general-purpose LLMs default to US/UK guidelines, US brand names, NICE/CDC rather than RACGP, and US emergency services (911 instead of 000) — all of which create clinical and regulatory risk.
 
-**Knowledge sources and licensing actions:**
+**Phase 1 knowledge sources (PRD-011 — open-source stack, no commercial licensing required):**
 
-| Source | Tier | Status / Action Required |
-|--------|------|--------------------------|
-| eTG Complete (Therapeutic Guidelines) | 1 — authoritative | Contact Therapeutic Guidelines Ltd for AI licensing agreement before Sprint 4 |
-| AMH (Australian Medicines Handbook) | 1 — authoritative | Contact AMH for AI licensing agreement before Sprint 4 |
-| MIMS Australia | 1 — drug database | Contact MIMS for commercial AI integration agreement before Sprint 4 |
-| RACGP guidelines | 1 — GP standard of care | Freely available; attribution required; no blocker |
-| PBS / MBS data | 1 — prescribing + billing | Open Government Licence; no blocker |
-| Specialty college guidelines (RANZCP, ACD, etc.) | 2 — condition-specific | As needed per consultation categories |
+| Source | Type | Status |
+|--------|------|--------|
+| PBS API (data.pbs.gov.au) | Medication schedule — full monthly PBS listing | Free API key registration; Open Government Licence |
+| MBS schedule (mbsonline.gov.au) | Medicare items, telehealth eligibility, referral items | Open Government Licence; no blocker |
+| RACGP clinical guidelines + Red Book | GP standard of care for all 5 Phase 1 presentations | Freely available; attribution required |
+| NHMRC approved guidelines | Evidence-based guidelines for diabetes, mental health | Freely available; Open Access Policy |
+| SNOMED CT-AU + AMT (healthterminologies.gov.au) | Clinical terminology normalisation; AU medicines terminology | Free registration; SNOMED Affiliate Licence (free) — confirm commercial vector store use with ADHA |
 
-**Fallback:** If eTG or AMH prohibit AI use, build the knowledge base on RACGP + PBS/MBS open data, supplemented by Medical Director-authored summaries of eTG/AMH content.
+**Phase 2 knowledge sources (PRD-019 — deferred to post-beta):**
+
+| Source | Why Deferred |
+|--------|-------------|
+| eTG Complete (Therapeutic Guidelines) | Commercial AI licence required; deferred until Phase 1 quality baselines established |
+| AMH (Australian Medicines Handbook) | Commercial AI licence required; deferred |
+| MIMS Australia | Commercial AI integration agreement required; deferred |
 
 **Vector database (MVP):** pgvector on the existing RDS PostgreSQL instance — sufficient for Phase 1 volume (200 consultations/month), zero additional infrastructure. Migrate to AWS OpenSearch (ap-southeast-2) if query latency degrades at scale.
 
@@ -277,7 +283,7 @@ Without explicit Australian grounding, general-purpose LLMs default to US/UK gui
 | Voice AI platform | **Resolved: Gemini 2.5 Flash Live API (direct)** — native audio-in/out; ~$0.024 AUD/consult. **Contingent on GCP `australia-southeast1` Live API availability** — confirm before Sprint 2. Fallback: Retell.ai. See [RESEARCH-002](../research/archive/2026-04-21-llm-voice-platform-evaluation.md). | CTO | Sprint 2 start |
 | Clinical LLM: Claude vs GPT-4o vs Gemini vs Llama 3 | **Resolved: Claude Sonnet 4.6 via AWS Bedrock ap-southeast-2** — 4.70/5 weighted score; 92.3% MedQA; best hallucination profile. Hallucination trap test + Medical Director SOAP blind eval still required before Sprint 4. See [RESEARCH-002](../research/archive/2026-04-21-llm-voice-platform-evaluation.md). | CTO + Medical Director | Sprint 4 start |
 | Auth provider: AWS Cognito vs Auth0 | **Resolved: AWS Cognito** — ap-southeast-2 data residency, free tier, native IAM integration (PRD-004 shipped) | CTO | ✅ Done |
-| Clinical knowledge licensing: eTG / AMH / MIMS | Open — must contact each vendor for AI use agreement; RACGP + PBS/MBS available freely as fallback | Medical Director + Lawyer | Sprint 4 start |
+| Clinical knowledge licensing: eTG / AMH / MIMS | **Deferred to PRD-019 (Phase 2).** Phase 1 knowledge base (PRD-011) uses open-source stack only: PBS API, MBS, RACGP guidelines, NHMRC guidelines, SNOMED CT-AU/AMT — no commercial licensing required. | CTO | Post-beta |
 | AHPRA advertising language constraints | Open — draft in progress; requires sign-off from AHPRA advertising compliance reviewer | Regulatory Advisor | Sprint 4 start |
 | Medical Director partner confirmed | Open | Founder | Pre-build |
 | Prescription language in consultation results | **Open — must resolve before Sprint 4.** Design shows "Prescription & Dosage" but eScript is out of scope. Determine whether output is a formal recommendation or a GP-signed letter; confirm AHPRA-compliant language with lawyer. | CTO + Lawyer + Medical Director | Sprint 4 start |
