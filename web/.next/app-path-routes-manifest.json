@@ -1,0 +1,12 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/(auth)/login/page": "/login",
+  "/(auth)/register/page": "/register",
+  "/(patient)/consultation/[id]/audio-check/page": "/consultation/[id]/audio-check",
+  "/(patient)/consultation/[id]/result/page": "/consultation/[id]/result",
+  "/(patient)/consultation/[id]/voice/page": "/consultation/[id]/voice",
+  "/(patient)/consultation/new/page": "/consultation/new",
+  "/(patient)/dashboard/page": "/dashboard",
+  "/(patient)/profile/page": "/profile",
+  "/(patient)/history/page": "/history"
+}

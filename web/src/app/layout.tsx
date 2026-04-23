@@ -1,0 +1,28 @@
+"use client";
+import "./globals.css";
+import { useState } from "react";
+import { AuthContext } from "@/hooks/useAuth";
+import { setToken as apiSetToken } from "@/lib/api";
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const [token, setTokenState] = useState<string | null>(null);
+
+  function setToken(t: string | null) {
+    setTokenState(t);
+    apiSetToken(t);
+  }
+
+  return (
+    <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      </head>
+      <body>
+        <AuthContext.Provider value={{ token, setToken }}>
+          {children}
+        </AuthContext.Provider>
+      </body>
+    </html>
+  );
+}

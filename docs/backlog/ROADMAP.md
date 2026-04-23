@@ -38,6 +38,7 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | [PRD-017](PRD-017-doctor-scheduling-availability.md) | Doctor Scheduling & Availability | Build | Sprint 5 | Week 10–12 | Not started |
 | [PRD-018](PRD-018-script-renewals.md) | Script Renewal Workflow | Build | Sprint 5 | Week 10–12 | Not started |
 | [PRD-019](PRD-019-clinical-knowledge-base-proprietary.md) | Clinical Knowledge Base: Proprietary Extensions (eTG, AMH, MIMS) | Phase 2 | Post-Beta | After PRD-011 in production | Not started |
+| [PRD-020](PRD-020-patient-web-frontend.md) | Patient Web Frontend | Build | Sprint 2 | Week 5–7 | **Shipped 2026-04-23** ✅ |
 
 ---
 
@@ -50,6 +51,7 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | [PRD-005](../shipped/PRD-005-audit-log.md) | Audit Log & Compliance Infrastructure | 2026-04-21 | DB migration pending (RDS in private subnet — requires ECS task or bastion); admin log viewer and gap alerting are app-layer work |
 | [PRD-006](../shipped/PRD-006-patient-registration.md) | Patient Registration & Profile | 2026-04-23 | IHI field as free-text only (no HI Service lookup); full address captured; paediatric guardian fields included |
 | [PRD-008](../shipped/PRD-008-ai-voice-consultation.md) | AI Voice Consultation | 2026-04-23 | Backend only (no browser client); question trees are placeholder system prompt (Medical Director content is PRD-011); audio sample recording (F-010a) deferred; WS auth token validation deferred to follow-up PR |
+| [PRD-020](PRD-020-patient-web-frontend.md) | Patient Web Frontend | 2026-04-23 | 54 Vitest tests green; 10 Next.js routes; real Cognito auth; Tailwind design system matching clinical_empathy mockups; E2E Playwright deferred pending Cognito test user setup |
 
 ---
 
