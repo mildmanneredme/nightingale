@@ -17,6 +17,7 @@ export async function resetTestDb(): Promise<void> {
   const pool = getTestPool();
   await pool.query(`
     TRUNCATE
+      consultations,
       patient_conditions,
       patient_medications,
       patient_allergies,

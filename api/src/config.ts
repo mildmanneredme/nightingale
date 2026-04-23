@@ -26,4 +26,14 @@ export const config = {
     clientId: optional("COGNITO_CLIENT_ID", ""),
     region: optional("AWS_REGION", "ap-southeast-2"),
   },
+
+  gemini: {
+    // Required for Gemini Live API. Set in ECS task definition (not committed).
+    // For local dev, export GEMINI_API_KEY=<your key>
+    apiKey: optional("GEMINI_API_KEY", ""),
+    // Target australia-southeast1 in production for APP 8 compliance.
+    // Use us-central1 for local dev until AU region availability is confirmed.
+    region: optional("GEMINI_REGION", "us-central1"),
+    model: optional("GEMINI_LIVE_MODEL", "gemini-3.1-flash-live-preview"),
+  },
 } as const;

@@ -1,6 +1,7 @@
 import express, { RequestHandler } from "express";
 import { errorHandler } from "../../middleware/errorHandler";
 import patientRouter from "../../routes/patients";
+import consultationRouter from "../../routes/consultations";
 
 // Builds a test app with auth stubbed to a caller-supplied Cognito sub.
 // This avoids any real Cognito calls in tests while exercising every other
@@ -15,6 +16,7 @@ export function buildTestApp(cognitoSub: string): express.Application {
   };
   app.use(stubAuth);
   app.use("/api/v1/patients", patientRouter);
+  app.use("/api/v1/consultations", consultationRouter);
   app.use(errorHandler);
   return app;
 }
