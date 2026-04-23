@@ -21,6 +21,17 @@ function getVerifier() {
   return verifier;
 }
 
+export function requireRole(role: string): RequestHandler {
+  return (req, res, next) => {
+    const groups: string[] = (req as any).user?.["cognito:groups"] ?? [];
+    if (!groups.includes(role)) {
+      res.status(403).json({ error: "Insufficient permissions" });
+      return;
+    }
+    next();
+  };
+}
+
 export const requireAuth: RequestHandler = async (req, res, next) => {
   const header = req.headers.authorization;
   if (!header?.startsWith("Bearer ")) {

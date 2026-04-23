@@ -19,7 +19,7 @@ export default function NewConsultationPage() {
       if (type === "voice") {
         router.push(`/consultation/${consultation.id}/audio-check`);
       } else {
-        router.push(`/consultation/${consultation.id}/result`);
+        router.push(`/consultation/${consultation.id}/text`);
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to start consultation.");

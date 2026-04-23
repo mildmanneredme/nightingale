@@ -27,11 +27,11 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | [PRD-006](../shipped/PRD-006-patient-registration.md) | Patient Registration & Profile | Build | Sprint 1 | Week 3–4 | **Shipped 2026-04-23** ✅ |
 | [PRD-007](PRD-007-payments-booking.md) | Payments & Consultation Booking | Build | Pre-beta | Deferred | **Deferred — not required for MVP functional testing** |
 | [PRD-008](../shipped/PRD-008-ai-voice-consultation.md) | AI Voice Consultation | Build | Sprint 2 | Week 5–7 | **Shipped 2026-04-23** ✅ |
-| [PRD-009](PRD-009-text-chat-fallback.md) | Text-Chat Fallback | Build | Sprint 2 | Week 5–7 | Not started |
+| [PRD-009](../shipped/PRD-009-text-chat-fallback.md) | Text-Chat Fallback | Build | Sprint 2 | Week 5–7 | **Shipped 2026-04-23** ✅ |
 | [PRD-010](PRD-010-photo-upload.md) | Photo Upload & Quality Guidance | Build | Sprint 3 | Week 7–8 | Not started |
-| [PRD-011](PRD-011-clinical-knowledge-base.md) | Clinical Knowledge Base & RAG Pipeline | Build | Sprint 3 | Week 7–8 | Not started |
+| [PRD-011](../shipped/PRD-011-clinical-knowledge-base.md) | Clinical Knowledge Base & RAG Pipeline | Build | Sprint 3 | Week 7–8 | **Shipped 2026-04-23** ✅ |
 | [PRD-012](PRD-012-clinical-ai-engine.md) | Clinical AI Engine | Build | Sprint 4 | Week 8–10 | Not started |
-| [PRD-013](PRD-013-doctor-review-dashboard.md) | Doctor Review Dashboard | Build | Sprint 5 | Week 10–12 | Not started |
+| [PRD-013](../shipped/PRD-013-doctor-review-dashboard.md) | Doctor Review Dashboard | Build | Sprint 5 | Week 10–12 | **Shipped 2026-04-23** ✅ |
 | [PRD-014](PRD-014-patient-notifications.md) | Patient Notifications | Build | Sprint 5 | Week 10–12 | Not started |
 | [PRD-015](PRD-015-post-consultation-followup.md) | Post-Consultation Follow-Up | Build | Sprint 6 | Week 12–14 | Not started |
 | [PRD-016](PRD-016-beta-launch-readiness.md) | Beta Launch Readiness | Build | Sprint 6 | Week 12–14 | Not started |
@@ -51,7 +51,10 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | [PRD-005](../shipped/PRD-005-audit-log.md) | Audit Log & Compliance Infrastructure | 2026-04-21 | DB migration pending (RDS in private subnet — requires ECS task or bastion); admin log viewer and gap alerting are app-layer work |
 | [PRD-006](../shipped/PRD-006-patient-registration.md) | Patient Registration & Profile | 2026-04-23 | IHI field as free-text only (no HI Service lookup); full address captured; paediatric guardian fields included |
 | [PRD-008](../shipped/PRD-008-ai-voice-consultation.md) | AI Voice Consultation | 2026-04-23 | Backend only (no browser client); question trees are placeholder system prompt (Medical Director content is PRD-011); audio sample recording (F-010a) deferred; WS auth token validation deferred to follow-up PR |
-| [PRD-020](../shipped/PRD-020-patient-web-frontend.md) | Patient Web Frontend | 2026-04-23 | 54 Vitest tests green; 10 Next.js routes; real Cognito auth; Tailwind design system matching clinical_empathy mockups; E2E Playwright deferred pending Cognito test user setup |
+| [PRD-009](../shipped/PRD-009-text-chat-fallback.md) | Text-Chat Fallback | 2026-04-23 | Gemini 2.0 Flash chat with context injection; supports question/complete/emergency response types; 8 Jest tests green; `POST /api/v1/consultations/:id/chat` endpoint |
+| [PRD-011](../shipped/PRD-011-clinical-knowledge-base.md) | Clinical Knowledge Base & RAG Pipeline | 2026-04-23 | ILIKE text search (pgvector fallback); SNOMED normalisation; audit log on retrieval; 14 Jest tests green; ingestion script for markdown knowledge chunks; 5 GP presentation scaffolds (URTI, UTI, skin rash, MSK, mental health) |
+| [PRD-013](../shipped/PRD-013-doctor-review-dashboard.md) | Doctor Review Dashboard | 2026-04-23 | Backend: queue/detail/approve/amend/reject endpoints + admin reassign + AHPRA audit log; 10 Jest tests green; Frontend: Next.js doctor portal with queue page, consultation detail, amend side-by-side editor, reject form |
+| [PRD-020](../shipped/PRD-020-patient-web-frontend.md) | Patient Web Frontend | 2026-04-23 | 54 Vitest tests green; 10 Next.js routes; real Cognito auth; Tailwind design system matching clinical_empathy mockups; text chat UI added; E2E Playwright deferred pending Cognito test user setup |
 
 ---
 

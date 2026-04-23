@@ -17,11 +17,15 @@ export async function resetTestDb(): Promise<void> {
   const pool = getTestPool();
   await pool.query(`
     TRUNCATE
+      audit_log,
+      knowledge_chunks,
+      snomed_terms,
       consultations,
       patient_conditions,
       patient_medications,
       patient_allergies,
-      patients
+      patients,
+      doctors
     RESTART IDENTITY CASCADE
   `);
 }

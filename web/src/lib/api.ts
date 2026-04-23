@@ -213,3 +213,95 @@ export function addCondition(name: string): Promise<Condition> {
 export function deleteCondition(id: string): Promise<void> {
   return apiFetch(`/api/v1/patients/me/conditions/${id}`, { method: "DELETE" });
 }
+
+// ---------------------------------------------------------------------------
+// Text chat
+// ---------------------------------------------------------------------------
+
+export interface ChatResponse {
+  consultationId: string;
+  aiResponse: {
+    type: "question" | "complete" | "emergency";
+    text?: string;
+    options?: string[] | null;
+    summary?: string;
+    message?: string;
+  };
+  status: string;
+}
+
+export function sendChatMessage(
+  consultationId: string,
+  message: string
+): Promise<ChatResponse> {
+  return apiFetch(`/api/v1/consultations/${consultationId}/chat`, {
+    method: "POST",
+    body: JSON.stringify({ message }),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Doctor portal
+// ---------------------------------------------------------------------------
+
+export interface DoctorQueueItem {
+  id: string;
+  status: string;
+  consultationType: string;
+  presentingComplaint?: string;
+  priorityFlags: string[];
+  createdAt: string;
+}
+
+export interface DoctorConsultation {
+  id: string;
+  status: string;
+  consultationType: string;
+  presentingComplaint?: string;
+  transcript?: Array<{ speaker: string; text: string; timestamp_ms: number }>;
+  redFlags?: Array<{ phrase: string }>;
+  soapNote?: Record<string, string> | null;
+  differentialDiagnoses?: Array<{ diagnosis: string; rank: number }> | null;
+  aiDraft?: string;
+  priorityFlags: string[];
+  createdAt: string;
+  patientName?: string;
+  patientDob?: string;
+  patientSex?: string;
+  allergies?: unknown;
+  medications?: unknown;
+  conditions?: unknown;
+}
+
+export function getDoctorQueue(): Promise<DoctorQueueItem[]> {
+  return apiFetch("/api/v1/doctor/queue");
+}
+
+export function getDoctorConsultation(id: string): Promise<DoctorConsultation> {
+  return apiFetch(`/api/v1/doctor/consultations/${id}`);
+}
+
+export function approveConsultation(id: string): Promise<{ id: string; status: string }> {
+  return apiFetch(`/api/v1/doctor/consultations/${id}/approve`, { method: "POST" });
+}
+
+export function amendConsultation(
+  id: string,
+  doctorDraft: string
+): Promise<{ id: string; status: string }> {
+  return apiFetch(`/api/v1/doctor/consultations/${id}/amend`, {
+    method: "POST",
+    body: JSON.stringify({ doctorDraft }),
+  });
+}
+
+export function rejectConsultation(
+  id: string,
+  reasonCode: string,
+  message?: string
+): Promise<{ id: string; status: string }> {
+  return apiFetch(`/api/v1/doctor/consultations/${id}/reject`, {
+    method: "POST",
+    body: JSON.stringify({ reasonCode, message }),
+  });
+}

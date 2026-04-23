@@ -2,6 +2,7 @@ import { Router, RequestHandler } from "express";
 import WebSocket from "ws";
 import { pool } from "../db";
 import { GeminiLiveSession } from "../services/geminiLive";
+import { sendTextMessage, TextTurn } from "../services/textConsultation";
 
 // Called from index.ts WebSocket upgrade handler (no Express auth middleware here —
 // the consultation ID acts as an unguessable session token; Cognito auth over WS
@@ -181,6 +182,80 @@ router.post("/:id/end", async (req, res, next) => {
     }
 
     res.status(200).json(rows[0]);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /:id/chat — turn-by-turn text consultation
+// ---------------------------------------------------------------------------
+router.post("/:id/chat", async (req, res, next) => {
+  try {
+    const { message } = req.body;
+    if (!message || typeof message !== "string" || !message.trim()) {
+      res.status(400).json({ error: "message is required" });
+      return;
+    }
+
+    const patientId = await getPatientId(cognitoSub(req));
+    if (!patientId) {
+      res.status(404).json({ error: "Patient not found" });
+      return;
+    }
+
+    const { rows } = await pool.query(
+      `SELECT id, status, consultation_type, transcript
+       FROM consultations
+       WHERE id = $1 AND patient_id = $2`,
+      [req.params.id, patientId]
+    );
+    const consultation = rows[0];
+    if (!consultation || consultation.consultation_type !== "text") {
+      res.status(404).json({ error: "Consultation not found" });
+      return;
+    }
+    if (!["pending", "active"].includes(consultation.status)) {
+      res.status(409).json({ error: "Consultation is not active" });
+      return;
+    }
+
+    const history: TextTurn[] = consultation.transcript ?? [];
+    const patientTurn: TextTurn = {
+      speaker: "patient",
+      text: message.trim(),
+      timestamp_ms: Date.now(),
+    };
+
+    const aiResponse = await sendTextMessage(message.trim(), history);
+
+    const aiTurn: TextTurn = {
+      speaker: "ai",
+      text: aiResponse.text ?? aiResponse.message ?? aiResponse.summary ?? "",
+      timestamp_ms: Date.now(),
+    };
+    const finalHistory = [...history, patientTurn, aiTurn];
+
+    let newStatus = consultation.status === "pending" ? "active" : consultation.status;
+    if (aiResponse.type === "emergency") newStatus = "emergency_escalated";
+    if (aiResponse.type === "complete") newStatus = "transcript_ready";
+
+    await pool.query(
+      `UPDATE consultations
+       SET status = $1,
+           transcript = $2,
+           session_started_at = CASE WHEN session_started_at IS NULL THEN NOW() ELSE session_started_at END,
+           session_ended_at = CASE WHEN $1 IN ('transcript_ready', 'emergency_escalated') THEN NOW() ELSE session_ended_at END,
+           updated_at = NOW()
+       WHERE id = $3`,
+      [newStatus, JSON.stringify(finalHistory), req.params.id]
+    );
+
+    res.status(200).json({
+      consultationId: req.params.id,
+      aiResponse,
+      status: newStatus,
+    });
   } catch (err) {
     next(err);
   }
