@@ -1,9 +1,9 @@
 # Project Nightingale — Master Roadmap
 
-> **Status:** In Progress — Sprint 0 underway
+> **Status:** In Progress — Sprint 2 complete
 > **Phase:** 1 MVP (Months 1–6)
 > **Target:** 100 beta patients, 200 consultations completed
-> **Last updated:** 2026-04-21
+> **Last updated:** 2026-04-23
 
 ---
 
@@ -24,9 +24,9 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | [PRD-003](../shipped/PRD-003-infrastructure-devops.md) | Infrastructure & DevOps | Build | Sprint 0 | Week 1–2 | **Shipped 2026-04-22** ✅ |
 | [PRD-004](../shipped/PRD-004-authentication-access-control.md) | Authentication & Access Control | Build | Sprint 0 | Week 1–2 | **Shipped 2026-04-21** ✅ |
 | [PRD-005](../shipped/PRD-005-audit-log.md) | Audit Log & Compliance Infrastructure | Build | Sprint 0 | Week 1–2 | **Shipped 2026-04-21** ✅ |
-| [PRD-006](PRD-006-patient-registration.md) | Patient Registration & Profile | Build | Sprint 1 | Week 3–4 | Not started |
+| [PRD-006](../shipped/PRD-006-patient-registration.md) | Patient Registration & Profile | Build | Sprint 1 | Week 3–4 | **Shipped 2026-04-23** ✅ |
 | [PRD-007](PRD-007-payments-booking.md) | Payments & Consultation Booking | Build | Pre-beta | Deferred | **Deferred — not required for MVP functional testing** |
-| [PRD-008](PRD-008-ai-voice-consultation.md) | AI Voice Consultation | Build | Sprint 2 | Week 5–7 | Not started |
+| [PRD-008](../shipped/PRD-008-ai-voice-consultation.md) | AI Voice Consultation | Build | Sprint 2 | Week 5–7 | **Shipped 2026-04-23** ✅ |
 | [PRD-009](PRD-009-text-chat-fallback.md) | Text-Chat Fallback | Build | Sprint 2 | Week 5–7 | Not started |
 | [PRD-010](PRD-010-photo-upload.md) | Photo Upload & Quality Guidance | Build | Sprint 3 | Week 7–8 | Not started |
 | [PRD-011](PRD-011-clinical-knowledge-base.md) | Clinical Knowledge Base & RAG Pipeline | Build | Sprint 3 | Week 7–8 | Not started |
@@ -47,6 +47,8 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | [PRD-003](../shipped/PRD-003-infrastructure-devops.md) | Infrastructure & DevOps | 2026-04-22 | TLS 1.3 pending domain + ACM cert; RDS on `db.t3.micro` pending account upgrade |
 | [PRD-004](../shipped/PRD-004-authentication-access-control.md) | Authentication & Access Control | 2026-04-21 | MFA enforcement for doctor/admin at app middleware layer; idle timeout via app middleware (Cognito limitation) |
 | [PRD-005](../shipped/PRD-005-audit-log.md) | Audit Log & Compliance Infrastructure | 2026-04-21 | DB migration pending (RDS in private subnet — requires ECS task or bastion); admin log viewer and gap alerting are app-layer work |
+| [PRD-006](../shipped/PRD-006-patient-registration.md) | Patient Registration & Profile | 2026-04-23 | IHI field as free-text only (no HI Service lookup); full address captured; paediatric guardian fields included |
+| [PRD-008](../shipped/PRD-008-ai-voice-consultation.md) | AI Voice Consultation | 2026-04-23 | Backend only (no browser client); question trees are placeholder system prompt (Medical Director content is PRD-011); audio sample recording (F-010a) deferred; WS auth token validation deferred to follow-up PR |
 
 ---
 
