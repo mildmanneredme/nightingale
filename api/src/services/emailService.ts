@@ -204,7 +204,7 @@ async function dispatchEmail(msg: {
 async function insertNotification(
   dbPool: Pool,
   opts: {
-    consultationId: string;
+    consultationId: string | null;
     patientId: string;
     type: string;
     messageId: string | null;
@@ -348,4 +348,193 @@ We recommend booking an appointment with a GP in person.
 
 A full refund has been initiated. You should see the funds returned within 3–5 business days.
 ${EMAIL_FOOTER_PLAIN}`;
+}
+
+// ---------------------------------------------------------------------------
+// Script Renewal email functions (PRD-018)
+// ---------------------------------------------------------------------------
+
+export async function sendRenewalApprovedEmail(
+  renewalId: string,
+  dbPool: Pool
+): Promise<NotificationRecord> {
+  const { rows } = await dbPool.query<{
+    patient_email: string;
+    patient_name: string | null;
+    medication_name: string;
+    dosage: string | null;
+    review_note: string | null;
+    valid_until: Date | null;
+    doctor_last_name: string;
+    patient_id: string;
+  }>(
+    `SELECT p.email AS patient_email, p.full_name AS patient_name,
+            r.medication_name, r.dosage, r.review_note, r.valid_until,
+            d.last_name AS doctor_last_name, p.id AS patient_id
+     FROM renewal_requests r
+     JOIN patients p ON p.id = r.patient_id
+     JOIN doctors d  ON d.id = r.reviewed_by
+     WHERE r.id = $1`,
+    [renewalId]
+  );
+  if (!rows[0]) throw new Error(`Renewal ${renewalId} not found`);
+  const row = rows[0];
+
+  const greeting = row.patient_name ? `Hi ${row.patient_name.split(" ")[0]}` : "Hi there";
+  const validUntilStr = row.valid_until
+    ? row.valid_until.toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })
+    : "28 days";
+
+  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#111827;max-width:600px;margin:0 auto;padding:24px;">
+  <p>${greeting},</p>
+  <p>Dr ${row.doctor_last_name} has reviewed your renewal request for <strong>${row.medication_name}${row.dosage ? ` ${row.dosage}` : ""}</strong> and approved it.</p>
+  ${row.review_note ? `<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin:16px 0;"><p style="margin:0;">${row.review_note}</p></div>` : ""}
+  <p>Your prescription is valid until <strong>${validUntilStr}</strong>. Dr ${row.doctor_last_name} will issue your prescription via their prescribing system — you will receive further instructions separately.</p>
+  ${EMAIL_FOOTER_HTML}
+</body></html>`;
+
+  const text = `${greeting},\n\nDr ${row.doctor_last_name} has approved your renewal for ${row.medication_name}${row.dosage ? ` ${row.dosage}` : ""}. Valid until ${validUntilStr}.\n\n${row.review_note ?? ""}\n${EMAIL_FOOTER_PLAIN}`;
+
+  const messageId = await dispatchEmail({
+    to: row.patient_email,
+    subject: `Your script renewal for ${row.medication_name} has been approved`,
+    html,
+    text,
+  });
+
+  const notifId = await insertNotification(dbPool, {
+    consultationId: null as any,
+    patientId: row.patient_id,
+    type: "response_ready",
+    messageId,
+  });
+
+  await dbPool.query(
+    `INSERT INTO audit_log (event_type, actor_id, actor_role, metadata)
+     VALUES ('notification.sent', $1, 'patient', $2)`,
+    [row.patient_id, JSON.stringify({ notification_type: "renewal_approved", renewal_id: renewalId, message_id: messageId })]
+  );
+
+  return { id: notifId, sendgridMessageId: messageId };
+}
+
+export async function sendRenewalDeclinedEmail(
+  renewalId: string,
+  dbPool: Pool
+): Promise<NotificationRecord> {
+  const { rows } = await dbPool.query<{
+    patient_email: string;
+    patient_name: string | null;
+    medication_name: string;
+    review_note: string | null;
+    doctor_last_name: string;
+    patient_id: string;
+  }>(
+    `SELECT p.email AS patient_email, p.full_name AS patient_name,
+            r.medication_name, r.review_note,
+            d.last_name AS doctor_last_name, p.id AS patient_id
+     FROM renewal_requests r
+     JOIN patients p ON p.id = r.patient_id
+     JOIN doctors d  ON d.id = r.reviewed_by
+     WHERE r.id = $1`,
+    [renewalId]
+  );
+  if (!rows[0]) throw new Error(`Renewal ${renewalId} not found`);
+  const row = rows[0];
+
+  const greeting = row.patient_name ? `Hi ${row.patient_name.split(" ")[0]}` : "Hi there";
+  const reasonText = row.review_note ?? "A new full consultation is required before this medication can be renewed.";
+
+  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#111827;max-width:600px;margin:0 auto;padding:24px;">
+  <p>${greeting},</p>
+  <p>Dr ${row.doctor_last_name} was unable to approve your renewal request for <strong>${row.medication_name}</strong>.</p>
+  <div style="background:#fef3c7;border-left:4px solid #d97706;padding:12px 16px;margin:16px 0;"><p style="margin:0;">${reasonText}</p></div>
+  <p>Please start a new consultation on Nightingale or speak to a GP in person.</p>
+  ${EMAIL_FOOTER_HTML}
+</body></html>`;
+
+  const text = `${greeting},\n\nDr ${row.doctor_last_name} was unable to approve your renewal for ${row.medication_name}.\n\n${reasonText}\n\nPlease start a new consultation.\n${EMAIL_FOOTER_PLAIN}`;
+
+  const messageId = await dispatchEmail({
+    to: row.patient_email,
+    subject: `Update on your script renewal for ${row.medication_name}`,
+    html,
+    text,
+  });
+
+  const notifId = await insertNotification(dbPool, {
+    consultationId: null as any,
+    patientId: row.patient_id,
+    type: "rejected",
+    messageId,
+  });
+
+  await dbPool.query(
+    `INSERT INTO audit_log (event_type, actor_id, actor_role, metadata)
+     VALUES ('notification.sent', $1, 'patient', $2)`,
+    [row.patient_id, JSON.stringify({ notification_type: "renewal_declined", renewal_id: renewalId, message_id: messageId })]
+  );
+
+  return { id: notifId, sendgridMessageId: messageId };
+}
+
+export async function sendRenewalReminderEmail(
+  renewalId: string,
+  dbPool: Pool
+): Promise<NotificationRecord> {
+  const { rows } = await dbPool.query<{
+    patient_email: string;
+    patient_name: string | null;
+    medication_name: string;
+    valid_until: Date | null;
+    patient_id: string;
+  }>(
+    `SELECT p.email AS patient_email, p.full_name AS patient_name,
+            r.medication_name, r.valid_until, p.id AS patient_id
+     FROM renewal_requests r
+     JOIN patients p ON p.id = r.patient_id
+     WHERE r.id = $1`,
+    [renewalId]
+  );
+  if (!rows[0]) throw new Error(`Renewal ${renewalId} not found`);
+  const row = rows[0];
+
+  const greeting = row.patient_name ? `Hi ${row.patient_name.split(" ")[0]}` : "Hi there";
+  const validUntilStr = row.valid_until
+    ? row.valid_until.toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })
+    : "soon";
+
+  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#111827;max-width:600px;margin:0 auto;padding:24px;">
+  <p>${greeting},</p>
+  <p>Your prescription for <strong>${row.medication_name}</strong> is due to expire on <strong>${validUntilStr}</strong>.</p>
+  <p>If you need a renewal, log in to Nightingale and submit a renewal request — a doctor will review it promptly.</p>
+  ${EMAIL_FOOTER_HTML}
+</body></html>`;
+
+  const text = `${greeting},\n\nYour prescription for ${row.medication_name} expires on ${validUntilStr}.\n\nLog in to Nightingale to request a renewal.\n${EMAIL_FOOTER_PLAIN}`;
+
+  const messageId = await dispatchEmail({
+    to: row.patient_email,
+    subject: `Your prescription for ${row.medication_name} is due for renewal`,
+    html,
+    text,
+  });
+
+  const notifId = await insertNotification(dbPool, {
+    consultationId: null as any,
+    patientId: row.patient_id,
+    type: "response_ready",
+    messageId,
+  });
+
+  await dbPool.query(
+    `INSERT INTO audit_log (event_type, actor_id, actor_role, metadata)
+     VALUES ('notification.sent', $1, 'patient', $2)`,
+    [row.patient_id, JSON.stringify({ notification_type: "renewal_reminder", renewal_id: renewalId, message_id: messageId })]
+  );
+
+  return { id: notifId, sendgridMessageId: messageId };
 }

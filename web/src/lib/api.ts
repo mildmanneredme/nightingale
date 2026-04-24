@@ -474,3 +474,74 @@ export function getCapacityStats(): Promise<CapacityStats> {
 export function getResponseTime(): Promise<ResponseTimeEstimate> {
   return apiFetch("/api/v1/consultations/response-time");
 }
+
+// ---------------------------------------------------------------------------
+// Script renewals (PRD-018)
+// ---------------------------------------------------------------------------
+
+export interface RenewalRequest {
+  id: string;
+  status: "pending" | "approved" | "declined";
+  medicationName: string;
+  dosage?: string;
+  reviewNote?: string;
+  validUntil?: string;
+  remindersEnabled: boolean;
+  createdAt: string;
+  reviewedAt?: string;
+  doctorName?: string;
+}
+
+export interface RenewalQueueItem {
+  id: string;
+  medicationName: string;
+  dosage?: string;
+  noAdverseEffects: boolean;
+  conditionUnchanged: boolean;
+  patientNotes?: string;
+  createdAt: string;
+  validUntil?: string;
+  isExpiryAlert: boolean;
+  patient: { name?: string; dob?: string; sex?: string };
+}
+
+export function getRenewals(): Promise<RenewalRequest[]> {
+  return apiFetch("/api/v1/renewals");
+}
+
+export function submitRenewal(data: {
+  medicationName: string;
+  dosage?: string;
+  sourceConsultationId?: string;
+  noAdverseEffects?: boolean;
+  conditionUnchanged?: boolean;
+  patientNotes?: string;
+  remindersEnabled?: boolean;
+}): Promise<{ id: string; status: string }> {
+  return apiFetch("/api/v1/renewals", { method: "POST", body: JSON.stringify(data) });
+}
+
+export function getRenewalQueue(): Promise<RenewalQueueItem[]> {
+  return apiFetch("/api/v1/renewals/queue");
+}
+
+export function approveRenewal(
+  id: string,
+  reviewNote?: string,
+  validDays?: number
+): Promise<{ id: string; status: string; validUntil: string }> {
+  return apiFetch(`/api/v1/renewals/${id}/approve`, {
+    method: "POST",
+    body: JSON.stringify({ reviewNote, validDays }),
+  });
+}
+
+export function declineRenewal(
+  id: string,
+  reviewNote?: string
+): Promise<{ id: string; status: string }> {
+  return apiFetch(`/api/v1/renewals/${id}/decline`, {
+    method: "POST",
+    body: JSON.stringify({ reviewNote }),
+  });
+}

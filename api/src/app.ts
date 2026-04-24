@@ -10,6 +10,7 @@ import adminRouter from "./routes/admin";
 import inboxRouter from "./routes/inbox";
 import webhooksRouter from "./routes/webhooks";
 import availabilityRouter from "./routes/availability";
+import renewalsRouter from "./routes/renewals";
 import { requireAuth, requireRole } from "./middleware/auth";
 import { errorHandler } from "./middleware/errorHandler";
 
@@ -26,6 +27,8 @@ app.use("/api/v1/doctor", requireAuth, requireRole("doctor"), doctorRouter);
 app.use("/api/v1/admin", requireAuth, requireRole("admin"), adminRouter);
 // Doctor schedule management
 app.use("/api/v1/doctor/schedule", requireAuth, requireRole("doctor"), availabilityRouter);
+// Script renewals — patient routes (submit, list) + doctor queue + admin expiry check
+app.use("/api/v1/renewals", requireAuth, renewalsRouter);
 // Patient inbox — authenticated, patient role
 app.use("/api/v1/inbox", requireAuth, requireRole("patient"), inboxRouter);
 // SendGrid delivery webhooks — no auth (called by SendGrid servers)

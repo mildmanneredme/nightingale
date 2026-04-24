@@ -22,6 +22,7 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
         </Link>
         <nav className="flex items-center gap-4">
           <Link href="/doctor/queue" className="text-body-md text-on-surface-variant hover:text-primary transition-colors">Queue</Link>
+          <Link href="/doctor/renewals" className="text-body-md text-on-surface-variant hover:text-primary transition-colors">Renewals</Link>
           <Link href="/doctor/schedule" className="text-body-md text-on-surface-variant hover:text-primary transition-colors">Schedule</Link>
         </nav>
       </header>

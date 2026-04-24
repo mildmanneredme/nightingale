@@ -19,6 +19,7 @@ export async function resetTestDb(): Promise<void> {
     TRUNCATE
       audit_log,
       notifications,
+      renewal_requests,
       consultation_photos,
       knowledge_chunks,
       snomed_terms,

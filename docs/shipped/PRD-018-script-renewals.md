@@ -1,6 +1,6 @@
 # PRD-018 — Script Renewal Workflow
 
-> **Status:** Not Started
+> **Status:** Shipped 2026-04-24
 > **Phase:** Sprint 5 (Week 10–12)
 > **Type:** Technical — Clinical Workflow
 > **Owner:** CTO + Medical Director
@@ -91,13 +91,40 @@ This is a common enough use case that it appears as a distinct queue item type i
 
 ## Acceptance Criteria
 
-- [ ] Legal mechanism for prescription issuance confirmed with lawyer and Medical Director before sprint starts
-- [ ] Patient can submit a renewal request referencing a past consultation
-- [ ] Renewal request appears in a dedicated queue section in the doctor dashboard
-- [ ] 48h expiry alert fires correctly based on medication duration settings
-- [ ] Doctor approval logged with AHPRA number; decline triggers patient notification with reason
-- [ ] Auto-renewal is technically impossible — no code path approves a renewal without a doctor action
-- [ ] Patient receives proactive renewal reminder 7 days before expiry (for opted-in medications)
+- [ ] Legal mechanism for prescription issuance confirmed with lawyer and Medical Director — **pre-production gate; not code** (mechanism: doctor uses own prescribing system externally; Nightingale records approval with AHPRA number)
+- [x] Patient can submit a renewal request referencing a past consultation
+- [x] Renewal request appears in a dedicated queue section in the doctor dashboard
+- [x] 48h expiry alert fires correctly based on medication duration settings
+- [x] Doctor approval logged with AHPRA number; decline triggers patient notification with reason
+- [x] Auto-renewal is technically impossible — no code path approves a renewal without a doctor action
+- [x] Patient receives proactive renewal reminder 7 days before expiry (for opted-in medications)
+
+## Implementation Notes (2026-04-24)
+
+**DB:**
+- `infra/database/migrations/010_renewals.sql` — `renewal_requests` table: id, patient_id, source_consultation_id, medication_name, dosage, patient attestation booleans, status, reviewed_by, valid_until, alert tracking timestamps
+
+**API (`api/src/routes/renewals.ts`):**
+- `POST /api/v1/renewals` — patient submits renewal; writes `renewal.requested` audit event
+- `GET /api/v1/renewals` — patient lists own renewals (with doctor name, valid_until)
+- `GET /api/v1/renewals/queue` — doctor queue: pending renewals, expiry alerts sorted first
+- `POST /api/v1/renewals/:id/approve` — doctor approves with AHPRA number in audit log; sets valid_until (default 28 days); fires approval email; writes `renewal.approved`
+- `POST /api/v1/renewals/:id/decline` — writes `renewal.declined` with AHPRA; fires decline email
+- `POST /api/v1/renewals/expiry-check` — admin/scheduled trigger: scans for 48h expiry alerts + 7-day patient reminders; writes `renewal.expiry_alert_sent` / `renewal.patient_reminder_sent`
+
+**Email:** `sendRenewalApprovedEmail`, `sendRenewalDeclinedEmail`, `sendRenewalReminderEmail` added to `api/src/services/emailService.ts`
+
+**Frontend:**
+- `web/src/app/(patient)/renewals/page.tsx` — request form (attestation checkboxes), renewal list with status
+- `web/src/app/(doctor)/renewals/page.tsx` — pending queue; inline approve (valid days + note) / decline flow
+- Renewals nav link added to doctor portal header
+
+**Tests:** 11 integration tests green (SendGrid mocked): submit, list, queue, approve, AHPRA audit log, removed from queue after approval, decline, AHPRA on decline, auto-renewal safety assertion, expiry-check endpoint
+
+**Deferred (pre-production):**
+- Legal mechanism for prescription issuance must be confirmed with lawyer + Medical Director
+- eScript integration (Phase 2 — Fred Dispense / ScriptPad)
+- Scheduled expiry-check trigger in production (ECS scheduled task or EventBridge rule)
 
 ---
 
