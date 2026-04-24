@@ -98,14 +98,22 @@ export default function DashboardPage() {
               </p>
             </div>
             <div className="space-y-3">
-              <div className="flex items-center gap-3 p-3 bg-secondary-container/30 rounded-lg border border-secondary-container/50">
+              <Link
+                href="/profile"
+                className="flex items-center gap-3 p-3 bg-secondary-container/30 rounded-lg border border-secondary-container/50 hover:bg-secondary-container/50 transition-colors"
+              >
                 <span className="material-symbols-outlined text-secondary">check_circle</span>
-                <span className="font-clinical-data text-on-secondary-container">Personal details added</span>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-surface-container rounded-lg border border-outline-variant/30">
+                <span className="font-clinical-data text-on-secondary-container">Personal details</span>
+                <span className="material-symbols-outlined text-secondary ml-auto text-[16px]">arrow_forward</span>
+              </Link>
+              <Link
+                href="/history"
+                className="flex items-center gap-3 p-3 bg-surface-container rounded-lg border border-outline-variant/30 hover:bg-surface-container-high transition-colors"
+              >
                 <span className="material-symbols-outlined text-outline">pending</span>
-                <span className="font-clinical-data text-on-surface-variant">Update chronic conditions</span>
-              </div>
+                <span className="font-clinical-data text-on-surface-variant">Update medical history</span>
+                <span className="material-symbols-outlined text-outline ml-auto text-[16px]">arrow_forward</span>
+              </Link>
             </div>
           </div>
 

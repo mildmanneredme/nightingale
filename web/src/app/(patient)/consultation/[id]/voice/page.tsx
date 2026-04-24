@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ConsultationSocket, TranscriptEvent } from "@/lib/consultation-ws";
 import { endConsultation } from "@/lib/api";
+import ConsultationStepper from "@/components/ConsultationStepper";
 
 interface Turn {
   role: "patient" | "assistant";
@@ -96,6 +97,11 @@ export default function VoiceConsultationPage() {
           </span>
         </div>
       </header>
+
+      {/* Progress stepper */}
+      <div className="px-6 py-3 border-b border-white/10">
+        <ConsultationStepper activeStep={2} variant="dark" />
+      </div>
 
       {/* Emergency banner */}
       {isEmergency && (

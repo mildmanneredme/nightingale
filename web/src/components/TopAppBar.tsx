@@ -1,6 +1,5 @@
 "use client";
 import Link from "next/link";
-import { useAuth } from "@/hooks/useAuth";
 
 type NavItem = "health" | "appointments" | "records";
 
@@ -15,8 +14,6 @@ const navLinks: { key: NavItem; label: string; href: string }[] = [
 ];
 
 export default function TopAppBar({ activeNav }: TopAppBarProps) {
-  const { token } = useAuth();
-  const initials = token ? "U" : "?";
 
   return (
     <header className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
@@ -41,15 +38,13 @@ export default function TopAppBar({ activeNav }: TopAppBarProps) {
         </nav>
       </div>
       <div className="flex items-center gap-4">
-        <button className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
-          <span className="material-symbols-outlined">notifications</span>
-        </button>
-        <button className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
-          <span className="material-symbols-outlined">help_outline</span>
-        </button>
-        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold border border-slate-200">
-          {initials}
-        </div>
+        <Link
+          href="/profile"
+          className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white hover:opacity-80 transition-opacity"
+          aria-label="Your profile"
+        >
+          <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>person</span>
+        </Link>
       </div>
     </header>
   );

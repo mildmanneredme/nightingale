@@ -6,6 +6,7 @@ import { getConsultation, getToken, Consultation } from "@/lib/api";
 import { ErrorState } from "@/components/ErrorState";
 import TopAppBar from "@/components/TopAppBar";
 import BottomNavBar from "@/components/BottomNavBar";
+import ConsultationStepper from "@/components/ConsultationStepper";
 
 async function downloadPdf(id: string) {
   const token = getToken();
@@ -59,10 +60,16 @@ export default function ResultPage() {
 
   const { status } = consultation;
 
+  const isFollowUpStatus = status === "followup_concern" || status === "resolved" || status === "unchanged";
+  const stepperStep: 1 | 2 | 3 | 4 = isFollowUpStatus ? 4 : 3;
+
   const shell = (children: React.ReactNode) => (
     <>
       <TopAppBar activeNav="records" />
       <main className="pt-24 pb-20 md:pb-8 px-4 md:px-patient-margin max-w-3xl mx-auto">
+        <div className="mb-8">
+          <ConsultationStepper activeStep={stepperStep} showFollowUp={isFollowUpStatus} />
+        </div>
         {children}
         <div className="mt-6">
           <Link href="/dashboard" className="inline-flex items-center gap-1 text-secondary font-bold hover:underline">

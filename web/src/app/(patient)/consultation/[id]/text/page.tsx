@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { sendChatMessage, endConsultation } from "@/lib/api";
 import Link from "next/link";
+import ConsultationStepper from "@/components/ConsultationStepper";
 
 interface Turn {
   role: "patient" | "ai";
@@ -68,17 +69,22 @@ export default function TextConsultationPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="fixed top-0 left-0 w-full z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 h-16 flex items-center justify-between px-6">
-        <Link href="/dashboard" className="font-manrope font-bold text-xl tracking-tighter text-primary">
-          Nightingale
-        </Link>
-        <div className="flex items-center gap-2">
-          {!isEmergency && (
-            <span className="flex items-center gap-1.5 text-xs font-bold font-manrope text-secondary uppercase tracking-widest">
-              <span className="w-2 h-2 rounded-full bg-secondary animate-pulse inline-block" />
-              Doctor Review Pending
-            </span>
-          )}
+      <header className="fixed top-0 left-0 w-full z-50 bg-white/90 backdrop-blur-md border-b border-slate-200">
+        <div className="h-14 flex items-center justify-between px-6">
+          <Link href="/dashboard" className="font-manrope font-bold text-xl tracking-tighter text-primary">
+            Nightingale
+          </Link>
+          <div className="flex items-center gap-2">
+            {!isEmergency && (
+              <span className="flex items-center gap-1.5 text-xs font-bold font-manrope text-secondary uppercase tracking-widest">
+                <span className="w-2 h-2 rounded-full bg-secondary animate-pulse inline-block" />
+                Doctor Review Pending
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="px-6 pb-3">
+          <ConsultationStepper activeStep={2} />
         </div>
       </header>
 
@@ -94,7 +100,7 @@ export default function TextConsultationPage() {
       )}
 
       {/* Chat messages */}
-      <div className="flex-1 overflow-y-auto px-4 pt-20 pb-32 space-y-4 max-w-2xl mx-auto w-full">
+      <div className="flex-1 overflow-y-auto px-4 pt-28 pb-32 space-y-4 max-w-2xl mx-auto w-full">
         {turns.map((turn, i) => (
           <div key={i} className={`flex flex-col gap-2 ${turn.role === "patient" ? "items-end" : "items-start"}`}>
             <p className="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-widest px-1">
