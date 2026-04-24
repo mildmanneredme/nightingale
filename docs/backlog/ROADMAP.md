@@ -1,9 +1,9 @@
 # Project Nightingale — Master Roadmap
 
-> **Status:** In Progress — Sprint 5 in progress
+> **Status:** In Progress — Sprint 7 (Security Hardening & UX Fixes)
 > **Phase:** 1 MVP (Months 1–6)
 > **Target:** 100 beta patients, 200 consultations completed
-> **Last updated:** 2026-04-23 (PRD-016 shipped — all buildable PRDs complete)
+> **Last updated:** 2026-04-24 (Security & UX audit complete — 9 new PRDs added)
 
 ---
 
@@ -40,6 +40,16 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 
 | [PRD-019](PRD-019-clinical-knowledge-base-proprietary.md) | Clinical Knowledge Base: Proprietary Extensions (eTG, AMH, MIMS) | Phase 2 | Post-Beta | After PRD-011 in production | Not started |
 | [PRD-020](../shipped/PRD-020-patient-web-frontend.md) | Patient Web Frontend | Build | Sprint 2 | Week 5–7 | **Shipped 2026-04-23** ✅ |
+| — | — | — | — | — | — |
+| **SEC-001** | [Critical Authorization Fixes](SEC-001-critical-authorization-fixes.md) | Security Hardening | Sprint 7 | Week 14–15 | Not started — **P0 pre-beta blocker** |
+| **SEC-002** | [Email & Webhook Security](SEC-002-email-webhook-security.md) | Security Hardening | Sprint 7 | Week 14–15 | Not started — **P0 pre-beta blocker** |
+| **SEC-003** | [API Hardening: Rate Limiting, Headers & Validation](SEC-003-api-hardening.md) | Security Hardening | Sprint 7 | Week 14–15 | Not started — **P0 pre-beta blocker** |
+| **SEC-004** | [Session & Token Security](SEC-004-session-token-security.md) | Security Hardening | Sprint 7 | Week 15–16 | Not started — P1 |
+| **SEC-005** | [Renewal Business Logic Integrity](SEC-005-renewal-integrity.md) | Security Hardening | Sprint 7 | Week 15–16 | Not started — P1 |
+| **UX-001** | [Consultation Result & State Display](UX-001-consultation-result-display.md) | UX Fixes | Sprint 7 | Week 14–15 | Not started — **P0 pre-beta blocker** |
+| **UX-002** | [Patient History & Inbox Improvements](UX-002-patient-history-inbox.md) | UX Fixes | Sprint 7 | Week 15–16 | Not started — P1 |
+| **UX-003** | [Admin Portal: Layout, Navigation & Auth](UX-003-admin-portal.md) | UX Fixes | Sprint 7 | Week 15–16 | Not started — P1 |
+| **UX-004** | [Patient Profile Completeness](UX-004-patient-profile-completeness.md) | UX Fixes | Sprint 7 | Week 16 | Not started — P2 |
 
 ---
 
@@ -69,23 +79,75 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 ## Timeline Overview
 
 ```
-PRE-BUILD          SPRINT 0       SPRINT 1       SPRINT 2       SPRINT 3       SPRINT 4       SPRINT 5       SPRINT 6
-(Before Week 1)    (Week 1–2)     (Week 3–4)     (Week 5–7)     (Week 7–8)     (Week 8–10)    (Week 10–12)   (Week 12–14)
+PRE-BUILD          SPRINT 0       SPRINT 1       SPRINT 2       SPRINT 3       SPRINT 4       SPRINT 5       SPRINT 6       SPRINT 7
+(Before Week 1)    (Week 1–2)     (Week 3–4)     (Week 5–7)     (Week 7–8)     (Week 8–10)    (Week 10–12)   (Week 12–14)   (Week 14–16)
 
-PRD-001            PRD-003        PRD-006        PRD-008        PRD-010        PRD-012        PRD-013        PRD-015
-Regulatory &       Infrastructure Patient        AI Voice       Photo Upload   Clinical AI    Doctor Review  Post-Consult
-Legal Prereqs      & DevOps       Registration   Consultation   & Quality      Engine         Dashboard      Follow-Up
+PRD-001            PRD-003        PRD-006        PRD-008        PRD-010        PRD-012        PRD-013        PRD-015        SEC-001 ⚠
+Regulatory &       Infrastructure Patient        AI Voice       Photo Upload   Clinical AI    Doctor Review  Post-Consult   Critical Auth
+Legal Prereqs      & DevOps       Registration   Consultation   & Quality      Engine         Dashboard      Follow-Up      Fixes
 
-PRD-002 *          PRD-004        —              PRD-009        PRD-011                       PRD-014        PRD-016
-LLM & Voice        Auth &         (PRD-007       Text-Chat      Clinical                      Patient        Beta Launch
-Evaluation         Access         deferred —     Fallback       Knowledge                     Notifications  Readiness
+PRD-002 *          PRD-004        —              PRD-009        PRD-011                       PRD-014        PRD-016        SEC-002 ⚠
+LLM & Voice        Auth &         (PRD-007       Text-Chat      Clinical                      Patient        Beta Launch    Email/Webhook
+Evaluation         Access         deferred —     Fallback       Knowledge                     Notifications  Readiness      Security
 (ongoing Wk 1–5)                 pre-beta)                     Base & RAG
+                                                                                                                            SEC-003 ⚠
+                   PRD-005                                                                    PRD-017        PRD-018        API Hardening
+                   Audit Log                                                                  Doctor Sched   Script         (rate limiting,
+                                                                                              & Avail.       Renewals       helmet, validation)
 
-                   PRD-005
-                   Audit Log
+                                                                                                                            UX-001 ⚠
+                                                                                                                            Result Page
+                                                                                                                            Fixes
+
+                                                                                                                            SEC-004
+                                                                                                                            Session Tokens
+
+                                                                                                                            SEC-005
+                                                                                                                            Renewal Logic
+
+                                                                                                                            UX-002
+                                                                                                                            History & Inbox
+
+                                                                                                                            UX-003
+                                                                                                                            Admin Portal
+
+                                                                                                                            UX-004
+                                                                                                                            Profile (P2)
 ```
 
+⚠ = P0 pre-beta blocker. Must ship before first real patient consultation.
+
 *PRD-002 runs concurrently from Week 1; voice platform decision gates Sprint 2 start; LLM decision gates Sprint 4 start.
+
+---
+
+## Sprint 7 — Security Hardening & UX Fixes (Week 14–16)
+
+Sprint 7 was scoped following a full security and user journey audit conducted 2026-04-24. The audit identified 12 security vulnerabilities and 7 UX gaps across the codebase. The findings were grouped into 9 PRDs spanning two priority tiers.
+
+### P0 Pre-Beta Blockers (must ship before first real patient)
+
+| PRD | Issue | Why It's a Blocker |
+|-----|-------|-------------------|
+| [SEC-001](SEC-001-critical-authorization-fixes.md) | Photo IDOR + renewal role guards | Any authenticated doctor can access any patient's clinical photos; patients can probe doctor-only endpoints |
+| [SEC-002](SEC-002-email-webhook-security.md) | Webhook signature + HTML injection in emails | Fake delivery events corruptible; doctor can inject HTML into patient clinical emails |
+| [SEC-003](SEC-003-api-hardening.md) | Rate limiting + helmet + email validation | No brute-force protection, no security headers, invalid emails silently block all notifications |
+| [UX-001](UX-001-consultation-result-display.md) | Amended/rejected result display + text end button | Patients with amended responses never see them; rejected patients see "still waiting"; text chat has no exit |
+
+### P1 High Priority (fix before scaling beyond beta cohort)
+
+| PRD | Issue |
+|-----|-------|
+| [SEC-004](SEC-004-session-token-security.md) | WebSocket stream uses consultation ID as session credential; follow-up token in audit log |
+| [SEC-005](SEC-005-renewal-integrity.md) | Renewals accepted without prior prescription link; no maximum valid period enforced |
+| [UX-002](UX-002-patient-history-inbox.md) | History has no detail view; inbox doesn't link to results or PDF |
+| [UX-003](UX-003-admin-portal.md) | Admin portal unreachable — no layout, nav, or auth routing |
+
+### P2 Before Paediatric Consultations
+
+| PRD | Issue |
+|-----|-------|
+| [UX-004](UX-004-patient-profile-completeness.md) | Guardian fields not editable on profile page — required before paediatric consults are enabled |
 
 ---
 
