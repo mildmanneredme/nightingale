@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { sendChatMessage, endConsultation } from "@/lib/api";
+import Link from "next/link";
 
 interface Turn {
   role: "patient" | "ai";
@@ -46,54 +47,63 @@ export default function TextConsultationPage() {
 
       if (status === "emergency_escalated") {
         setIsEmergency(true);
-        setTurns((prev) => [...prev, {
-          role: "ai",
-          text: aiResponse.message ?? "Please call 000 immediately.",
-          options: null,
-        }]);
+        setTurns((prev) => [...prev, { role: "ai", text: aiResponse.message ?? "Please call 000 immediately.", options: null }]);
       } else if (status === "transcript_ready") {
         setTurns((prev) => [...prev, {
           role: "ai",
-          text: "Thank you — I have enough information to prepare your assessment. A doctor will review your consultation shortly.",
+          text: "Thank you — I have enough information. A doctor will review your consultation shortly.",
           options: null,
         }]);
         setTimeout(() => router.push(`/consultation/${id}/photos`), 2000);
       } else {
-        setTurns((prev) => [...prev, {
-          role: "ai",
-          text: aiResponse.text ?? "",
-          options: aiResponse.options,
-        }]);
+        setTurns((prev) => [...prev, { role: "ai", text: aiResponse.text ?? "", options: aiResponse.options }]);
       }
     } catch {
-      setTurns((prev) => [...prev, {
-        role: "ai",
-        text: "Sorry, there was a connection issue. Please try again.",
-        options: null,
-      }]);
+      setTurns((prev) => [...prev, { role: "ai", text: "Sorry, there was a connection issue. Please try again.", options: null }]);
     } finally {
       setThinking(false);
     }
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] py-4 max-w-2xl">
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Header */}
+      <header className="fixed top-0 left-0 w-full z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 h-16 flex items-center justify-between px-6">
+        <Link href="/dashboard" className="font-manrope font-bold text-xl tracking-tighter text-primary">
+          Nightingale
+        </Link>
+        <div className="flex items-center gap-2">
+          {!isEmergency && (
+            <span className="flex items-center gap-1.5 text-xs font-bold font-manrope text-secondary uppercase tracking-widest">
+              <span className="w-2 h-2 rounded-full bg-secondary animate-pulse inline-block" />
+              Doctor Review Pending
+            </span>
+          )}
+        </div>
+      </header>
+
+      {/* Emergency banner */}
       {isEmergency && (
-        <div role="alert" className="mb-4 p-4 bg-error-container text-on-error-container rounded-xl">
-          <p className="font-semibold text-title-md mb-2">Emergency — Call 000 immediately</p>
-          <a href="tel:000" className="inline-block bg-error text-on-error font-semibold rounded-lg py-2 px-4 text-body-md">
+        <div role="alert" className="mt-16 mx-4 mt-20 p-4 bg-error-container text-on-error-container rounded-xl">
+          <p className="font-manrope font-bold text-headline-md mb-2">Emergency — Call 000 immediately</p>
+          <a href="tel:000" className="inline-flex items-center gap-2 bg-error text-white font-bold rounded-xl py-2 px-4">
+            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>call</span>
             Call 000
           </a>
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto space-y-3 mb-4 pb-2">
+      {/* Chat messages */}
+      <div className="flex-1 overflow-y-auto px-4 pt-20 pb-32 space-y-4 max-w-2xl mx-auto w-full">
         {turns.map((turn, i) => (
           <div key={i} className={`flex flex-col gap-2 ${turn.role === "patient" ? "items-end" : "items-start"}`}>
-            <div className={`rounded-2xl px-4 py-3 text-body-md max-w-[85%] ${
+            <p className="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-widest px-1">
+              {turn.role === "patient" ? "You" : "AI Assistant"}
+            </p>
+            <div className={`rounded-2xl px-4 py-3 font-body-md max-w-[85%] ${
               turn.role === "patient"
                 ? "bg-secondary-container text-on-secondary-container"
-                : "bg-surface-container text-on-surface"
+                : "bg-white border border-slate-100 shadow-card text-on-surface"
             }`}>
               {turn.text}
             </div>
@@ -104,7 +114,7 @@ export default function TextConsultationPage() {
                     key={opt}
                     onClick={() => handleSend(opt)}
                     disabled={thinking}
-                    className="border border-secondary text-secondary rounded-full px-3 py-1 text-body-md hover:bg-secondary-container disabled:opacity-50"
+                    className="border-2 border-secondary text-secondary rounded-full px-4 py-1.5 font-manrope font-bold text-xs hover:bg-secondary-container disabled:opacity-50 transition-colors"
                   >
                     {opt}
                   </button>
@@ -115,52 +125,52 @@ export default function TextConsultationPage() {
         ))}
         {thinking && (
           <div className="flex items-start">
-            <div className="bg-surface-container rounded-2xl px-4 py-3 text-on-surface-variant text-body-md">
-              Thinking…
+            <div className="bg-white border border-slate-100 shadow-card rounded-2xl px-4 py-3 text-on-surface-variant font-body-md flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-secondary animate-bounce" />
+              <span className="w-2 h-2 rounded-full bg-secondary animate-bounce" style={{ animationDelay: "0.15s" }} />
+              <span className="w-2 h-2 rounded-full bg-secondary animate-bounce" style={{ animationDelay: "0.3s" }} />
             </div>
           </div>
         )}
         <div ref={bottomRef} />
       </div>
 
-      {patientHasSent && !isEmergency && (
-        <div className="pb-2">
-          <button
-            onClick={async () => {
-              if (ending) return;
-              setEnding(true);
-              try {
-                await endConsultation(id, []);
-              } catch {
-                // End consultation best-effort — navigate regardless
-              }
-              router.push(`/consultation/${id}/result`);
-            }}
-            disabled={ending || thinking}
-            className="w-full border-2 border-outline text-on-surface-variant rounded-lg py-2 text-body-md hover:bg-surface-container disabled:opacity-50"
-          >
-            {ending ? "Finishing…" : "Finish Consultation"}
-          </button>
+      {/* Fixed bottom input */}
+      <div className="fixed bottom-0 left-0 w-full bg-white border-t border-slate-100 px-4 py-3 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
+        <div className="max-w-2xl mx-auto space-y-2">
+          {patientHasSent && !isEmergency && (
+            <button
+              onClick={async () => {
+                if (ending) return;
+                setEnding(true);
+                try { await endConsultation(id, []); } catch { /* best-effort */ }
+                router.push(`/consultation/${id}/result`);
+              }}
+              disabled={ending || thinking}
+              className="w-full border-2 border-outline-variant text-on-surface-variant font-manrope font-bold rounded-xl py-2 text-sm hover:bg-surface-container disabled:opacity-50 transition-colors"
+            >
+              {ending ? "Finishing…" : "Finish Consultation"}
+            </button>
+          )}
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend(input)}
+              disabled={thinking || isEmergency}
+              placeholder="Type your response…"
+              className="flex-1 bg-surface-container-lowest border-2 border-outline-variant rounded-xl px-4 py-3 font-body-md focus:outline-none focus:border-primary disabled:opacity-50 transition-colors"
+            />
+            <button
+              onClick={() => handleSend(input)}
+              disabled={!input.trim() || thinking || isEmergency}
+              className="bg-primary text-white rounded-xl px-5 font-manrope font-bold hover:bg-primary-container disabled:opacity-50 flex items-center gap-1 transition-colors"
+            >
+              <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>send</span>
+            </button>
+          </div>
         </div>
-      )}
-
-      <div className="flex gap-2 border-t border-outline-variant pt-3">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend(input)}
-          disabled={thinking || isEmergency}
-          placeholder="Type your response…"
-          className="flex-1 border-2 border-outline-variant rounded-lg px-3 py-2 text-body-md focus:outline-none focus:border-primary disabled:opacity-50"
-        />
-        <button
-          onClick={() => handleSend(input)}
-          disabled={!input.trim() || thinking || isEmergency}
-          className="bg-primary text-on-primary rounded-lg px-4 py-2 font-semibold text-body-md hover:opacity-90 disabled:opacity-50"
-        >
-          Send
-        </button>
       </div>
     </div>
   );

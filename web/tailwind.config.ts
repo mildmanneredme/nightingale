@@ -54,6 +54,14 @@ const config: Config = {
       fontFamily: {
         display: ["Manrope", "sans-serif"],
         body: ["Public Sans", "sans-serif"],
+        manrope: ["Manrope", "sans-serif"],
+        "display-xl": ["Manrope", "sans-serif"],
+        "headline-lg": ["Manrope", "sans-serif"],
+        "headline-md": ["Manrope", "sans-serif"],
+        "body-md": ["Public Sans", "sans-serif"],
+        "body-lg": ["Public Sans", "sans-serif"],
+        "clinical-data": ["Public Sans", "sans-serif"],
+        "label-sm": ["Public Sans", "sans-serif"],
       },
       fontSize: {
         "display-xl": ["48px", { lineHeight: "1.1", letterSpacing: "-0.02em", fontWeight: "700" }],

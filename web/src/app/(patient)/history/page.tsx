@@ -4,6 +4,77 @@ import {
   getMe, addAllergy, deleteAllergy, addMedication, deleteMedication, addCondition, deleteCondition,
   Patient,
 } from "@/lib/api";
+import TopAppBar from "@/components/TopAppBar";
+import BottomNavBar from "@/components/BottomNavBar";
+
+function MedSection({
+  title,
+  icon,
+  items,
+  inputValue,
+  onInputChange,
+  onAdd,
+  onDelete,
+  placeholder,
+}: {
+  title: string;
+  icon: string;
+  items: Array<{ id: string; name: string }>;
+  inputValue: string;
+  onInputChange: (v: string) => void;
+  onAdd: (e: React.FormEvent) => void;
+  onDelete: (id: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <section className="bg-white rounded-xl border border-slate-100 shadow-card overflow-hidden">
+      <div className="px-6 py-4 border-b border-slate-50 flex items-center gap-3">
+        <div className="p-2 bg-secondary/10 rounded-lg text-secondary">
+          <span className="material-symbols-outlined text-[20px]">{icon}</span>
+        </div>
+        <h2 className="font-manrope text-headline-md text-primary">{title}</h2>
+        <span className="ml-auto font-label-sm text-on-surface-variant text-xs">{items.length} recorded</span>
+      </div>
+      <div className="p-6 space-y-3">
+        {items.length === 0 ? (
+          <p className="font-body-md text-on-surface-variant text-sm">No {title.toLowerCase()} recorded.</p>
+        ) : (
+          <div className="space-y-2">
+            {items.map((item) => (
+              <div key={item.id} className="flex items-center justify-between bg-surface-container-low rounded-xl px-4 py-3 border border-outline-variant/30">
+                <span className="font-body-md text-on-surface">{item.name}</span>
+                <button
+                  onClick={() => onDelete(item.id)}
+                  className="text-on-surface-variant hover:text-error transition-colors"
+                  aria-label={`Remove ${item.name}`}
+                >
+                  <span className="material-symbols-outlined text-[18px]">close</span>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        <form onSubmit={onAdd} className="flex gap-2 pt-2">
+          <input
+            type="text"
+            value={inputValue}
+            onChange={(e) => onInputChange(e.target.value)}
+            placeholder={placeholder}
+            className="flex-1 bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-3 font-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+          />
+          <button
+            type="submit"
+            disabled={!inputValue.trim()}
+            className="bg-secondary text-white rounded-xl px-5 font-manrope font-bold hover:opacity-90 disabled:opacity-50 flex items-center gap-1 transition-opacity"
+          >
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            Add
+          </button>
+        </form>
+      </div>
+    </section>
+  );
+}
 
 export default function HistoryPage() {
   const [patient, setPatient] = useState<Patient | null>(null);
@@ -29,21 +100,11 @@ export default function HistoryPage() {
     await refresh();
   }
 
-  async function handleDeleteAllergy(id: string) {
-    await deleteAllergy(id);
-    await refresh();
-  }
-
   async function handleAddMedication(e: React.FormEvent) {
     e.preventDefault();
     if (!medInput.trim()) return;
     await addMedication(medInput.trim());
     setMedInput("");
-    await refresh();
-  }
-
-  async function handleDeleteMedication(id: string) {
-    await deleteMedication(id);
     await refresh();
   }
 
@@ -55,121 +116,59 @@ export default function HistoryPage() {
     await refresh();
   }
 
-  async function handleDeleteCondition(id: string) {
-    await deleteCondition(id);
-    await refresh();
-  }
-
-  if (loading) return <div className="py-stack-lg text-on-surface-variant">Loading…</div>;
-
   return (
-    <div className="py-stack-lg max-w-2xl space-y-8">
-      <div>
-        <h1 className="font-display text-headline-lg text-on-surface mb-1">Medical History</h1>
-        <p className="text-on-surface-variant text-body-md">Keep your health information up to date for better care.</p>
-      </div>
+    <>
+      <TopAppBar activeNav="records" />
 
-      {/* Allergies */}
-      <section>
-        <h2 className="font-display text-headline-sm text-on-surface mb-3">Allergies</h2>
-        <div className="space-y-2 mb-3">
-          {(patient?.allergies ?? []).length === 0 && (
-            <p className="text-on-surface-variant text-body-md">No allergies recorded.</p>
-          )}
-          {(patient?.allergies ?? []).map((a) => (
-            <div key={a.id} className="flex items-center justify-between bg-surface-container-lowest border border-outline-variant rounded-lg px-4 py-3">
-              <span className="text-body-md text-on-surface">{a.name}</span>
-              <button
-                onClick={() => handleDeleteAllergy(a.id)}
-                className="text-error text-label-sm hover:opacity-70"
-                aria-label={`Remove ${a.name}`}
-              >
-                Remove
-              </button>
-            </div>
-          ))}
-        </div>
-        <form onSubmit={handleAddAllergy} className="flex gap-2">
-          <input
-            type="text"
-            value={allergyInput}
-            onChange={(e) => setAllergyInput(e.target.value)}
-            placeholder="Add allergy…"
-            className="flex-1 border-2 border-outline-variant rounded px-3 py-2 text-body-md focus:outline-none focus:border-primary"
-          />
-          <button type="submit" className="bg-secondary text-on-secondary rounded px-4 py-2 font-semibold text-body-md hover:opacity-90">
-            Add
-          </button>
-        </form>
-      </section>
+      <main className="pt-24 pb-20 md:pb-8 px-4 md:px-patient-margin max-w-3xl mx-auto">
+        <section className="mb-stack-lg">
+          <h1 className="font-manrope text-headline-lg text-primary">Medical History</h1>
+          <p className="font-body-md text-on-surface-variant mt-1">
+            Keep your health information up to date for better care.
+          </p>
+        </section>
 
-      {/* Medications */}
-      <section>
-        <h2 className="font-display text-headline-sm text-on-surface mb-3">Current Medications</h2>
-        <div className="space-y-2 mb-3">
-          {(patient?.medications ?? []).length === 0 && (
-            <p className="text-on-surface-variant text-body-md">No medications recorded.</p>
-          )}
-          {(patient?.medications ?? []).map((m) => (
-            <div key={m.id} className="flex items-center justify-between bg-surface-container-lowest border border-outline-variant rounded-lg px-4 py-3">
-              <span className="text-body-md text-on-surface">{m.name}</span>
-              <button
-                onClick={() => handleDeleteMedication(m.id)}
-                className="text-error text-label-sm hover:opacity-70"
-                aria-label={`Remove ${m.name}`}
-              >
-                Remove
-              </button>
-            </div>
-          ))}
-        </div>
-        <form onSubmit={handleAddMedication} className="flex gap-2">
-          <input
-            type="text"
-            value={medInput}
-            onChange={(e) => setMedInput(e.target.value)}
-            placeholder="Add medication…"
-            className="flex-1 border-2 border-outline-variant rounded px-3 py-2 text-body-md focus:outline-none focus:border-primary"
-          />
-          <button type="submit" className="bg-secondary text-on-secondary rounded px-4 py-2 font-semibold text-body-md hover:opacity-90">
-            Add
-          </button>
-        </form>
-      </section>
+        {loading ? (
+          <div className="flex items-center justify-center py-24 text-on-surface-variant">
+            <span className="material-symbols-outlined text-4xl animate-spin">progress_activity</span>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <MedSection
+              title="Allergies"
+              icon="warning"
+              items={patient?.allergies ?? []}
+              inputValue={allergyInput}
+              onInputChange={setAllergyInput}
+              onAdd={handleAddAllergy}
+              onDelete={async (id) => { await deleteAllergy(id); await refresh(); }}
+              placeholder="e.g. Penicillin, Peanuts…"
+            />
+            <MedSection
+              title="Current Medications"
+              icon="medication"
+              items={patient?.medications ?? []}
+              inputValue={medInput}
+              onInputChange={setMedInput}
+              onAdd={handleAddMedication}
+              onDelete={async (id) => { await deleteMedication(id); await refresh(); }}
+              placeholder="e.g. Metformin 500mg…"
+            />
+            <MedSection
+              title="Medical Conditions"
+              icon="health_and_safety"
+              items={patient?.conditions ?? []}
+              inputValue={conditionInput}
+              onInputChange={setConditionInput}
+              onAdd={handleAddCondition}
+              onDelete={async (id) => { await deleteCondition(id); await refresh(); }}
+              placeholder="e.g. Type 2 Diabetes…"
+            />
+          </div>
+        )}
+      </main>
 
-      {/* Conditions */}
-      <section>
-        <h2 className="font-display text-headline-sm text-on-surface mb-3">Medical Conditions</h2>
-        <div className="space-y-2 mb-3">
-          {(patient?.conditions ?? []).length === 0 && (
-            <p className="text-on-surface-variant text-body-md">No conditions recorded.</p>
-          )}
-          {(patient?.conditions ?? []).map((c) => (
-            <div key={c.id} className="flex items-center justify-between bg-surface-container-lowest border border-outline-variant rounded-lg px-4 py-3">
-              <span className="text-body-md text-on-surface">{c.name}</span>
-              <button
-                onClick={() => handleDeleteCondition(c.id)}
-                className="text-error text-label-sm hover:opacity-70"
-                aria-label={`Remove ${c.name}`}
-              >
-                Remove
-              </button>
-            </div>
-          ))}
-        </div>
-        <form onSubmit={handleAddCondition} className="flex gap-2">
-          <input
-            type="text"
-            value={conditionInput}
-            onChange={(e) => setConditionInput(e.target.value)}
-            placeholder="Add condition…"
-            className="flex-1 border-2 border-outline-variant rounded px-3 py-2 text-body-md focus:outline-none focus:border-primary"
-          />
-          <button type="submit" className="bg-secondary text-on-secondary rounded px-4 py-2 font-semibold text-body-md hover:opacity-90">
-            Add
-          </button>
-        </form>
-      </section>
-    </div>
+      <BottomNavBar active="history" />
+    </>
   );
 }

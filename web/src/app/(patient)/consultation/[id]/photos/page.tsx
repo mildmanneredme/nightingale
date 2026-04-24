@@ -2,6 +2,7 @@
 import { useCallback, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { uploadConsultationPhoto, PhotoQualityCheck, ApiError } from "@/lib/api";
+import TopAppBar from "@/components/TopAppBar";
 
 interface PhotoEntry {
   file: File;
@@ -194,11 +195,13 @@ export default function PhotoUploadPage() {
   }
 
   return (
-    <div className="py-stack-lg max-w-2xl">
-      <h1 className="font-display text-headline-md text-on-surface mb-2">
+    <>
+    <TopAppBar />
+    <div className="pt-24 pb-8 px-4 md:px-patient-margin max-w-2xl mx-auto">
+      <h1 className="font-manrope text-headline-lg text-primary mb-2">
         Add photos
       </h1>
-      <p className="text-body-md text-on-surface-variant mb-6">
+      <p className="font-body-md text-on-surface-variant mb-6">
         Photos help the reviewing doctor assess your condition more accurately.
         You can upload up to {MAX} photos (JPEG, PNG, or HEIC, max 10 MB each).
       </p>
@@ -318,5 +321,6 @@ export default function PhotoUploadPage() {
         </button>
       </div>
     </div>
+    </>
   );
 }
