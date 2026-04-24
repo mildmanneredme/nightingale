@@ -21,6 +21,9 @@ import { errorHandler } from "./middleware/errorHandler";
 
 const app = express();
 
+// Trust one proxy hop (the ALB) so X-Forwarded-For is used for client IP in rate limiting
+app.set("trust proxy", 1);
+
 // OPS-001: Correlation ID — must be first so every request and response has an X-Correlation-ID
 app.use(correlationId);
 

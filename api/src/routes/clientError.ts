@@ -12,7 +12,7 @@ const clientErrorLimiter = rateLimit({
   message: { error: "Too many requests" },
 });
 
-const ERROR_CODE_RE = /^[A-Z_][A-Z_.]*$/;
+const ERROR_CODE_RE = /^[A-Z_][A-Z_.0-9]*$/;
 
 router.post("/", clientErrorLimiter, (req, res) => {
   const { errorCode, errorMessage, page, correlationId } = req.body ?? {};
