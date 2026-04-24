@@ -1,4 +1,5 @@
 import express, { RequestHandler } from "express";
+import { correlationId } from "../../middleware/correlationId";
 import { errorHandler } from "../../middleware/errorHandler";
 import patientRouter from "../../routes/patients";
 import consultationRouter from "../../routes/consultations";
@@ -18,6 +19,7 @@ export function buildTestApp(
   role: "patient" | "doctor" | "admin" = "patient"
 ): express.Application {
   const app = express();
+  app.use(correlationId);
   // SEC-002: raw body for webhook signature verification must precede express.json()
   app.use("/api/v1/webhooks/sendgrid", express.raw({ type: "*/*" }));
   app.use(express.json());

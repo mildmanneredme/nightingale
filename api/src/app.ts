@@ -3,7 +3,9 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import pinoHttp from "pino-http";
 import { logger } from "./logger";
+import { correlationId } from "./middleware/correlationId";
 import healthRouter from "./routes/health";
+import clientErrorRouter from "./routes/clientError";
 import patientRouter from "./routes/patients";
 import consultationRouter from "./routes/consultations";
 import photoRouter from "./routes/photos";
@@ -18,6 +20,9 @@ import { requireAuth, requireRole } from "./middleware/auth";
 import { errorHandler } from "./middleware/errorHandler";
 
 const app = express();
+
+// OPS-001: Correlation ID — must be first so every request and response has an X-Correlation-ID
+app.use(correlationId);
 
 // SEC-003: Security headers (helmet first — before any response is sent)
 app.use(helmet({
@@ -50,6 +55,8 @@ app.use(express.json());
 app.use(pinoHttp({ logger }));
 
 app.use(healthRouter);
+// OPS-001: Client-error reporting — no auth, rate-limited internally
+app.use("/api/v1/client-error", clientErrorRouter);
 app.use("/api/v1/patients", requireAuth, patientRouter);
 app.use("/api/v1/consultations", requireAuth, consultationRouter);
 app.use("/api/v1/consultations", requireAuth, photoRouter);
