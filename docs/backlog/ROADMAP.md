@@ -38,8 +38,9 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | [PRD-017](../shipped/PRD-017-doctor-scheduling-availability.md) | Doctor Scheduling & Availability | Build | Sprint 5 | Week 10–12 | **Shipped 2026-04-24** ✅ |
 | [PRD-018](../shipped/PRD-018-script-renewals.md) | Script Renewal Workflow | Build | Sprint 5 | Week 10–12 | **Shipped 2026-04-24** ✅ |
 
-| [PRD-019](PRD-019-clinical-knowledge-base-proprietary.md) | Clinical Knowledge Base: Proprietary Extensions (eTG, AMH, MIMS) | Phase 2 | Post-Beta | After PRD-011 in production | Not started |
+| [PRD-019](PRD-019-clinical-knowledge-base-proprietary.md) | Clinical Knowledge Base: Proprietary Extensions (eTG, AMH, MIMS) | Phase 2 | Post-Beta | After PRD-021 stable | Not started |
 | [PRD-020](../shipped/PRD-020-patient-web-frontend.md) | Patient Web Frontend | Build | Sprint 2 | Week 5–7 | **Shipped 2026-04-23** ✅ |
+| [PRD-021](PRD-021-clinical-knowledge-expansion.md) | Clinical Knowledge Base Expansion — 35 Additional GP Presentations | Phase 2 | Sprint 8 | After PRD-011 stable | Not started |
 | — | — | — | — | — | — |
 | **SEC-001** | [Critical Authorization Fixes](../shipped/SEC-001-critical-authorization-fixes.md) | Security Hardening | Sprint 7 | Week 14–15 | **Shipped 2026-04-24** ✅ |
 | **SEC-002** | [Email & Webhook Security](../shipped/SEC-002-email-webhook-security.md) | Security Hardening | Sprint 7 | Week 14–15 | **Shipped 2026-04-24** ✅ |
@@ -53,6 +54,7 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | **OPS-001** | [Comprehensive Error Logging & Observability](OPS-001-error-logging-observability.md) | Operational | Sprint 8 | Week 17–18 | Not started — P1 |
 | **BUG-004** | [API Client Constructs Absolute localhost URLs](BUG-004-api-client-localhost-url.md) | Bug Fix | Sprint 8 | Week 17 | Not started — P0 |
 | **BUG-005** | [Cognito Login 400 / Silent Failure](BUG-005-cognito-login-400.md) | Bug Fix | Sprint 8 | Week 17 | Not started — P0 |
+| **BUG-006** | [Staging Deployment Failures: Consultation Broken End-to-End](../shipped/BUG-006-staging-deployment-failures.md) | Bug Fix | Sprint 8 | Week 17 | **Shipped 2026-04-25** ✅ |
 
 ---
 
@@ -199,9 +201,14 @@ PRD-010 (Photo Upload)
 
 PRD-011 (Clinical Knowledge Base & RAG)
   └─► PRD-012 (knowledge base, pgvector, and system prompts required before Clinical AI Engine)
+  └─► PRD-021 (content expansion builds on PRD-011 infrastructure)
 
 PRD-012 (Clinical AI Engine)
   └─► PRD-013 (SOAP + diff + draft surfaces in doctor dashboard)
+  └─► PRD-021 (new conditions available to engine without code changes once ingested)
+
+PRD-021 (Clinical Knowledge Base Expansion)
+  └─► PRD-019 (proprietary source expansion deferred until PRD-021 open-source content stable)
 
 PRD-013 (Doctor Dashboard)
   └─► PRD-014 (approval triggers patient notification)
