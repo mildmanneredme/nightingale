@@ -145,6 +145,7 @@ router.get("/queue", requireRole("doctor"), async (req, res, next) => {
       `SELECT r.id, r.status, r.medication_name, r.dosage,
               r.no_adverse_effects, r.condition_unchanged, r.patient_notes,
               r.created_at, r.valid_until, r.alert_48h_sent_at,
+              r.source_consultation_id,
               p.full_name AS patient_name, p.date_of_birth AS patient_dob,
               p.biological_sex AS patient_sex
        FROM renewal_requests r
@@ -166,6 +167,7 @@ router.get("/queue", requireRole("doctor"), async (req, res, next) => {
       createdAt: r.created_at,
       validUntil: r.valid_until,
       isExpiryAlert: !!r.alert_48h_sent_at,
+      noPriorPrescriptionWarning: !r.source_consultation_id,
       patient: {
         name: r.patient_name,
         dob: r.patient_dob,
@@ -184,6 +186,15 @@ router.post("/:id/approve", requireRole("doctor"), async (req, res, next) => {
       reviewNote?: string;
       validDays?: number;
     };
+
+    // SEC-005: Enforce maximum valid period
+    const maxValidDays = parseInt(process.env.RENEWAL_MAX_VALID_DAYS ?? "90", 10);
+    if (typeof validDays === "number" && validDays > maxValidDays) {
+      res.status(400).json({
+        error: `Valid period cannot exceed ${maxValidDays} days. Contact the Medical Director to extend this limit.`,
+      });
+      return;
+    }
 
     const { rows: dRows } = await pool.query(
       `SELECT id, ahpra_number, first_name, last_name FROM doctors WHERE cognito_sub = $1`,
