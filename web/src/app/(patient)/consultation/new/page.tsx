@@ -1,18 +1,19 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createConsultation } from "@/lib/api";
+import { createConsultation, ApiError } from "@/lib/api";
+import { useToast } from "@/hooks/useToast";
+import { getErrorMessage } from "@/lib/errors";
 
 export default function NewConsultationPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [complaint, setComplaint] = useState("");
   const [type, setType] = useState<"voice" | "text">("voice");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
     setLoading(true);
     try {
       const consultation = await createConsultation(type, complaint || undefined);
@@ -22,7 +23,8 @@ export default function NewConsultationPage() {
         router.push(`/consultation/${consultation.id}/text`);
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to start consultation.");
+      const { title, detail } = err instanceof ApiError ? getErrorMessage(err.status) : getErrorMessage(0);
+      toast.error(title, { detail, correlationId: err instanceof ApiError ? err.correlationId : undefined });
     } finally {
       setLoading(false);
     }
@@ -34,12 +36,6 @@ export default function NewConsultationPage() {
       <p className="text-on-surface-variant text-body-md mb-8">
         Describe what&apos;s brought you in today and choose how you&apos;d like to consult.
       </p>
-
-      {error && (
-        <div role="alert" className="mb-4 p-3 bg-error-container text-on-error-container rounded-md text-sm">
-          {error}
-        </div>
-      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>

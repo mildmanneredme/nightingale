@@ -2,16 +2,18 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { getDoctorConsultation, amendConsultation } from "@/lib/api";
+import { getDoctorConsultation, amendConsultation, ApiError } from "@/lib/api";
+import { useToast } from "@/hooks/useToast";
+import { getErrorMessage } from "@/lib/errors";
 
 export default function AmendPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { toast } = useToast();
   const [aiDraft, setAiDraft] = useState("");
   const [doctorDraft, setDoctorDraft] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -25,13 +27,13 @@ export default function AmendPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!id || !doctorDraft.trim()) return;
-    setError(null);
     setSaving(true);
     try {
       await amendConsultation(id, doctorDraft.trim());
       router.push("/doctor/queue");
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to send amendment.");
+      const { title, detail } = err instanceof ApiError ? getErrorMessage(err.status) : getErrorMessage(0);
+      toast.error(title, { detail, correlationId: err instanceof ApiError ? err.correlationId : undefined });
     } finally {
       setSaving(false);
     }
@@ -45,10 +47,6 @@ export default function AmendPage() {
         <Link href={`/doctor/consultation/${id}`} className="text-secondary text-body-md hover:opacity-70">← Back</Link>
         <h1 className="font-display text-headline-md text-on-surface">Amend Response</h1>
       </div>
-
-      {error && (
-        <div role="alert" className="mb-4 p-3 bg-error-container text-on-error-container rounded-md text-sm">{error}</div>
-      )}
 
       <div className="grid grid-cols-2 gap-6">
         <div>

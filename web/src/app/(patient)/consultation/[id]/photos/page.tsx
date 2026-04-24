@@ -103,7 +103,6 @@ export default function PhotoUploadPage() {
   const [photos, setPhotos] = useState<PhotoEntry[]>([]);
   const [skipping, setSkipping] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [globalError, setGlobalError] = useState<string | null>(null);
 
   const MAX = 5;
   const canAddMore = photos.length < MAX;
@@ -156,7 +155,6 @@ export default function PhotoUploadPage() {
 
   async function handleUploadAll() {
     setSubmitting(true);
-    setGlobalError(null);
 
     let anyError = false;
     for (let i = 0; i < photos.length; i++) {
@@ -284,10 +282,6 @@ export default function PhotoUploadPage() {
             {photos.length === 0 ? "Tap to add a photo" : `Add another photo (${photos.length}/${MAX})`}
           </button>
         </div>
-      )}
-
-      {globalError && (
-        <p className="mb-4 text-error text-body-sm">{globalError}</p>
       )}
 
       {/* Action buttons */}

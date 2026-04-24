@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
-import { getRenewals, submitRenewal, RenewalRequest } from "@/lib/api";
+import { getRenewals, submitRenewal, RenewalRequest, ApiError } from "@/lib/api";
+import { useToast } from "@/hooks/useToast";
+import { getErrorMessage } from "@/lib/errors";
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "Awaiting Review",
@@ -15,11 +17,12 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function RenewalsPage() {
+  const { toast } = useToast();
   const [renewals, setRenewals] = useState<RenewalRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   // Form fields
   const [medicationName, setMedicationName] = useState("");
@@ -36,31 +39,31 @@ export default function RenewalsPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!medicationName.trim()) { setFormError("Medication name is required"); return; }
+    if (!medicationName.trim()) { setValidationError("Medication name is required"); return; }
     if (!noAdverseEffects || !conditionUnchanged) {
-      setFormError("If you have experienced adverse effects or your condition has changed, please start a new consultation.");
+      setValidationError("If you have experienced adverse effects or your condition has changed, please start a new consultation.");
       return;
     }
 
     setSubmitting(true);
-    setFormError(null);
+    setValidationError(null);
     try {
-      const result = await submitRenewal({
+      await submitRenewal({
         medicationName: medicationName.trim(),
         dosage: dosage.trim() || undefined,
         noAdverseEffects,
         conditionUnchanged,
         patientNotes: patientNotes.trim() || undefined,
       });
-      // Reload renewals
       const updated = await getRenewals();
       setRenewals(updated);
       setShowForm(false);
       setMedicationName("");
       setDosage("");
       setPatientNotes("");
-    } catch (err: any) {
-      setFormError(err.message ?? "Submission failed");
+    } catch (err: unknown) {
+      const { title, detail } = err instanceof ApiError ? getErrorMessage(err.status) : getErrorMessage(0);
+      toast.error(title, { detail, correlationId: err instanceof ApiError ? err.correlationId : undefined });
     } finally {
       setSubmitting(false);
     }
@@ -159,8 +162,8 @@ export default function RenewalsPage() {
               />
             </div>
 
-            {formError && (
-              <p className="text-body-sm text-error">{formError}</p>
+            {validationError && (
+              <p className="text-body-sm text-error">{validationError}</p>
             )}
 
             <div className="flex gap-3">

@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { getAdminStats, AdminStats } from "@/lib/api";
+import { getAdminStats, AdminStats, ApiError } from "@/lib/api";
+import { useToast } from "@/hooks/useToast";
+import { getErrorMessage } from "@/lib/errors";
 
 function StatCard({
   label,
@@ -41,23 +43,26 @@ function GateItem({ done, label }: { done: boolean; label: string }) {
 }
 
 export default function BetaDashboard() {
+  const { toast } = useToast();
   const [stats, setStats] = useState<AdminStats | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const fetchStats = useCallback(async () => {
-    setError(null);
+    setLoadFailed(false);
     try {
       const data = await getAdminStats();
       setStats(data);
       setLastUpdated(new Date());
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Failed to load stats");
+      if (!stats) setLoadFailed(true);
+      const { title, detail } = e instanceof ApiError ? getErrorMessage(e.status) : getErrorMessage(0);
+      toast.error(title, { detail, correlationId: e instanceof ApiError ? e.correlationId : undefined });
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [stats, toast]);
 
   useEffect(() => {
     fetchStats();
@@ -70,10 +75,10 @@ export default function BetaDashboard() {
     return () => clearInterval(interval);
   }, [fetchStats]);
 
-  if (error && !stats) {
+  if (loadFailed) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-4">
-        <p className="text-red-600 font-medium">Failed to load stats: {error}</p>
+        <p className="text-red-600 font-medium">Failed to load stats</p>
         <button
           onClick={() => { setLoading(true); fetchStats(); }}
           className="px-4 py-2 bg-gray-900 text-white rounded text-sm hover:opacity-80"
@@ -111,7 +116,6 @@ export default function BetaDashboard() {
                 })}
               </p>
             )}
-            {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
           </div>
         </div>
 

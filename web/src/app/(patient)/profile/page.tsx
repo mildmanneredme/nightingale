@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
-import { getMe, updateMe, Patient } from "@/lib/api";
+import { getMe, updateMe, Patient, ApiError } from "@/lib/api";
+import { useToast } from "@/hooks/useToast";
+import { getErrorMessage } from "@/lib/errors";
 
 function ReadOnlyField({ label, value, note }: { label: string; value?: string | null; note?: string }) {
   return (
@@ -13,12 +15,12 @@ function ReadOnlyField({ label, value, note }: { label: string; value?: string |
 }
 
 export default function ProfilePage() {
+  const { toast } = useToast();
   const [patient, setPatient] = useState<Patient | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [guardianSaved, setGuardianSaved] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -46,7 +48,6 @@ export default function ProfilePage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
     setSaved(false);
     setGuardianSaved(false);
     setSaving(true);
@@ -64,7 +65,8 @@ export default function ProfilePage() {
         setSaved(true);
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to save profile.");
+      const { title, detail } = err instanceof ApiError ? getErrorMessage(err.status) : getErrorMessage(0);
+      toast.error(title, { detail, correlationId: err instanceof ApiError ? err.correlationId : undefined });
     } finally {
       setSaving(false);
     }
@@ -77,11 +79,6 @@ export default function ProfilePage() {
       <h1 className="font-display text-headline-lg text-on-surface mb-2">Your Profile</h1>
       <p className="text-on-surface-variant text-body-md mb-8">Keep your personal details up to date.</p>
 
-      {error && (
-        <div role="alert" className="mb-4 p-3 bg-error-container text-on-error-container rounded-md text-sm">
-          {error}
-        </div>
-      )}
       {saved && (
         <div className="mb-4 p-3 bg-secondary-container text-on-secondary-container rounded-md text-sm">
           Profile saved successfully.

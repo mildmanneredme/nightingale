@@ -7,7 +7,10 @@ import {
   reassignConsultation,
   AdminQueueItem,
   AdminDoctor,
+  ApiError,
 } from "@/lib/api";
+import { useToast } from "@/hooks/useToast";
+import { getErrorMessage } from "@/lib/errors";
 
 const ALERT_HOURS = 4;
 
@@ -22,10 +25,10 @@ function formatDuration(ms: number): string {
 }
 
 export default function ConsultationQueuePage() {
+  const { toast } = useToast();
   const [items, setItems] = useState<AdminQueueItem[]>([]);
   const [doctors, setDoctors] = useState<AdminDoctor[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [reassigning, setReassigning] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -34,9 +37,14 @@ export default function ConsultationQueuePage() {
         setItems(queue);
         setDoctors(docs);
       })
-      .catch((e: unknown) => setError(e instanceof Error ? e.message : "Failed to load"))
+      .catch((e: unknown) => {
+        const { title, detail } = e instanceof ApiError
+          ? getErrorMessage(e.status)
+          : getErrorMessage(0);
+        toast.error(title, { detail, correlationId: e instanceof ApiError ? e.correlationId : undefined });
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }, [toast]);
 
   async function handleReassign(consultationId: string, doctorId: string) {
     if (!doctorId) return;
@@ -55,7 +63,8 @@ export default function ConsultationQueuePage() {
         })
       );
     } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : "Reassignment failed");
+      const { title, detail } = e instanceof ApiError ? getErrorMessage(e.status) : getErrorMessage(0);
+      toast.error(title, { detail, correlationId: e instanceof ApiError ? e.correlationId : undefined });
     } finally {
       setReassigning((prev) => ({ ...prev, [consultationId]: false }));
     }
@@ -64,12 +73,6 @@ export default function ConsultationQueuePage() {
   if (loading) {
     return (
       <div className="p-8 text-sm text-gray-500">Loading consultation queue…</div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-8 text-sm text-red-600">{error}</div>
     );
   }
 

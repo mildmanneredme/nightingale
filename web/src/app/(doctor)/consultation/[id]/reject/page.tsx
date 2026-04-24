@@ -2,7 +2,9 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { rejectConsultation } from "@/lib/api";
+import { rejectConsultation, ApiError } from "@/lib/api";
+import { useToast } from "@/hooks/useToast";
+import { getErrorMessage } from "@/lib/errors";
 
 const REASON_CODES = [
   { value: "physical_exam_required", label: "Physical exam required" },
@@ -14,21 +16,21 @@ const REASON_CODES = [
 export default function RejectPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { toast } = useToast();
   const [reasonCode, setReasonCode] = useState("");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!id || !reasonCode) return;
-    setError(null);
     setSubmitting(true);
     try {
       await rejectConsultation(id, reasonCode, message || undefined);
       router.push("/doctor/queue");
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to reject consultation.");
+      const { title, detail } = err instanceof ApiError ? getErrorMessage(err.status) : getErrorMessage(0);
+      toast.error(title, { detail, correlationId: err instanceof ApiError ? err.correlationId : undefined });
     } finally {
       setSubmitting(false);
     }
@@ -40,10 +42,6 @@ export default function RejectPage() {
         <Link href={`/doctor/consultation/${id}`} className="text-secondary text-body-md hover:opacity-70">← Back</Link>
         <h1 className="font-display text-headline-md text-on-surface">Reject Consultation</h1>
       </div>
-
-      {error && (
-        <div role="alert" className="mb-4 p-3 bg-error-container text-on-error-container rounded-md text-sm">{error}</div>
-      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
