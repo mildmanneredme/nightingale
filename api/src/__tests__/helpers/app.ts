@@ -18,6 +18,8 @@ export function buildTestApp(
   role: "patient" | "doctor" | "admin" = "patient"
 ): express.Application {
   const app = express();
+  // SEC-002: raw body for webhook signature verification must precede express.json()
+  app.use("/api/v1/webhooks/sendgrid", express.raw({ type: "*/*" }));
   app.use(express.json());
 
   const stubAuth: RequestHandler = (req, _res, next) => {

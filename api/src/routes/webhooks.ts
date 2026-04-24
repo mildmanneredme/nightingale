@@ -1,12 +1,13 @@
 // PRD-014: SendGrid delivery webhook
 //
 // Receives delivery status events from SendGrid and updates the notifications table.
-// No authentication required for this endpoint — SendGrid calls it from their servers.
+// SEC-002: ECDSA signature verified via @sendgrid/eventwebhook before any DB writes.
 //
 // Event types handled: delivered, bounce, dropped, spamreport
 // Full event reference: https://docs.sendgrid.com/for-developers/tracking-events/event
 
 import { Router, Request, Response, NextFunction } from "express";
+import { EventWebhook } from "@sendgrid/eventwebhook";
 import { pool } from "../db";
 import { logger } from "../logger";
 
@@ -23,9 +24,47 @@ interface SendGridEvent {
 }
 
 // POST /api/v1/webhooks/sendgrid
+// Body arrives as Buffer (express.raw applied in app.ts before express.json).
 router.post("/sendgrid", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const events: SendGridEvent[] = Array.isArray(req.body) ? req.body : [req.body];
+    // SEC-002: Verify ECDSA signature before any processing
+    const pubKey = process.env.SENDGRID_WEBHOOK_PUBLIC_KEY;
+    if (!pubKey) {
+      logger.warn("SENDGRID_WEBHOOK_PUBLIC_KEY not set — rejecting webhook (fail-closed)");
+      res.status(500).json({ error: "Webhook verification not configured" });
+      return;
+    }
+
+    const sig = req.headers["x-twilio-email-event-webhook-signature"] as string | undefined;
+    const ts = req.headers["x-twilio-email-event-webhook-timestamp"] as string | undefined;
+
+    if (!sig || !ts) {
+      res.status(403).json({ error: "Missing webhook signature headers" });
+      return;
+    }
+
+    // Raw body may be a Buffer (production via express.raw) or already-parsed (test env fallback)
+    const rawBody: Buffer = Buffer.isBuffer(req.body)
+      ? req.body
+      : Buffer.from(JSON.stringify(req.body));
+
+    const ev = new EventWebhook();
+    const key = ev.convertPublicKeyToECDSA(pubKey);
+    const isValid = ev.verifySignature(key, rawBody, sig, ts);
+
+    if (!isValid) {
+      res.status(403).json({ error: "Invalid webhook signature" });
+      return;
+    }
+
+    // Parse body — raw Buffer in production, already parsed in test env
+    let events: SendGridEvent[];
+    if (Buffer.isBuffer(req.body)) {
+      const parsed = JSON.parse(req.body.toString("utf8"));
+      events = Array.isArray(parsed) ? parsed : [parsed];
+    } else {
+      events = Array.isArray(req.body) ? req.body : [req.body];
+    }
 
     for (const evt of events) {
       if (!evt.sg_message_id) continue;

@@ -17,6 +17,9 @@ import { errorHandler } from "./middleware/errorHandler";
 
 const app = express();
 
+// SEC-002: Raw body required for SendGrid ECDSA signature verification.
+// Must be registered BEFORE the global express.json() middleware.
+app.use("/api/v1/webhooks/sendgrid", express.raw({ type: "*/*" }));
 app.use(express.json());
 app.use(pinoHttp({ logger }));
 

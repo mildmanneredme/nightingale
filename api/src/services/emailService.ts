@@ -7,6 +7,7 @@
 // If SENDGRID_API_KEY is not set (test/dev), sends are skipped and a warning is logged.
 
 import sgMail from "@sendgrid/mail";
+import he from "he";
 import { Pool } from "pg";
 import { config } from "../config";
 import { logger } from "../logger";
@@ -313,7 +314,7 @@ function buildRejectionHtml(opts: {
   customMessage: string | null;
 }): string {
   const customPara = opts.customMessage
-    ? `<p>${opts.customMessage}</p>`
+    ? `<p>${he.escape(opts.customMessage)}</p>`
     : "";
 
   return `<!DOCTYPE html>
@@ -389,7 +390,7 @@ export async function sendRenewalApprovedEmail(
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#111827;max-width:600px;margin:0 auto;padding:24px;">
   <p>${greeting},</p>
   <p>Dr ${row.doctor_last_name} has reviewed your renewal request for <strong>${row.medication_name}${row.dosage ? ` ${row.dosage}` : ""}</strong> and approved it.</p>
-  ${row.review_note ? `<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin:16px 0;"><p style="margin:0;">${row.review_note}</p></div>` : ""}
+  ${row.review_note ? `<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin:16px 0;"><p style="margin:0;">${he.escape(row.review_note)}</p></div>` : ""}
   <p>Your prescription is valid until <strong>${validUntilStr}</strong>. Dr ${row.doctor_last_name} will issue your prescription via their prescribing system — you will receive further instructions separately.</p>
   ${EMAIL_FOOTER_HTML}
 </body></html>`;
@@ -450,7 +451,7 @@ export async function sendRenewalDeclinedEmail(
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#111827;max-width:600px;margin:0 auto;padding:24px;">
   <p>${greeting},</p>
   <p>Dr ${row.doctor_last_name} was unable to approve your renewal request for <strong>${row.medication_name}</strong>.</p>
-  <div style="background:#fef3c7;border-left:4px solid #d97706;padding:12px 16px;margin:16px 0;"><p style="margin:0;">${reasonText}</p></div>
+  <div style="background:#fef3c7;border-left:4px solid #d97706;padding:12px 16px;margin:16px 0;"><p style="margin:0;">${he.escape(reasonText)}</p></div>
   <p>Please start a new consultation on Nightingale or speak to a GP in person.</p>
   ${EMAIL_FOOTER_HTML}
 </body></html>`;

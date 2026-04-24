@@ -42,7 +42,7 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | [PRD-020](../shipped/PRD-020-patient-web-frontend.md) | Patient Web Frontend | Build | Sprint 2 | Week 5–7 | **Shipped 2026-04-23** ✅ |
 | — | — | — | — | — | — |
 | **SEC-001** | [Critical Authorization Fixes](../shipped/SEC-001-critical-authorization-fixes.md) | Security Hardening | Sprint 7 | Week 14–15 | **Shipped 2026-04-24** ✅ |
-| **SEC-002** | [Email & Webhook Security](SEC-002-email-webhook-security.md) | Security Hardening | Sprint 7 | Week 14–15 | Not started — **P0 pre-beta blocker** |
+| **SEC-002** | [Email & Webhook Security](../shipped/SEC-002-email-webhook-security.md) | Security Hardening | Sprint 7 | Week 14–15 | **Shipped 2026-04-24** ✅ |
 | **SEC-003** | [API Hardening: Rate Limiting, Headers & Validation](SEC-003-api-hardening.md) | Security Hardening | Sprint 7 | Week 14–15 | Not started — **P0 pre-beta blocker** |
 | **SEC-004** | [Session & Token Security](SEC-004-session-token-security.md) | Security Hardening | Sprint 7 | Week 15–16 | Not started — P1 |
 | **SEC-005** | [Renewal Business Logic Integrity](SEC-005-renewal-integrity.md) | Security Hardening | Sprint 7 | Week 15–16 | Not started — P1 |
@@ -74,6 +74,7 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | [PRD-015](../shipped/PRD-015-post-consultation-followup.md) | Post-Consultation Follow-Up | 2026-04-23 | 9 integration tests written (DB-required); follow-up email + 3-button tracking URLs; better/same/worse response handling; FOLLOWUP_CONCERN flag + doctor re-queue; patient acknowledgement email; PDF summary endpoint (pdfkit, AHPRA footer); confirmation page; `scheduleFollowUp` wired to approve/amend; 72h no-response mark + EventBridge trigger deferred |
 | [PRD-016](../shipped/PRD-016-beta-launch-readiness.md) | Beta Launch Readiness | 2026-04-23 | Technical implementation only: `GET /api/v1/admin/stats` (patient/consult counts, approval rates, follow-up outcomes); beta dashboard page; 2 admin integration tests; compliance/operational gates remain (pen test, DPAs, TGA, AHPRA, Medical Director sign-offs) |
 | [SEC-001](../shipped/SEC-001-critical-authorization-fixes.md) | Critical Authorization Fixes | 2026-04-24 | Photo IDOR fixed: SQL JOIN verifies `assigned_doctor_id` + admin bypass via `cognito:groups`; renewal role guards added: `requireRole("doctor")` on queue/approve/decline, `requireRole("admin")` on expiry-check; TypeScript clean; TDD tests written |
+| [SEC-002](../shipped/SEC-002-email-webhook-security.md) | Email & Webhook Security | 2026-04-24 | SendGrid webhook ECDSA signature verification (`@sendgrid/eventwebhook`); raw body parsing for webhook route; fail-closed if `SENDGRID_WEBHOOK_PUBLIC_KEY` unset; HTML injection escaping (`he`) on rejection message, renewal approval/decline reviewNote; 12 unit tests green |
 
 ---
 
