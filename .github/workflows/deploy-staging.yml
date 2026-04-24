@@ -27,7 +27,7 @@ jobs:
       - name: Build and push image
         run: |
           IMAGE_URI=${{ secrets.ECR_REGISTRY }}/nightingale/api
-          docker build -t $IMAGE_URI:staging-latest -t $IMAGE_URI:staging-${{ github.sha }} .
+          docker build -t $IMAGE_URI:staging-latest -t $IMAGE_URI:staging-${{ github.sha }} ./api
           docker push $IMAGE_URI:staging-latest
           docker push $IMAGE_URI:staging-${{ github.sha }}
 
