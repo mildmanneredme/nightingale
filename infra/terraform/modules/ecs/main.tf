@@ -33,10 +33,16 @@ resource "aws_ecs_task_definition" "api" {
       protocol      = "tcp"
     }]
 
-    secrets = [{
-      name      = "DB_PASSWORD"
-      valueFrom = var.db_secret_arn
-    }]
+    secrets = [
+      {
+        name      = "DB_PASSWORD"
+        valueFrom = var.db_secret_arn
+      },
+      {
+        name      = "GEMINI_API_KEY"
+        valueFrom = var.gemini_api_key_secret_arn
+      }
+    ]
 
     environment = [
       { name = "APP_ENV",               value = var.env },

@@ -51,6 +51,8 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | **UX-003** | [Admin Portal: Layout, Navigation & Auth](../shipped/UX-003-admin-portal.md) | UX Fixes | Sprint 7 | Week 15–16 | **Shipped 2026-04-24** ✅ |
 | **UX-004** | [Patient Profile Completeness](../shipped/UX-004-patient-profile-completeness.md) | UX Fixes | Sprint 7 | Week 16 | **Shipped 2026-04-24** ✅ |
 | **OPS-001** | [Comprehensive Error Logging & Observability](OPS-001-error-logging-observability.md) | Operational | Sprint 8 | Week 17–18 | Not started — P1 |
+| **BUG-004** | [API Client Constructs Absolute localhost URLs](BUG-004-api-client-localhost-url.md) | Bug Fix | Sprint 8 | Week 17 | Not started — P0 |
+| **BUG-005** | [Cognito Login 400 / Silent Failure](BUG-005-cognito-login-400.md) | Bug Fix | Sprint 8 | Week 17 | Not started — P0 |
 
 ---
 

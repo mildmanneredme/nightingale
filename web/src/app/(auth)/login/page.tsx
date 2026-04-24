@@ -1,12 +1,14 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signIn, getUserRole } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const passwordReset = searchParams.get("reset") === "1";
   const { setToken } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -80,6 +82,13 @@ export default function LoginPage() {
               </Link>
             </p>
           </div>
+
+          {passwordReset && (
+            <div className="mb-stack-md p-4 bg-secondary-container text-on-secondary-container rounded-xl text-sm flex items-center gap-2">
+              <span className="material-symbols-outlined text-base">check_circle</span>
+              Password reset successfully. Please sign in.
+            </div>
+          )}
 
           {error && (
             <div role="alert" className="mb-stack-md p-4 bg-error-container text-on-error-container rounded-xl text-sm flex items-center gap-2">

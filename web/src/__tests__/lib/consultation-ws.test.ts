@@ -47,6 +47,7 @@ class MockWebSocket {
 beforeEach(() => {
   MockWebSocket.instances = [];
   vi.stubGlobal("WebSocket", MockWebSocket);
+  // jsdom sets window.location to http://localhost/ by default
 });
 
 // ---------------------------------------------------------------------------
@@ -54,21 +55,27 @@ beforeEach(() => {
 // ---------------------------------------------------------------------------
 
 describe("ConsultationSocket", () => {
-  it("connects to the correct WebSocket URL", () => {
-    new ConsultationSocket("http://localhost:8080", "consult-id-123");
-    expect(MockWebSocket.instances[0].url).toBe(
-      "ws://localhost:8080/api/v1/consultations/consult-id-123/stream"
-    );
+  it("connects using ws:// when page is served over http", () => {
+    new ConsultationSocket("consult-id-123", "test-token");
+    const { url } = MockWebSocket.instances[0];
+    // jsdom runs on window.location.host which includes the port
+    expect(url).toMatch(/^ws:\/\/localhost(:\d+)?\/api\/v1\/consultations\/consult-id-123\/stream\?token=test-token$/);
   });
 
-  it("converts https to wss for the WebSocket URL", () => {
-    new ConsultationSocket("https://api.nightingale.com.au", "abc");
-    expect(MockWebSocket.instances[0].url).toMatch(/^wss:\/\//);
+  it("includes wsToken as query param", () => {
+    new ConsultationSocket("abc", "my-secret-token");
+    expect(MockWebSocket.instances[0].url).toContain("token=my-secret-token");
+  });
+
+  it("URL-encodes the token", () => {
+    new ConsultationSocket("abc", "token with spaces");
+    // encodeURIComponent encodes spaces as %20
+    expect(MockWebSocket.instances[0].url).toContain("token=token%20with%20spaces");
   });
 
   it("calls onOpen callback when connection established", () => {
     const onOpen = vi.fn();
-    const sock = new ConsultationSocket("http://localhost:8080", "c1", { onOpen });
+    new ConsultationSocket("c1", "tok", { onOpen });
     MockWebSocket.instances[0].simulateOpen();
     expect(onOpen).toHaveBeenCalledOnce();
   });
@@ -80,7 +87,7 @@ describe("ConsultationSocket", () => {
 
 describe("sendAudio", () => {
   it("sends a JSON message with type 'audio' and base64 data", () => {
-    const sock = new ConsultationSocket("http://localhost:8080", "c1");
+    const sock = new ConsultationSocket("c1", "tok");
     MockWebSocket.instances[0].simulateOpen();
     sock.sendAudio("base64audiochunk==");
     const sent = JSON.parse(MockWebSocket.instances[0].sentMessages[0]);
@@ -94,7 +101,7 @@ describe("sendAudio", () => {
 
 describe("endSession", () => {
   it("sends { type: 'end' } message", () => {
-    const sock = new ConsultationSocket("http://localhost:8080", "c1");
+    const sock = new ConsultationSocket("c1", "tok");
     MockWebSocket.instances[0].simulateOpen();
     sock.endSession();
     const sent = JSON.parse(MockWebSocket.instances[0].sentMessages[0]);
@@ -109,7 +116,7 @@ describe("endSession", () => {
 describe("onTranscript callback", () => {
   it("is called with speaker, text, and timestamp_ms on transcript messages", () => {
     const onTranscript = vi.fn();
-    const sock = new ConsultationSocket("http://localhost:8080", "c1", { onTranscript });
+    new ConsultationSocket("c1", "tok", { onTranscript });
     const ws = MockWebSocket.instances[0];
     ws.simulateOpen();
     ws.simulateMessage({ type: "transcript", speaker: "patient", text: "I feel sick", timestamp_ms: 1234 });
@@ -120,7 +127,7 @@ describe("onTranscript callback", () => {
 describe("onAudio callback", () => {
   it("is called with base64 data on audio messages", () => {
     const onAudio = vi.fn();
-    const sock = new ConsultationSocket("http://localhost:8080", "c1", { onAudio });
+    new ConsultationSocket("c1", "tok", { onAudio });
     const ws = MockWebSocket.instances[0];
     ws.simulateOpen();
     ws.simulateMessage({ type: "audio", data: "audiodata==" });
@@ -131,7 +138,7 @@ describe("onAudio callback", () => {
 describe("onEmergency callback", () => {
   it("is called with the message text on emergency messages", () => {
     const onEmergency = vi.fn();
-    const sock = new ConsultationSocket("http://localhost:8080", "c1", { onEmergency });
+    new ConsultationSocket("c1", "tok", { onEmergency });
     const ws = MockWebSocket.instances[0];
     ws.simulateOpen();
     ws.simulateMessage({ type: "emergency", message: "Call 000 immediately" });
@@ -142,7 +149,7 @@ describe("onEmergency callback", () => {
 describe("onEnded callback", () => {
   it("is called when server sends ended message", () => {
     const onEnded = vi.fn();
-    const sock = new ConsultationSocket("http://localhost:8080", "c1", { onEnded });
+    new ConsultationSocket("c1", "tok", { onEnded });
     const ws = MockWebSocket.instances[0];
     ws.simulateOpen();
     ws.simulateMessage({ type: "ended", consultationId: "c1" });
@@ -153,7 +160,7 @@ describe("onEnded callback", () => {
 describe("onError callback", () => {
   it("is called on WebSocket error", () => {
     const onError = vi.fn();
-    const sock = new ConsultationSocket("http://localhost:8080", "c1", { onError });
+    new ConsultationSocket("c1", "tok", { onError });
     const ws = MockWebSocket.instances[0];
     ws.simulateError();
     expect(onError).toHaveBeenCalledOnce();
@@ -166,7 +173,7 @@ describe("onError callback", () => {
 
 describe("disconnect", () => {
   it("closes the WebSocket", () => {
-    const sock = new ConsultationSocket("http://localhost:8080", "c1");
+    const sock = new ConsultationSocket("c1", "tok");
     const ws = MockWebSocket.instances[0];
     ws.simulateOpen();
     sock.disconnect();

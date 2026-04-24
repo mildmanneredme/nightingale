@@ -62,8 +62,7 @@ export function reportClientError(
   correlationId?: string,
   page?: string
 ): void {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
-  fetch(`${apiUrl}/api/v1/client-error`, {
+  fetch("/api/v1/client-error", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

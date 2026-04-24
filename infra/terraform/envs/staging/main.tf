@@ -83,8 +83,9 @@ module "ecs" {
   ecr_repository_url    = module.ecr.api_repository_url
   db_secret_arn         = module.rds.secret_arn
   db_host               = module.rds.db_host
-  cognito_user_pool_id  = module.cognito.user_pool_id
-  cognito_client_id     = module.cognito.web_client_id
+  cognito_user_pool_id      = module.cognito.user_pool_id
+  cognito_client_id         = module.cognito.web_client_id
+  gemini_api_key_secret_arn = "arn:aws:secretsmanager:ap-southeast-2:682812950646:secret:nightingale/staging/gemini-api-key-wObADx"
 }
 
 module "waf" {

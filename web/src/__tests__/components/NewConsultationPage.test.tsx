@@ -13,6 +13,9 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/hooks/useAuth", () => ({
   useAuth: () => ({ token: "tok", setToken: vi.fn() }),
 }));
+vi.mock("@/hooks/useToast", () => ({
+  useToast: () => ({ toast: { error: vi.fn() } }),
+}));
 
 import { createConsultation } from "@/lib/api";
 import NewConsultationPage from "@/app/(patient)/consultation/new/page";
@@ -20,17 +23,23 @@ import NewConsultationPage from "@/app/(patient)/consultation/new/page";
 beforeEach(() => vi.clearAllMocks());
 
 describe("NewConsultationPage", () => {
-  it("renders presenting complaint textarea and consultation type selector", () => {
+  it("renders presenting complaint textarea and consultation type cards", () => {
     render(<NewConsultationPage />);
-    expect(screen.getByLabelText(/what brings you in/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/voice/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/what brings you in today/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /voice call/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /text chat/i })).toBeInTheDocument();
   });
 
   it("calls createConsultation on submit and redirects to audio-check", async () => {
-    (createConsultation as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ id: "new-c", status: "pending", consultationType: "voice", createdAt: "" });
+    (createConsultation as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      id: "new-c",
+      status: "pending",
+      consultationType: "voice",
+      createdAt: "",
+    });
     render(<NewConsultationPage />);
-    await userEvent.type(screen.getByLabelText(/what brings you in/i), "sore throat");
-    await userEvent.click(screen.getByRole("button", { name: /continue/i }));
+    await userEvent.type(screen.getByLabelText(/what brings you in today/i), "sore throat");
+    await userEvent.click(screen.getByRole("button", { name: /commence consultation/i }));
     await waitFor(() =>
       expect(createConsultation).toHaveBeenCalledWith("voice", "sore throat")
     );

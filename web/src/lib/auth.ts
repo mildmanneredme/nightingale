@@ -7,10 +7,14 @@ import {
 import { setToken } from "./api";
 
 function getPool(): CognitoUserPool {
-  return new CognitoUserPool({
-    UserPoolId: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID ?? "",
-    ClientId: process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID ?? "",
-  });
+  const UserPoolId = process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID;
+  const ClientId = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID;
+  if (!UserPoolId || !ClientId) {
+    throw new Error(
+      "Cognito is not configured. Set NEXT_PUBLIC_COGNITO_USER_POOL_ID and NEXT_PUBLIC_COGNITO_CLIENT_ID."
+    );
+  }
+  return new CognitoUserPool({ UserPoolId, ClientId });
 }
 
 // In-memory token — mirrors what api.ts stores
@@ -23,6 +27,36 @@ export function getStoredToken(): string | null {
 function storeToken(token: string | null) {
   _storedToken = token;
   setToken(token);
+}
+
+// ---------------------------------------------------------------------------
+// Cognito error code → user-facing message
+// ---------------------------------------------------------------------------
+
+function mapCognitoError(err: unknown): string {
+  const code = (err as { code?: string; name?: string })?.code
+    ?? (err as { name?: string })?.name;
+  switch (code) {
+    case "NotAuthorizedException":
+      return "Incorrect email or password.";
+    case "UserNotFoundException":
+      return "No account found with that email.";
+    case "UserNotConfirmedException":
+      return "Please verify your email before signing in.";
+    case "PasswordResetRequiredException":
+      return "Your password must be reset. Use 'Forgot password?'.";
+    case "TooManyRequestsException":
+    case "LimitExceededException":
+      return "Too many attempts. Please wait a few minutes and try again.";
+    case "CodeMismatchException":
+      return "That code is incorrect. Please check and try again.";
+    case "ExpiredCodeException":
+      return "That code has expired. Please request a new one.";
+    case "InvalidPasswordException":
+      return "Password must be at least 8 characters.";
+    default:
+      return err instanceof Error ? err.message : "Something went wrong. Please try again.";
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -42,7 +76,7 @@ export function signIn(email: string, password: string): Promise<string> {
         resolve(token);
       },
       onFailure(err) {
-        reject(err instanceof Error ? err : new Error(String(err)));
+        reject(new Error(mapCognitoError(err)));
       },
     });
   });
@@ -67,7 +101,7 @@ export function signUp(email: string, password: string): Promise<void> {
     const attrs = [new CognitoUserAttribute({ Name: "email", Value: email })];
 
     getPool().signUp(email, password, attrs, [], (err) => {
-      if (err) return reject(err instanceof Error ? err : new Error(String(err)));
+      if (err) return reject(new Error(mapCognitoError(err)));
       resolve();
     });
   });
@@ -82,8 +116,42 @@ export function confirmSignUp(email: string, code: string): Promise<void> {
     const user = new CognitoUser({ Username: email, Pool: getPool() });
 
     user.confirmRegistration(code, true, (err) => {
-      if (err) return reject(err instanceof Error ? err : new Error(String(err)));
+      if (err) return reject(new Error(mapCognitoError(err)));
       resolve();
+    });
+  });
+}
+
+// ---------------------------------------------------------------------------
+// forgotPassword — step 1: request reset code
+// ---------------------------------------------------------------------------
+
+export function forgotPassword(email: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const user = new CognitoUser({ Username: email, Pool: getPool() });
+
+    user.forgotPassword({
+      onSuccess: () => resolve(),
+      onFailure: (err) => reject(new Error(mapCognitoError(err))),
+    });
+  });
+}
+
+// ---------------------------------------------------------------------------
+// confirmForgotPassword — step 2: submit code + new password
+// ---------------------------------------------------------------------------
+
+export function confirmForgotPassword(
+  email: string,
+  code: string,
+  newPassword: string
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const user = new CognitoUser({ Username: email, Pool: getPool() });
+
+    user.confirmPassword(code, newPassword, {
+      onSuccess: () => resolve(),
+      onFailure: (err) => reject(new Error(mapCognitoError(err))),
     });
   });
 }

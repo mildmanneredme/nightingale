@@ -1,14 +1,17 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ConsultationSocket, TranscriptEvent } from "@/lib/consultation-ws";
-import { endConsultation } from "@/lib/api";
+import { getStreamToken } from "@/lib/api";
 import ConsultationStepper from "@/components/ConsultationStepper";
 
 interface Turn {
   role: "patient" | "assistant";
   text: string;
 }
+
+// Gemini Live sends PCM16 mono at 24 kHz
+const GEMINI_AUDIO_SAMPLE_RATE = 24000;
 
 export default function VoiceConsultationPage() {
   const { id } = useParams<{ id: string }>();
@@ -18,10 +21,43 @@ export default function VoiceConsultationPage() {
   const [ended, setEnded] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [muted, setMuted] = useState(false);
+  const [connectError, setConnectError] = useState<string | null>(null);
+
   const socketRef = useRef<ConsultationSocket | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Audio playback — scheduled gapless playback of PCM16 chunks from Gemini
+  const playbackCtxRef = useRef<AudioContext | null>(null);
+  const nextPlayTimeRef = useRef(0);
+
+  const playAudioChunk = useCallback((base64Data: string) => {
+    const ctx = playbackCtxRef.current;
+    if (!ctx) return;
+
+    // Resume AudioContext if suspended (browser autoplay policy)
+    if (ctx.state === "suspended") ctx.resume();
+
+    const binary = atob(base64Data);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+
+    const int16 = new Int16Array(bytes.buffer);
+    const float32 = new Float32Array(int16.length);
+    for (let i = 0; i < int16.length; i++) float32[i] = int16[i] / 32768;
+
+    const buffer = ctx.createBuffer(1, float32.length, GEMINI_AUDIO_SAMPLE_RATE);
+    buffer.getChannelData(0).set(float32);
+
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ctx.destination);
+
+    const when = Math.max(ctx.currentTime, nextPlayTimeRef.current);
+    source.start(when);
+    nextPlayTimeRef.current = when + buffer.duration;
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => setElapsed((e) => e + 1), 1000);
@@ -35,46 +71,69 @@ export default function VoiceConsultationPage() {
   useEffect(() => {
     if (!id) return;
 
-    const socket = new ConsultationSocket(
-      process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080",
-      id,
-      {
-        onTranscript: (turn: TranscriptEvent) =>
-          setTurns((prev) => [...prev, { role: turn.speaker === "ai" ? "assistant" : "patient", text: turn.text }]),
-        onEmergency: () => setIsEmergency(true),
-        onEnded: () => {
-          setEnded(true);
-          router.push(`/consultation/${id}/photos`);
-        },
-      }
-    );
-    socketRef.current = socket;
+    playbackCtxRef.current = new AudioContext();
 
-    navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-      mediaStreamRef.current = stream;
-      const ctx = new AudioContext({ sampleRate: 16000 });
-      const src = ctx.createMediaStreamSource(stream);
-      const processor = ctx.createScriptProcessor(4096, 1, 1);
-      processorRef.current = processor;
-      src.connect(processor);
-      processor.connect(ctx.destination);
-      processor.onaudioprocess = (e) => {
-        if (muted) return;
-        const float32 = e.inputBuffer.getChannelData(0);
-        const int16 = new Int16Array(float32.length);
-        for (let i = 0; i < float32.length; i++) {
-          int16[i] = Math.max(-32768, Math.min(32767, Math.round(float32[i] * 32767)));
+    let cancelled = false;
+
+    async function connect() {
+      try {
+        const { wsToken } = await getStreamToken(id);
+        if (cancelled) return;
+
+        const socket = new ConsultationSocket(id, wsToken, {
+          onTranscript: (turn: TranscriptEvent) =>
+            setTurns((prev) => [...prev, {
+              role: turn.speaker === "ai" ? "assistant" : "patient",
+              text: turn.text,
+            }]),
+          onAudio: playAudioChunk,
+          onEmergency: () => setIsEmergency(true),
+          onEnded: () => {
+            setEnded(true);
+            router.push(`/consultation/${id}/photos`);
+          },
+        });
+        socketRef.current = socket;
+
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop());
+          socket.disconnect();
+          return;
         }
-        const b64 = btoa(String.fromCharCode(...new Uint8Array(int16.buffer)));
-        socket.sendAudio(b64);
-      };
-    });
+        mediaStreamRef.current = stream;
+
+        const ctx = new AudioContext({ sampleRate: 16000 });
+        const src = ctx.createMediaStreamSource(stream);
+        const processor = ctx.createScriptProcessor(4096, 1, 1);
+        processorRef.current = processor;
+        src.connect(processor);
+        processor.connect(ctx.destination);
+        processor.onaudioprocess = (e) => {
+          if (muted) return;
+          const float32 = e.inputBuffer.getChannelData(0);
+          const int16 = new Int16Array(float32.length);
+          for (let i = 0; i < float32.length; i++) {
+            int16[i] = Math.max(-32768, Math.min(32767, Math.round(float32[i] * 32767)));
+          }
+          const b64 = btoa(String.fromCharCode(...new Uint8Array(int16.buffer)));
+          socket.sendAudio(b64);
+        };
+      } catch {
+        if (!cancelled) setConnectError("Could not start session. Please go back and try again.");
+      }
+    }
+
+    connect();
 
     return () => {
-      socket.disconnect();
+      cancelled = true;
+      socketRef.current?.disconnect();
       mediaStreamRef.current?.getTracks().forEach((t) => t.stop());
+      playbackCtxRef.current?.close();
     };
-  }, [id, router, muted]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, router]);
 
   function handleEnd() {
     socketRef.current?.endSession();
@@ -103,6 +162,14 @@ export default function VoiceConsultationPage() {
         <ConsultationStepper activeStep={2} variant="dark" />
       </div>
 
+      {/* Connection error */}
+      {connectError && (
+        <div role="alert" className="mx-4 mt-4 p-4 bg-error-container text-on-error-container rounded-xl">
+          <p className="font-manrope font-bold mb-1">Connection Failed</p>
+          <p className="font-body-md">{connectError}</p>
+        </div>
+      )}
+
       {/* Emergency banner */}
       {isEmergency && (
         <div role="alert" className="mx-4 mt-4 p-4 bg-error-container text-on-error-container rounded-xl">
@@ -117,7 +184,6 @@ export default function VoiceConsultationPage() {
 
       {/* Status */}
       <div className="text-center py-8">
-        {/* Animated waveform */}
         <div className="flex items-center justify-center gap-1 mb-4 h-12">
           {[...Array(7)].map((_, i) => (
             <div
@@ -140,7 +206,7 @@ export default function VoiceConsultationPage() {
 
       {/* Transcript */}
       <div className="flex-1 overflow-y-auto px-4 space-y-3 pb-4">
-        {turns.length === 0 && (
+        {turns.length === 0 && !connectError && (
           <p className="text-white/40 font-body-md text-center py-8">
             Speak naturally about your symptoms…
           </p>
@@ -164,7 +230,7 @@ export default function VoiceConsultationPage() {
       </div>
 
       {/* Controls */}
-      {!ended && (
+      {!ended && !connectError && (
         <div className="flex items-center justify-center gap-6 px-6 py-6 border-t border-white/10">
           <button
             onClick={() => setMuted(!muted)}

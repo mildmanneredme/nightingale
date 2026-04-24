@@ -6,6 +6,7 @@ vi.mock("@/lib/auth", () => ({ signIn: vi.fn() }));
 vi.mock("@/lib/api", () => ({ getMe: vi.fn(), setToken: vi.fn() }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: vi.fn() }),
+  useSearchParams: () => ({ get: vi.fn().mockReturnValue(null) }),
 }));
 vi.mock("@/hooks/useAuth", () => ({
   useAuth: () => ({ token: null, setToken: vi.fn() }),

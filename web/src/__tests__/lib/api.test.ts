@@ -19,12 +19,14 @@ import {
 // Token store is internal — tests inject via module-level setter
 import { setToken } from "@/lib/api";
 
-const BASE = "http://localhost:8080";
-
 beforeEach(() => {
-  vi.stubGlobal("fetch", vi.fn());
-  // Reset env
-  process.env.NEXT_PUBLIC_API_URL = BASE;
+  // Default: always returns 200 so fire-and-forget calls (e.g. reportClientError) don't crash
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+    ok: true,
+    status: 200,
+    headers: { get: () => null },
+    json: async () => ({}),
+  }));
   setToken("test-access-token");
 });
 
@@ -82,7 +84,7 @@ describe("getConsultations", () => {
     const result = await getConsultations();
     expect(result).toEqual(list);
     const [url] = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(url).toBe(`${BASE}/api/v1/consultations`);
+    expect(url).toBe("/api/v1/consultations");
   });
 
   it("throws ApiError on non-2xx", async () => {
@@ -101,7 +103,7 @@ describe("createConsultation", () => {
     const result = await createConsultation("voice", "sore throat");
     expect(result.id).toBe("new-id");
     const [url, init] = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(url).toBe(`${BASE}/api/v1/consultations`);
+    expect(url).toBe("/api/v1/consultations");
     expect((init as RequestInit).method).toBe("POST");
     expect(JSON.parse((init as RequestInit).body as string)).toMatchObject({
       consultationType: "voice",
@@ -121,7 +123,7 @@ describe("getConsultation", () => {
     const result = await getConsultation("c1");
     expect(result).toEqual(consultation);
     const [url] = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(url).toBe(`${BASE}/api/v1/consultations/c1`);
+    expect(url).toBe("/api/v1/consultations/c1");
   });
 
   it("throws ApiError 404 when not found", async () => {
@@ -140,7 +142,7 @@ describe("endConsultation", () => {
     mockFetch(200, { status: "transcript_ready" });
     await endConsultation("c1", transcript);
     const [url, init] = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(url).toBe(`${BASE}/api/v1/consultations/c1/end`);
+    expect(url).toBe("/api/v1/consultations/c1/end");
     expect(JSON.parse((init as RequestInit).body as string)).toMatchObject({ transcript });
   });
 });
@@ -155,7 +157,7 @@ describe("registerPatient", () => {
     const result = await registerPatient("a@b.com", "v1.0");
     expect(result.id).toBe("p1");
     const [url, init] = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(url).toBe(`${BASE}/api/v1/patients/register`);
+    expect(url).toBe("/api/v1/patients/register");
     expect(JSON.parse((init as RequestInit).body as string)).toMatchObject({
       email: "a@b.com",
       privacyPolicyVersion: "v1.0",
@@ -173,7 +175,7 @@ describe("getMe", () => {
     const result = await getMe();
     expect(result.email).toBe("a@b.com");
     const [url] = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(url).toBe(`${BASE}/api/v1/patients/me`);
+    expect(url).toBe("/api/v1/patients/me");
   });
 });
 
@@ -197,7 +199,7 @@ describe("addAllergy", () => {
     const result = await addAllergy("Penicillin", "severe");
     expect(result.id).toBe("a1");
     const [url] = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(url).toBe(`${BASE}/api/v1/patients/me/allergies`);
+    expect(url).toBe("/api/v1/patients/me/allergies");
   });
 });
 
@@ -206,7 +208,7 @@ describe("deleteAllergy", () => {
     mockFetch(204, null);
     await deleteAllergy("a1");
     const [url, init] = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(url).toBe(`${BASE}/api/v1/patients/me/allergies/a1`);
+    expect(url).toBe("/api/v1/patients/me/allergies/a1");
     expect((init as RequestInit).method).toBe("DELETE");
   });
 });

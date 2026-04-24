@@ -57,3 +57,8 @@ variable "cognito_client_id" {
   type    = string
   default = ""
 }
+
+variable "gemini_api_key_secret_arn" {
+  type    = string
+  default = ""
+}

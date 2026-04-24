@@ -36,6 +36,9 @@ async function getMocks() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Satisfy the getPool() guard so tests don't fail on missing env vars
+  process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID = "ap-southeast-2_testpool";
+  process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID = "test-client-id";
 });
 
 // ---------------------------------------------------------------------------

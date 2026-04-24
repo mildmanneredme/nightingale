@@ -49,7 +49,6 @@ describe("getErrorMessage", () => {
 describe("reportClientError", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({ ok: true })));
-    process.env.NEXT_PUBLIC_API_URL = "http://localhost:8080";
   });
 
   afterEach(() => {
@@ -62,7 +61,7 @@ describe("reportClientError", () => {
     await new Promise((r) => setTimeout(r, 0));
     expect(fetch).toHaveBeenCalledOnce();
     const [url, init] = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(url).toBe("http://localhost:8080/api/v1/client-error");
+    expect(url).toBe("/api/v1/client-error");
     expect((init as RequestInit).method).toBe("POST");
     const body = JSON.parse((init as RequestInit).body as string);
     expect(body).toMatchObject({

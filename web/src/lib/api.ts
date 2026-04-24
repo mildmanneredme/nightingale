@@ -1,7 +1,5 @@
 import { reportClientError } from "./errors";
 
-const apiUrl = () => process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
-
 // ---------------------------------------------------------------------------
 // Token store — in-memory for XSS safety
 // ---------------------------------------------------------------------------
@@ -32,7 +30,7 @@ export class ApiError extends Error {
 }
 
 // ---------------------------------------------------------------------------
-// Core fetch wrapper
+// Core fetch wrapper — uses relative paths so Next.js rewrites proxy to the API
 // ---------------------------------------------------------------------------
 
 async function apiFetch<T>(
@@ -41,7 +39,7 @@ async function apiFetch<T>(
 ): Promise<T> {
   if (!_token) throw new ApiError(401, "Not authenticated");
 
-  const res = await fetch(`${apiUrl()}${path}`, {
+  const res = await fetch(path, {
     ...init,
     headers: {
       "Content-Type": "application/json",
@@ -173,6 +171,14 @@ export function endConsultation(
   });
 }
 
+export function getStreamToken(
+  consultationId: string
+): Promise<{ wsToken: string; expiresInSeconds: number }> {
+  return apiFetch(`/api/v1/consultations/${consultationId}/stream-token`, {
+    method: "POST",
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Patient endpoints
 // ---------------------------------------------------------------------------
@@ -297,14 +303,11 @@ export async function uploadConsultationPhoto(
   form.append("qualityOverridden", String(quality.overridden));
   form.append("qualityIssues", JSON.stringify(quality.issues));
 
-  const res = await fetch(
-    `${apiUrl()}/api/v1/consultations/${consultationId}/photos`,
-    {
-      method: "POST",
-      headers: { Authorization: `Bearer ${_token}` },
-      body: form,
-    }
-  );
+  const res = await fetch(`/api/v1/consultations/${consultationId}/photos`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${_token}` },
+    body: form,
+  });
 
   if (!res.ok) {
     let message = "Upload failed";

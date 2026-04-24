@@ -17,17 +17,16 @@ export class ConsultationSocket {
   private ws: WebSocket;
 
   constructor(
-    apiBaseUrl: string,
     consultationId: string,
+    wsToken: string,
     callbacks: ConsultationSocketCallbacks = {}
   ) {
-    const wsUrl = apiBaseUrl
-      .replace(/^https:\/\//, "wss://")
-      .replace(/^http:\/\//, "ws://");
+    // Derive WebSocket URL from the current host so Next.js rewrites proxy it
+    // to the backend — no hardcoded origin needed.
+    const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const url = `${proto}//${window.location.host}/api/v1/consultations/${consultationId}/stream?token=${encodeURIComponent(wsToken)}`;
 
-    this.ws = new WebSocket(
-      `${wsUrl}/api/v1/consultations/${consultationId}/stream`
-    );
+    this.ws = new WebSocket(url);
 
     this.ws.onopen = () => callbacks.onOpen?.();
 
