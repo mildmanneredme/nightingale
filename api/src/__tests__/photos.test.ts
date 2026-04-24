@@ -20,16 +20,22 @@ jest.mock("../services/photoStorage", () => ({
   generatePresignedUrl: jest.fn(async (_key: string) => "https://s3.example.com/mock-presigned-url"),
 }));
 
-const PATIENT_SUB = "photo-test-patient-sub";
-const DOCTOR_SUB = "photo-test-doctor-sub";
+const PATIENT_SUB  = "photo-test-patient-sub";
+const DOCTOR_A_SUB = "photo-test-doctor-sub";      // assigned doctor
+const DOCTOR_B_SUB = "photo-test-doctor-b-sub";    // unassigned doctor (IDOR check)
+const ADMIN_SUB    = "photo-test-admin-sub";
 
-const patientApp = buildTestApp(PATIENT_SUB, "patient");
-const doctorApp = buildTestApp(DOCTOR_SUB, "doctor");
+const patientApp  = buildTestApp(PATIENT_SUB,  "patient");
+const doctorApp   = buildTestApp(DOCTOR_A_SUB, "doctor");
+const doctorBApp  = buildTestApp(DOCTOR_B_SUB, "doctor");
+const adminApp    = buildTestApp(ADMIN_SUB,    "admin");
 
 // Minimal valid JPEG header bytes
 const JPEG_BUFFER = Buffer.from([
   0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00,
 ]);
+
+let doctorAId: string;
 
 async function createPatient(): Promise<string> {
   const res = await request(patientApp)
@@ -42,11 +48,32 @@ async function createConsultation(): Promise<string> {
   const res = await request(patientApp)
     .post("/api/v1/consultations")
     .send({ consultationType: "text", presentingComplaint: "Skin rash on left arm" });
-  return res.body.id;
+  const consultationId = res.body.id;
+  // Assign to Doctor A so the ownership check passes
+  const pool = getTestPool();
+  await pool.query(
+    `UPDATE consultations SET assigned_doctor_id = $1 WHERE id = $2`,
+    [doctorAId, consultationId]
+  );
+  return consultationId;
 }
 
 beforeEach(async () => {
   await resetTestDb();
+  // Create Doctor A record (assigned doctor)
+  const pool = getTestPool();
+  const { rows } = await pool.query(
+    `INSERT INTO doctors (cognito_sub, email, first_name, last_name, ahpra_number, specialty, is_active)
+     VALUES ($1, $2, 'Alice', 'DoctorA', 'MED0011111', 'General Practice', TRUE) RETURNING id`,
+    [DOCTOR_A_SUB, "doctor-a@photo-test.com"]
+  );
+  doctorAId = rows[0].id;
+  // Doctor B record (NOT assigned to any consultation)
+  await pool.query(
+    `INSERT INTO doctors (cognito_sub, email, first_name, last_name, ahpra_number, specialty, is_active)
+     VALUES ($1, $2, 'Bob', 'DoctorB', 'MED0022222', 'General Practice', TRUE)`,
+    [DOCTOR_B_SUB, "doctor-b@photo-test.com"]
+  );
 });
 
 afterAll(async () => {
@@ -265,5 +292,45 @@ describe("GET /api/v1/consultations/:id/photos/:photoId/url", () => {
       `/api/v1/consultations/${fakeConsultationId}/photos/${fakePhotoId}/url`
     );
     expect(res.status).toBe(404);
+  });
+
+  // SEC-001: IDOR fix — unassigned doctor must not access another doctor's photos
+  it("returns 404 when Doctor B requests a presigned URL for Doctor A's consultation (IDOR)", async () => {
+    await createPatient();
+    const consultationId = await createConsultation(); // assigned to Doctor A
+
+    const uploadRes = await request(patientApp)
+      .post(`/api/v1/consultations/${consultationId}/photos`)
+      .field("qualityPassed", "true")
+      .field("qualityOverridden", "false")
+      .field("qualityIssues", "[]")
+      .attach("photo", JPEG_BUFFER, { filename: "rash.jpg", contentType: "image/jpeg" });
+    const photoId = uploadRes.body.id;
+
+    // Doctor B (not assigned) should be blocked
+    const res = await request(doctorBApp).get(
+      `/api/v1/consultations/${consultationId}/photos/${photoId}/url`
+    );
+    expect(res.status).toBe(404);
+  });
+
+  // SEC-001: Admin bypass — admin can access any consultation's photos
+  it("returns presigned URL for an admin regardless of consultation assignment", async () => {
+    await createPatient();
+    const consultationId = await createConsultation(); // assigned to Doctor A
+
+    const uploadRes = await request(patientApp)
+      .post(`/api/v1/consultations/${consultationId}/photos`)
+      .field("qualityPassed", "true")
+      .field("qualityOverridden", "false")
+      .field("qualityIssues", "[]")
+      .attach("photo", JPEG_BUFFER, { filename: "rash.jpg", contentType: "image/jpeg" });
+    const photoId = uploadRes.body.id;
+
+    const res = await request(adminApp).get(
+      `/api/v1/consultations/${consultationId}/photos/${photoId}/url`
+    );
+    expect(res.status).toBe(200);
+    expect(res.body.url).toBeDefined();
   });
 });

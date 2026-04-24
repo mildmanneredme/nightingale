@@ -11,6 +11,7 @@
 
 import { Router, RequestHandler } from "express";
 import { pool } from "../db";
+import { requireRole } from "../middleware/auth";
 import { sendRenewalApprovedEmail, sendRenewalDeclinedEmail, sendRenewalReminderEmail } from "../services/emailService";
 import { logger } from "../logger";
 
@@ -138,7 +139,7 @@ router.get("/", async (req, res, next) => {
 
 // GET /api/v1/renewals/queue  (doctor only)
 // Returns pending renewal requests for the doctor queue.
-router.get("/queue", async (req, res, next) => {
+router.get("/queue", requireRole("doctor"), async (req, res, next) => {
   try {
     const { rows } = await pool.query(
       `SELECT r.id, r.status, r.medication_name, r.dosage,
@@ -177,7 +178,7 @@ router.get("/queue", async (req, res, next) => {
 });
 
 // POST /api/v1/renewals/:id/approve  (doctor only)
-router.post("/:id/approve", async (req, res, next) => {
+router.post("/:id/approve", requireRole("doctor"), async (req, res, next) => {
   try {
     const { reviewNote, validDays = 28 } = req.body as {
       reviewNote?: string;
@@ -237,7 +238,7 @@ router.post("/:id/approve", async (req, res, next) => {
 });
 
 // POST /api/v1/renewals/:id/decline  (doctor only)
-router.post("/:id/decline", async (req, res, next) => {
+router.post("/:id/decline", requireRole("doctor"), async (req, res, next) => {
   try {
     const { reviewNote } = req.body as { reviewNote?: string };
 
@@ -288,7 +289,7 @@ router.post("/:id/decline", async (req, res, next) => {
 // Fires 48h doctor queue alerts and 7-day patient reminders.
 // In production, called by a scheduled ECS task or EventBridge rule.
 // ---------------------------------------------------------------------------
-router.post("/expiry-check", async (_req, res, next) => {
+router.post("/expiry-check", requireRole("admin"), async (_req, res, next) => {
   try {
     // 48h alert: approved renewals expiring within 48 hours where alert not yet sent
     const { rows: expiring48h } = await pool.query(

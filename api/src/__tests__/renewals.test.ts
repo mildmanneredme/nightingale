@@ -204,12 +204,48 @@ describe("auto-renewal safety", () => {
 // ---------------------------------------------------------------------------
 describe("POST /api/v1/renewals/expiry-check", () => {
   it("returns counts of alerts and reminders sent", async () => {
-    const app = buildTestApp(DOCTOR_SUB, "doctor");
+    const app = buildTestApp(DOCTOR_SUB, "admin"); // admin-only
     const res = await request(app)
       .post("/api/v1/renewals/expiry-check")
       .expect(200);
 
     expect(typeof res.body.alerts48hSent).toBe("number");
     expect(typeof res.body.reminders7dSent).toBe("number");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SEC-001: Role guard enforcement
+// ---------------------------------------------------------------------------
+describe("SEC-001: renewal role guards", () => {
+  it("patient calling GET /queue receives 403", async () => {
+    const app = buildTestApp(PATIENT_SUB, "patient");
+    await request(app).get("/api/v1/renewals/queue").expect(403);
+  });
+
+  it("patient calling POST /:id/approve receives 403", async () => {
+    const app = buildTestApp(PATIENT_SUB, "patient");
+    await request(app)
+      .post("/api/v1/renewals/00000000-0000-0000-0000-000000000001/approve")
+      .send({ validDays: 28 })
+      .expect(403);
+  });
+
+  it("patient calling POST /:id/decline receives 403", async () => {
+    const app = buildTestApp(PATIENT_SUB, "patient");
+    await request(app)
+      .post("/api/v1/renewals/00000000-0000-0000-0000-000000000001/decline")
+      .send({ reason: "needs in-person review" })
+      .expect(403);
+  });
+
+  it("patient calling POST /expiry-check receives 403", async () => {
+    const app = buildTestApp(PATIENT_SUB, "patient");
+    await request(app).post("/api/v1/renewals/expiry-check").expect(403);
+  });
+
+  it("doctor calling GET /queue receives 200", async () => {
+    const app = buildTestApp(DOCTOR_SUB, "doctor");
+    await request(app).get("/api/v1/renewals/queue").expect(200);
   });
 });

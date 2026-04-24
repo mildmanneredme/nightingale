@@ -240,11 +240,32 @@ router.get(
   async (req, res, next) => {
     try {
       const { consultationId, photoId } = req.params;
+      const groups: string[] = (req as any).user?.["cognito:groups"] ?? [];
+      const isAdmin = groups.includes("admin");
+
+      // Doctors may only access photos from their assigned consultation (SEC-001)
+      let doctorId: string | null = null;
+      if (!isAdmin) {
+        const sub = (req as any).user.sub as string;
+        const { rows: dRows } = await pool.query(
+          `SELECT id FROM doctors WHERE cognito_sub = $1`,
+          [sub]
+        );
+        if (!dRows[0]) {
+          res.status(403).json({ error: "Doctor record not found" });
+          return;
+        }
+        doctorId = dRows[0].id as string;
+      }
 
       const { rows } = await pool.query(
-        `SELECT id, s3_key FROM consultation_photos
-         WHERE id = $1 AND consultation_id = $2`,
-        [photoId, consultationId]
+        `SELECT cp.id, cp.s3_key
+         FROM consultation_photos cp
+         JOIN consultations c ON c.id = cp.consultation_id
+         WHERE cp.id = $1
+           AND cp.consultation_id = $2
+           AND ($3::boolean OR c.assigned_doctor_id = $4)`,
+        [photoId, consultationId, isAdmin, doctorId]
       );
 
       if (!rows[0]) {
