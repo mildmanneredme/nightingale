@@ -2,17 +2,32 @@
 import { useEffect, useState } from "react";
 import { getMe, updateMe, Patient } from "@/lib/api";
 
+function ReadOnlyField({ label, value, note }: { label: string; value?: string | null; note?: string }) {
+  return (
+    <div className="bg-surface-container rounded-lg p-4">
+      <p className="text-label-sm text-on-surface-variant mb-1">{label}</p>
+      <p className="text-body-md text-on-surface">{value ?? "—"}</p>
+      {note && <p className="text-body-sm text-on-surface-variant mt-1">{note}</p>}
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   const [patient, setPatient] = useState<Patient | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [guardianSaved, setGuardianSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [phone, setPhone] = useState("");
+
+  const [guardianName, setGuardianName] = useState("");
+  const [guardianEmail, setGuardianEmail] = useState("");
+  const [guardianRelationship, setGuardianRelationship] = useState("");
 
   useEffect(() => {
     getMe()
@@ -22,6 +37,9 @@ export default function ProfilePage() {
         setLastName(p.lastName ?? "");
         setDateOfBirth(p.dateOfBirth ?? "");
         setPhone(p.phone ?? "");
+        setGuardianName(p.guardianName ?? "");
+        setGuardianEmail(p.guardianEmail ?? "");
+        setGuardianRelationship(p.guardianRelationship ?? "");
       })
       .finally(() => setLoading(false));
   }, []);
@@ -30,10 +48,21 @@ export default function ProfilePage() {
     e.preventDefault();
     setError(null);
     setSaved(false);
+    setGuardianSaved(false);
     setSaving(true);
     try {
-      await updateMe({ firstName, lastName, dateOfBirth, phone });
-      setSaved(true);
+      const fields: Parameters<typeof updateMe>[0] = { firstName, lastName, dateOfBirth, phone };
+      if (patient?.isPaediatric) {
+        fields.guardianName = guardianName;
+        fields.guardianEmail = guardianEmail;
+        fields.guardianRelationship = guardianRelationship;
+      }
+      await updateMe(fields);
+      if (patient?.isPaediatric) {
+        setGuardianSaved(true);
+      } else {
+        setSaved(true);
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to save profile.");
     } finally {
@@ -56,6 +85,11 @@ export default function ProfilePage() {
       {saved && (
         <div className="mb-4 p-3 bg-secondary-container text-on-secondary-container rounded-md text-sm">
           Profile saved successfully.
+        </div>
+      )}
+      {guardianSaved && (
+        <div className="mb-4 p-3 bg-secondary-container text-on-secondary-container rounded-md text-sm">
+          Guardian details updated.
         </div>
       )}
 
@@ -105,17 +139,63 @@ export default function ProfilePage() {
           />
         </div>
 
-        <div className="bg-surface-container rounded-lg p-4">
-          <p className="text-label-sm text-on-surface-variant mb-1">EMAIL ADDRESS</p>
-          <p className="text-body-md text-on-surface">{patient?.email}</p>
-        </div>
+        <ReadOnlyField
+          label="EMAIL ADDRESS"
+          value={patient?.email}
+          note="To change your email, contact support."
+        />
+
+        {patient?.isPaediatric && (
+          <div className="border border-outline-variant rounded-xl p-5 space-y-4">
+            <div>
+              <p className="text-label-md font-semibold text-on-surface mb-1">Guardian / Parent Details</p>
+              <p className="text-body-sm text-on-surface-variant">
+                This account is registered for a minor. Keep guardian contact details current.
+              </p>
+            </div>
+
+            <div>
+              <label htmlFor="guardianName" className="block text-label-sm text-on-surface-variant mb-1">GUARDIAN NAME</label>
+              <input
+                id="guardianName"
+                type="text"
+                value={guardianName}
+                onChange={(e) => setGuardianName(e.target.value)}
+                className="w-full border-2 border-outline-variant rounded px-3 py-2 text-body-md focus:outline-none focus:border-primary"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="guardianEmail" className="block text-label-sm text-on-surface-variant mb-1">GUARDIAN EMAIL</label>
+              <input
+                id="guardianEmail"
+                type="email"
+                value={guardianEmail}
+                onChange={(e) => setGuardianEmail(e.target.value)}
+                className="w-full border-2 border-outline-variant rounded px-3 py-2 text-body-md focus:outline-none focus:border-primary"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="guardianRelationship" className="block text-label-sm text-on-surface-variant mb-1">RELATIONSHIP TO PATIENT</label>
+              <input
+                id="guardianRelationship"
+                type="text"
+                value={guardianRelationship}
+                onChange={(e) => setGuardianRelationship(e.target.value)}
+                placeholder="e.g. Mother, Father, Carer"
+                className="w-full border-2 border-outline-variant rounded px-3 py-2 text-body-md focus:outline-none focus:border-primary"
+              />
+            </div>
+          </div>
+        )}
 
         <button
           type="submit"
           disabled={saving}
           className="w-full bg-primary text-on-primary rounded-lg py-4 font-semibold text-body-md hover:opacity-90 disabled:opacity-50"
         >
-          {saving ? "Saving…" : "Save Profile"}
+          {saving ? "Saving…" : "Save Changes"}
         </button>
       </form>
     </div>

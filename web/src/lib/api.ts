@@ -99,6 +99,10 @@ export interface Patient {
   emergencyContactName?: string;
   emergencyContactPhone?: string;
   emergencyContactRel?: string;
+  isPaediatric?: boolean;
+  guardianName?: string;
+  guardianEmail?: string;
+  guardianRelationship?: string;
   allergies: Allergy[];
   medications: Medication[];
   conditions: Condition[];

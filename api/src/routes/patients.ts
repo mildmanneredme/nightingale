@@ -68,6 +68,9 @@ router.get("/me", async (req, res, next) => {
          emergency_contact_phone AS "emergencyContactPhone",
          emergency_contact_rel AS "emergencyContactRel",
          is_paediatric AS "isPaediatric",
+         guardian_name AS "guardianName",
+         guardian_email AS "guardianEmail",
+         guardian_relationship AS "guardianRelationship",
          privacy_policy_accepted_at AS "privacyPolicyAcceptedAt",
          created_at AS "createdAt"
        FROM patients
@@ -125,6 +128,9 @@ router.put("/me", async (req, res, next) => {
       emergencyContactName,
       emergencyContactPhone,
       emergencyContactRel,
+      guardianName,
+      guardianEmail,
+      guardianRelationship,
     } = req.body;
 
     if (biologicalSex !== undefined && !VALID_BIOLOGICAL_SEX.includes(biologicalSex)) {
@@ -145,14 +151,20 @@ router.put("/me", async (req, res, next) => {
          ihi_number              = COALESCE($8, ihi_number),
          emergency_contact_name  = COALESCE($9, emergency_contact_name),
          emergency_contact_phone = COALESCE($10, emergency_contact_phone),
-         emergency_contact_rel   = COALESCE($11, emergency_contact_rel)
+         emergency_contact_rel   = COALESCE($11, emergency_contact_rel),
+         guardian_name           = COALESCE($12, guardian_name),
+         guardian_email          = COALESCE($13, guardian_email),
+         guardian_relationship   = COALESCE($14, guardian_relationship)
        WHERE cognito_sub = $1 AND deletion_requested_at IS NULL
        RETURNING
          id, email,
          full_name AS "fullName",
          to_char(date_of_birth, 'YYYY-MM-DD') AS "dateOfBirth",
          biological_sex AS "biologicalSex",
-         phone, address`,
+         phone, address,
+         guardian_name AS "guardianName",
+         guardian_email AS "guardianEmail",
+         guardian_relationship AS "guardianRelationship"`,
       [
         sub,
         fullName ?? null,
@@ -165,6 +177,9 @@ router.put("/me", async (req, res, next) => {
         emergencyContactName ?? null,
         emergencyContactPhone ?? null,
         emergencyContactRel ?? null,
+        guardianName ?? null,
+        guardianEmail ?? null,
+        guardianRelationship ?? null,
       ]
     );
 
