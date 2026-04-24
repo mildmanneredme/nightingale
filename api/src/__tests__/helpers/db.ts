@@ -27,6 +27,8 @@ export async function resetTestDb(): Promise<void> {
       patient_medications,
       patient_allergies,
       patients,
+      doctor_date_overrides,
+      doctor_availability,
       doctors
     RESTART IDENTITY CASCADE
   `);

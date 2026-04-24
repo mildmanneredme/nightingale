@@ -1,6 +1,6 @@
 # PRD-017 — Doctor Scheduling & Availability
 
-> **Status:** Not Started
+> **Status:** Shipped 2026-04-24
 > **Phase:** Sprint 5 (Week 10–12)
 > **Type:** Technical — Doctor Web App
 > **Owner:** CTO
@@ -82,13 +82,36 @@ This PRD must be live before beta launch. Any patient-facing promise of a respon
 
 ## Acceptance Criteria
 
-- [ ] Doctor can set weekly recurring availability and save it
-- [ ] Doctor can block out a specific date as unavailable
-- [ ] Daily cap can be set; new consultations queue past the cap rather than being rejected
-- [ ] Capacity utilisation % shows correctly in analytics view
-- [ ] Patient-facing "estimated response time" reflects the actual next available doctor slot, not a hardcoded value
-- [ ] Admin alert fires when utilisation hits 80%
-- [ ] All times displayed in AEST/AEDT regardless of doctor's browser timezone
+- [x] Doctor can set weekly recurring availability and save it
+- [x] Doctor can block out a specific date as unavailable
+- [x] Daily cap can be set; new consultations queue past the cap rather than being rejected
+- [x] Capacity utilisation % shows correctly in analytics view
+- [x] Patient-facing "estimated response time" reflects the actual next available doctor slot, not a hardcoded value
+- [x] Admin alert fires when utilisation hits 80% (audit log event `doctor.capacity_alert`)
+- [x] All times displayed in AEST/AEDT — `Australia/Sydney` via `Intl.DateTimeFormat`, DST handled automatically
+
+## Implementation Notes (2026-04-24)
+
+**DB:**
+- `infra/database/migrations/009_doctor_availability.sql` — `doctor_availability` (one row per doctor: weekly_windows JSONB, daily_cap); `doctor_date_overrides` (per-date blocked/available overrides)
+
+**API (`api/src/routes/availability.ts`):**
+- `GET /api/v1/doctor/schedule` — returns weekly windows + overrides + daily cap; creates default Mon–Fri 08:00–18:00 if none set
+- `PUT /api/v1/doctor/schedule` — update windows and/or daily cap; writes `doctor.availability_updated` audit event
+- `POST /api/v1/doctor/schedule/overrides` — add/update date override (upsert)
+- `DELETE /api/v1/doctor/schedule/overrides/:date` — remove override
+- `GET /api/v1/doctor/schedule/capacity` — monthly utilisation %, today's count, daily cap hit flag; logs `doctor.capacity_alert` at ≥80%, `doctor.daily_cap_reached` when daily cap hit
+- `GET /api/v1/consultations/response-time` (patient-facing, public) — next available doctor window + queue length → `estimatedResponseText`
+
+**Frontend (`web/src/app/(doctor)/schedule/page.tsx`):**
+- Capacity bar widget with utilisation %, today's count, daily cap editor
+- Weekly grid: toggle days on/off, time pickers per day (AEST)
+- Date overrides: add/remove date blocks or extra availability
+- Schedule nav link added to doctor portal header
+
+**Tests:** 10 integration tests green: default schedule, update windows, update cap, invalid cap rejected, invalid windows rejected, audit log written, date override add/get/remove, capacity stats, response time estimate
+
+**Timezone:** All server-side logic uses `Australia/Sydney` via `Intl.DateTimeFormat.toLocaleString`. DST transitions (Oct/Apr) handled automatically by the JS runtime.
 
 ---
 

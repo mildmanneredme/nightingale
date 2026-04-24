@@ -20,7 +20,10 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
         <Link href="/doctor/queue" className="font-display font-bold text-primary text-lg tracking-tight">
           Nightingale Doctor Portal
         </Link>
-        <span className="text-on-surface-variant text-body-md">Doctor Review</span>
+        <nav className="flex items-center gap-4">
+          <Link href="/doctor/queue" className="text-body-md text-on-surface-variant hover:text-primary transition-colors">Queue</Link>
+          <Link href="/doctor/schedule" className="text-body-md text-on-surface-variant hover:text-primary transition-colors">Schedule</Link>
+        </nav>
       </header>
       <main className="pt-14 pb-8 px-patient-margin max-w-5xl mx-auto">
         {children}

@@ -35,7 +35,7 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | [PRD-014](../shipped/PRD-014-patient-notifications.md) | Patient Notifications | Build | Sprint 5 | Week 10–12 | **Shipped 2026-04-24** ✅ |
 | [PRD-015](PRD-015-post-consultation-followup.md) | Post-Consultation Follow-Up | Build | Sprint 6 | Week 12–14 | Not started |
 | [PRD-016](PRD-016-beta-launch-readiness.md) | Beta Launch Readiness | Build | Sprint 6 | Week 12–14 | Not started |
-| [PRD-017](PRD-017-doctor-scheduling-availability.md) | Doctor Scheduling & Availability | Build | Sprint 5 | Week 10–12 | Not started |
+| [PRD-017](../shipped/PRD-017-doctor-scheduling-availability.md) | Doctor Scheduling & Availability | Build | Sprint 5 | Week 10–12 | **Shipped 2026-04-24** ✅ |
 | [PRD-018](PRD-018-script-renewals.md) | Script Renewal Workflow | Build | Sprint 5 | Week 10–12 | Not started |
 | [PRD-019](PRD-019-clinical-knowledge-base-proprietary.md) | Clinical Knowledge Base: Proprietary Extensions (eTG, AMH, MIMS) | Phase 2 | Post-Beta | After PRD-011 in production | Not started |
 | [PRD-020](../shipped/PRD-020-patient-web-frontend.md) | Patient Web Frontend | Build | Sprint 2 | Week 5–7 | **Shipped 2026-04-23** ✅ |
@@ -58,6 +58,7 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | [PRD-012](../shipped/PRD-012-clinical-ai-engine.md) | Clinical AI Engine | 2026-04-24 | 20 PII unit tests + 13 engine integration tests green (Anthropic client mocked); Claude Sonnet 4.6 via Bedrock or direct API; prompt caching on system prompt; deterministic flags; cannot-assess triage; photo vision analysis deferred; pre-production gates pending Medical Director sign-off |
 | [PRD-020](../shipped/PRD-020-patient-web-frontend.md) | Patient Web Frontend | 2026-04-23 | 54 Vitest tests green; 10 Next.js routes; real Cognito auth; Tailwind design system matching clinical_empathy mockups; text chat UI added; E2E Playwright deferred pending Cognito test user setup |
 | [PRD-014](../shipped/PRD-014-patient-notifications.md) | Patient Notifications | 2026-04-24 | 11 Jest integration tests green (SendGrid mocked); response_ready + rejected email templates; SendGrid webhook handler; patient inbox page with unread badge; fire-and-forget from doctor approve/amend/reject; SMS deferred |
+| [PRD-017](../shipped/PRD-017-doctor-scheduling-availability.md) | Doctor Scheduling & Availability | 2026-04-24 | 10 Jest integration tests green; weekly schedule CRUD; date overrides; daily cap; monthly capacity widget; patient response-time estimate endpoint; audit log events; AEST timezone via Intl |
 
 ---
 

@@ -5,6 +5,7 @@ import { logger } from "../logger";
 import { GeminiLiveSession } from "../services/geminiLive";
 import { sendTextMessage, TextTurn } from "../services/textConsultation";
 import { runEngine } from "../services/clinicalAiEngine";
+import { getResponseTimeEstimate } from "./availability";
 
 // Fire-and-forget engine trigger. Errors are logged but never bubble to the
 // HTTP response — the patient's consultation end is acknowledged immediately.
@@ -274,6 +275,19 @@ router.post("/:id/chat", async (req, res, next) => {
       aiResponse,
       status: newStatus,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// GET /api/v1/consultations/response-time
+// Patient-facing estimated response time (no auth required — called before login).
+// ---------------------------------------------------------------------------
+router.get("/response-time", async (_req, res, next) => {
+  try {
+    const estimate = await getResponseTimeEstimate();
+    res.json(estimate);
   } catch (err) {
     next(err);
   }

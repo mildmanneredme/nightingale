@@ -404,3 +404,73 @@ export function getInbox(): Promise<InboxResponse> {
 export function markNotificationRead(notificationId: string): Promise<{ id?: string; readAt?: string; alreadyRead?: boolean }> {
   return apiFetch(`/api/v1/inbox/${notificationId}/read`, { method: "PATCH" });
 }
+
+// ---------------------------------------------------------------------------
+// Doctor schedule & availability
+// ---------------------------------------------------------------------------
+
+export interface AvailabilityWindow {
+  day: number;        // 0=Sun … 6=Sat
+  start_time: string; // "HH:MM" AEST
+  end_time: string;   // "HH:MM" AEST
+}
+
+export interface DateOverride {
+  date: string;       // YYYY-MM-DD
+  available: boolean;
+  windows?: AvailabilityWindow[];
+  note?: string;
+}
+
+export interface DoctorSchedule {
+  weeklyWindows: AvailabilityWindow[];
+  dailyCap: number;
+  overrides: DateOverride[];
+}
+
+export interface CapacityStats {
+  reviewedThisMonth: number;
+  monthlyCapEstimate: number;
+  utilisationPct: number;
+  dailyCap: number;
+  todayReviewCount: number;
+  dailyCapHit: boolean;
+}
+
+export interface ResponseTimeEstimate {
+  available: boolean;
+  estimatedResponseText: string;
+  nextSlotAt: string | null;
+}
+
+export function getDoctorSchedule(): Promise<DoctorSchedule> {
+  return apiFetch("/api/v1/doctor/schedule");
+}
+
+export function updateDoctorSchedule(
+  updates: { weeklyWindows?: AvailabilityWindow[]; dailyCap?: number }
+): Promise<{ weeklyWindows: AvailabilityWindow[]; dailyCap: number }> {
+  return apiFetch("/api/v1/doctor/schedule", {
+    method: "PUT",
+    body: JSON.stringify(updates),
+  });
+}
+
+export function addDateOverride(override: DateOverride): Promise<DateOverride & { id: string }> {
+  return apiFetch("/api/v1/doctor/schedule/overrides", {
+    method: "POST",
+    body: JSON.stringify(override),
+  });
+}
+
+export function removeDateOverride(date: string): Promise<void> {
+  return apiFetch(`/api/v1/doctor/schedule/overrides/${date}`, { method: "DELETE" });
+}
+
+export function getCapacityStats(): Promise<CapacityStats> {
+  return apiFetch("/api/v1/doctor/schedule/capacity");
+}
+
+export function getResponseTime(): Promise<ResponseTimeEstimate> {
+  return apiFetch("/api/v1/consultations/response-time");
+}
