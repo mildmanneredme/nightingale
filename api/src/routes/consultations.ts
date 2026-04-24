@@ -52,6 +52,7 @@ async function getPatientId(sub: string): Promise<string | null> {
 router.post("/", async (req, res, next) => {
   try {
     const { consultationType, presentingComplaint } = req.body;
+    const idempotencyKey = req.headers["idempotency-key"] as string | undefined;
 
     if (!consultationType) {
       res.status(400).json({ error: "consultationType is required" });
@@ -70,16 +71,36 @@ router.post("/", async (req, res, next) => {
       return;
     }
 
+    // SEC-003: Idempotency — return existing consultation if same key used within 24h
+    if (idempotencyKey) {
+      const { rows: existing } = await pool.query<{ id: string; status: string; consultation_type: string; presenting_complaint: string | null; created_at: Date }>(
+        `SELECT id, status,
+                consultation_type AS "consultationType",
+                presenting_complaint AS "presentingComplaint",
+                created_at AS "createdAt"
+         FROM consultations
+         WHERE patient_id = $1
+           AND idempotency_key = $2
+           AND created_at >= NOW() - INTERVAL '24 hours'
+         LIMIT 1`,
+        [patientId, idempotencyKey]
+      );
+      if (existing[0]) {
+        res.status(200).json(existing[0]);
+        return;
+      }
+    }
+
     const { rows } = await pool.query(
-      `INSERT INTO consultations (patient_id, consultation_type, presenting_complaint)
-       VALUES ($1, $2, $3)
+      `INSERT INTO consultations (patient_id, consultation_type, presenting_complaint, idempotency_key)
+       VALUES ($1, $2, $3, $4)
        RETURNING
          id,
          status,
          consultation_type AS "consultationType",
          presenting_complaint AS "presentingComplaint",
          created_at AS "createdAt"`,
-      [patientId, consultationType, presentingComplaint ?? null]
+      [patientId, consultationType, presentingComplaint ?? null, idempotencyKey ?? null]
     );
 
     res.status(201).json(rows[0]);

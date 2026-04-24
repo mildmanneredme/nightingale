@@ -1,4 +1,6 @@
 import express from "express";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import pinoHttp from "pino-http";
 import { logger } from "./logger";
 import healthRouter from "./routes/health";
@@ -16,6 +18,30 @@ import { requireAuth, requireRole } from "./middleware/auth";
 import { errorHandler } from "./middleware/errorHandler";
 
 const app = express();
+
+// SEC-003: Security headers (helmet first — before any response is sent)
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'none'"],
+      scriptSrc: ["'none'"],
+      styleSrc: ["'none'"],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+}));
+
+// SEC-003: Global rate limit — 300 req/min per IP
+const globalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests — please try again later" },
+});
+app.use(globalLimiter);
 
 // SEC-002: Raw body required for SendGrid ECDSA signature verification.
 // Must be registered BEFORE the global express.json() middleware.

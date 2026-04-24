@@ -1,4 +1,5 @@
 import { Router, RequestHandler } from "express";
+import { isEmail } from "validator";
 import { pool } from "../db";
 
 const router = Router();
@@ -19,6 +20,10 @@ router.post("/register", async (req, res, next) => {
 
     if (!email) {
       res.status(400).json({ error: "email is required" });
+      return;
+    }
+    if (typeof email !== "string" || !isEmail(email)) {
+      res.status(400).json({ error: "Invalid email address format" });
       return;
     }
     if (!privacyPolicyVersion) {
