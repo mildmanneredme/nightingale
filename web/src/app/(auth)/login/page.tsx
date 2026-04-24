@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { signIn } from "@/lib/auth";
+import { signIn, getUserRole } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function LoginPage() {
@@ -19,7 +19,10 @@ export default function LoginPage() {
     try {
       const token = await signIn(email, password);
       setToken(token);
-      router.replace("/dashboard");
+      const role = getUserRole(token);
+      if (role === "admin") router.replace("/admin/beta");
+      else if (role === "doctor") router.replace("/doctor/queue");
+      else router.replace("/dashboard");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Login failed.");
     } finally {

@@ -547,3 +547,72 @@ export function declineRenewal(
     body: JSON.stringify({ reviewNote }),
   });
 }
+
+// ---------------------------------------------------------------------------
+// Admin portal (UX-003)
+// ---------------------------------------------------------------------------
+
+export interface AdminStats {
+  patients: { total: number };
+  consultations: {
+    total: number;
+    pending: number;
+    approved: number;
+    amended: number;
+    rejected: number;
+    emergencyEscalated: number;
+    cannotAssess: number;
+    resolved: number;
+    followupConcern: number;
+  };
+  rates: {
+    approvalPct: number | null;
+    amendmentPct: number | null;
+    rejectionPct: number | null;
+    avgReviewMinutes: number | null;
+  };
+  followUp: {
+    sent: number;
+    responded: number;
+    better: number;
+    same: number;
+    worse: number;
+  };
+}
+
+export interface AdminQueueItem {
+  id: string;
+  patientInitials: string;
+  presentingComplaint: string | null;
+  assignedDoctorId: string | null;
+  assignedDoctorName: string | null;
+  createdAt: string;
+  queuedAt: string;
+}
+
+export interface AdminDoctor {
+  id: string;
+  name: string;
+}
+
+export function getAdminStats(): Promise<AdminStats> {
+  return apiFetch("/api/v1/admin/stats");
+}
+
+export function getAdminQueue(): Promise<AdminQueueItem[]> {
+  return apiFetch("/api/v1/admin/queue");
+}
+
+export function getAdminDoctors(): Promise<AdminDoctor[]> {
+  return apiFetch("/api/v1/admin/doctors");
+}
+
+export function reassignConsultation(
+  consultationId: string,
+  doctorId: string
+): Promise<{ id: string; assignedDoctorId: string }> {
+  return apiFetch(`/api/v1/admin/consultations/${consultationId}/reassign`, {
+    method: "POST",
+    body: JSON.stringify({ doctorId }),
+  });
+}

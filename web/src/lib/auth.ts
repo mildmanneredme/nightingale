@@ -87,3 +87,24 @@ export function confirmSignUp(email: string, code: string): Promise<void> {
     });
   });
 }
+
+// ---------------------------------------------------------------------------
+// getUserRole — decode Cognito JWT and resolve role from cognito:groups
+// ---------------------------------------------------------------------------
+
+export type UserRole = "admin" | "doctor" | "patient";
+
+export function getUserRole(token: string | null): UserRole | null {
+  if (!token) return null;
+  try {
+    const parts = token.split(".");
+    if (parts.length < 2) return null;
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
+    const groups: string[] = payload["cognito:groups"] ?? [];
+    if (groups.includes("admin")) return "admin";
+    if (groups.includes("doctor")) return "doctor";
+    return "patient";
+  } catch {
+    return null;
+  }
+}

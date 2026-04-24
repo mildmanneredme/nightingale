@@ -2,6 +2,7 @@
 import "./globals.css";
 import { useState } from "react";
 import { AuthContext } from "@/hooks/useAuth";
+import { getUserRole } from "@/lib/auth";
 import { setToken as apiSetToken } from "@/lib/api";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -12,6 +13,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     apiSetToken(t);
   }
 
+  const role = getUserRole(token);
+
   return (
     <html lang="en">
       <head>
@@ -19,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body>
-        <AuthContext.Provider value={{ token, setToken }}>
+        <AuthContext.Provider value={{ token, setToken, role }}>
           {children}
         </AuthContext.Provider>
       </body>

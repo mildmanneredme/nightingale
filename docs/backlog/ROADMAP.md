@@ -48,7 +48,7 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | **SEC-005** | [Renewal Business Logic Integrity](../shipped/SEC-005-renewal-integrity.md) | Security Hardening | Sprint 7 | Week 15–16 | **Shipped 2026-04-24** ✅ |
 | **UX-001** | [Consultation Result & State Display](../shipped/UX-001-consultation-result-display.md) | UX Fixes | Sprint 7 | Week 14–15 | **Shipped 2026-04-24** ✅ |
 | **UX-002** | [Patient History & Inbox Improvements](../shipped/UX-002-patient-history-inbox.md) | UX Fixes | Sprint 7 | Week 15–16 | **Shipped 2026-04-24** ✅ |
-| **UX-003** | [Admin Portal: Layout, Navigation & Auth](UX-003-admin-portal.md) | UX Fixes | Sprint 7 | Week 15–16 | Not started — P1 |
+| **UX-003** | [Admin Portal: Layout, Navigation & Auth](../shipped/UX-003-admin-portal.md) | UX Fixes | Sprint 7 | Week 15–16 | **Shipped 2026-04-24** ✅ |
 | **UX-004** | [Patient Profile Completeness](UX-004-patient-profile-completeness.md) | UX Fixes | Sprint 7 | Week 16 | Not started — P2 |
 
 ---
@@ -80,6 +80,7 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | [SEC-005](../shipped/SEC-005-renewal-integrity.md) | Renewal Business Logic Integrity | 2026-04-24 | `noPriorPrescriptionWarning` flag in doctor queue when no source consultation; `validDays` max enforcement (default 90, overridable via `RENEWAL_MAX_VALID_DAYS`); audit metadata includes `valid_days` + `max_valid_days`; 5 unit tests green |
 | [UX-001](../shipped/UX-001-consultation-result-display.md) | Consultation Result & State Display | 2026-04-24 | Amended status renders `doctor_draft`; rejected status renders rejection reason + in-person care direction + refund notice; 8 status branches covered; "Finish Consultation" button in text chat; `not-found.tsx` global page; `<ErrorState>` component; API now returns `doctorDraft` + `rejectionMessage`; TypeScript clean both API + web |
 | [UX-002](../shipped/UX-002-patient-history-inbox.md) | Patient History & Inbox Improvements | 2026-04-24 | Dashboard: full STATUS_LABELS/COLORS for all 11 statuses; PDF download button for approved/amended; empty state with branded CTA; Inbox: "View Your Assessment" link for response_ready/rejected; "Download PDF Summary" for approved/amended; expanded TYPE_LABELS; TypeScript clean |
+| [UX-003](../shipped/UX-003-admin-portal.md) | Admin Portal: Layout, Navigation & Auth | 2026-04-24 | `getUserRole()` decodes Cognito JWT groups; login routes admin→/admin/beta, doctor→/doctor/queue, patient→/dashboard; `(admin)/layout.tsx` auth+role guard + dark sidebar nav + logout; beta dashboard uses `getAdminStats()` via Bearer token, 60s auto-refresh, last-updated timestamp, loading skeleton, retry on error; `/admin/consultations` queue page with 4h alert + inline reassign dropdown; 7 unit tests green; TypeScript clean |
 
 ---
 
