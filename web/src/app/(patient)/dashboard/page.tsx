@@ -59,7 +59,10 @@ export default function DashboardPage() {
         <div className="grid grid-cols-12 gap-gutter">
 
           {/* CTA Card */}
-          <div className="col-span-12 lg:col-span-8 bg-primary rounded-xl p-8 relative overflow-hidden">
+          <div
+            className="col-span-12 lg:col-span-8 rounded-xl p-8 relative overflow-hidden"
+            style={{ backgroundImage: "url('/dashboard-bg.png')", backgroundSize: "cover", backgroundPosition: "center" }}
+          >
             <div className="relative z-10 flex flex-col h-full justify-between min-h-[240px]">
               <div>
                 <h2 className="font-manrope text-headline-md text-white mb-2">Need medical advice?</h2>
@@ -74,12 +77,6 @@ export default function DashboardPage() {
                 <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>add_circle</span>
                 Start New Consultation
               </Link>
-            </div>
-            {/* Decorative element */}
-            <div className="absolute top-0 right-0 w-1/2 h-full opacity-10 pointer-events-none hidden md:block">
-              <span className="material-symbols-outlined absolute bottom-4 right-4 text-[200px] text-white/30">
-                medical_services
-              </span>
             </div>
           </div>
 

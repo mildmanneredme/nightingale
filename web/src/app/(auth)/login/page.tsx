@@ -1,14 +1,23 @@
 "use client";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signIn, getUserRole } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
 
+function PasswordResetBanner() {
+  const searchParams = useSearchParams();
+  if (searchParams.get("reset") !== "1") return null;
+  return (
+    <div className="mb-stack-md p-4 bg-secondary-container text-on-secondary-container rounded-xl text-sm flex items-center gap-2">
+      <span className="material-symbols-outlined text-base">check_circle</span>
+      Password reset successfully. Please sign in.
+    </div>
+  );
+}
+
 export default function LoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const passwordReset = searchParams.get("reset") === "1";
   const { setToken } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,8 +46,10 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
       {/* Left: Branding panel */}
-      <div className="hidden md:flex md:w-5/12 bg-primary-container relative overflow-hidden items-center justify-center p-patient-margin">
-        <div className="absolute inset-0 opacity-20 bg-medical-pattern" />
+      <div
+        className="hidden md:flex md:w-5/12 relative overflow-hidden items-center justify-center p-patient-margin"
+        style={{ backgroundImage: "url('/landing-bg.png')", backgroundSize: "cover", backgroundPosition: "center" }}
+      >
         <div className="relative z-10 max-w-md text-on-primary-fixed">
           <div className="mb-stack-lg">
             <span className="font-manrope font-bold text-[48px] leading-none tracking-tighter text-primary-fixed">
@@ -83,12 +94,9 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {passwordReset && (
-            <div className="mb-stack-md p-4 bg-secondary-container text-on-secondary-container rounded-xl text-sm flex items-center gap-2">
-              <span className="material-symbols-outlined text-base">check_circle</span>
-              Password reset successfully. Please sign in.
-            </div>
-          )}
+          <Suspense>
+            <PasswordResetBanner />
+          </Suspense>
 
           {error && (
             <div role="alert" className="mb-stack-md p-4 bg-error-container text-on-error-container rounded-xl text-sm flex items-center gap-2">
