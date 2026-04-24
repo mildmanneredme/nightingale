@@ -1,6 +1,50 @@
-import { Pool } from "pg";
+import { Pool, QueryResult, QueryResultRow } from "pg";
 import { config } from "./config";
 import { logger } from "./logger";
+
+const SLOW_QUERY_MS = parseInt(process.env.SLOW_QUERY_THRESHOLD_MS ?? "500", 10);
+
+export interface QueryContext {
+  feature?: string;
+  correlationId?: string;
+}
+
+export async function query<T extends QueryResultRow = QueryResultRow>(
+  text: string,
+  values?: unknown[],
+  ctx?: QueryContext
+): Promise<QueryResult<T>> {
+  const start = Date.now();
+  try {
+    const result = await pool.query<T>(text, values);
+    const durationMs = Date.now() - start;
+    if (durationMs > SLOW_QUERY_MS) {
+      logger.warn(
+        {
+          errorCode: "DB.QUERY.SLOW",
+          feature: ctx?.feature,
+          correlationId: ctx?.correlationId,
+          durationMs,
+          query: text.slice(0, 200),
+        },
+        "Slow DB query detected"
+      );
+    }
+    return result;
+  } catch (err) {
+    logger.error(
+      {
+        errorCode: "DB.QUERY.FAILED",
+        feature: ctx?.feature,
+        correlationId: ctx?.correlationId,
+        query: text.slice(0, 200),
+        err,
+      },
+      "DB query failed"
+    );
+    throw err;
+  }
+}
 
 export const pool = new Pool({
   host: config.db.host,
