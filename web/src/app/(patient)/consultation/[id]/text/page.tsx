@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { sendChatMessage } from "@/lib/api";
+import { sendChatMessage, endConsultation } from "@/lib/api";
 
 interface Turn {
   role: "patient" | "ai";
@@ -16,6 +16,8 @@ export default function TextConsultationPage() {
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
   const [isEmergency, setIsEmergency] = useState(false);
+  const [patientHasSent, setPatientHasSent] = useState(false);
+  const [ending, setEnding] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -33,6 +35,7 @@ export default function TextConsultationPage() {
   async function handleSend(message: string) {
     if (!message.trim() || thinking || isEmergency) return;
     setInput("");
+    setPatientHasSent(true);
     setTurns((prev) => [...prev, { role: "patient", text: message }]);
     setThinking(true);
     await new Promise((r) => setTimeout(r, 300));
@@ -119,6 +122,27 @@ export default function TextConsultationPage() {
         )}
         <div ref={bottomRef} />
       </div>
+
+      {patientHasSent && !isEmergency && (
+        <div className="pb-2">
+          <button
+            onClick={async () => {
+              if (ending) return;
+              setEnding(true);
+              try {
+                await endConsultation(id, []);
+              } catch {
+                // End consultation best-effort — navigate regardless
+              }
+              router.push(`/consultation/${id}/result`);
+            }}
+            disabled={ending || thinking}
+            className="w-full border-2 border-outline text-on-surface-variant rounded-lg py-2 text-body-md hover:bg-surface-container disabled:opacity-50"
+          >
+            {ending ? "Finishing…" : "Finish Consultation"}
+          </button>
+        </div>
+      )}
 
       <div className="flex gap-2 border-t border-outline-variant pt-3">
         <input

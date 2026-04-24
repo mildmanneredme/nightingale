@@ -70,6 +70,8 @@ export interface Consultation {
   transcript?: TranscriptTurn[];
   redFlags?: { phrase: string; detected_at: string }[];
   assessment?: string;
+  doctorDraft?: string;
+  rejectionMessage?: string;
   prescription?: string;
   createdAt: string;
   sessionStartedAt?: string;

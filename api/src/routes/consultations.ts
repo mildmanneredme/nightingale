@@ -160,6 +160,9 @@ router.get("/:id", async (req, res, next) => {
          presenting_complaint AS "presentingComplaint",
          transcript,
          red_flags AS "redFlags",
+         ai_draft AS "assessment",
+         doctor_draft AS "doctorDraft",
+         rejection_message AS "rejectionMessage",
          created_at AS "createdAt",
          session_started_at AS "sessionStartedAt",
          session_ended_at AS "sessionEndedAt"
