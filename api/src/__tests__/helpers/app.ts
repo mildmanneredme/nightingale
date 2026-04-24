@@ -8,6 +8,7 @@ import inboxRouter from "../../routes/inbox";
 import webhooksRouter from "../../routes/webhooks";
 import availabilityRouter from "../../routes/availability";
 import renewalsRouter from "../../routes/renewals";
+import followupRouter from "../../routes/followup";
 
 // Builds a test app with auth stubbed to a caller-supplied Cognito sub.
 // This avoids any real Cognito calls in tests while exercising every other
@@ -32,6 +33,7 @@ export function buildTestApp(
   app.use("/api/v1/inbox", inboxRouter);
   app.use("/api/v1/webhooks", webhooksRouter);
   app.use("/api/v1/renewals", renewalsRouter);
+  app.use("/api/v1/followup", followupRouter);
   app.use(errorHandler);
   return app;
 }

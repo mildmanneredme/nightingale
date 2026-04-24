@@ -1,5 +1,6 @@
 import { Router, RequestHandler } from "express";
 import WebSocket from "ws";
+import PDFDocument from "pdfkit";
 import { pool } from "../db";
 import { logger } from "../logger";
 import { GeminiLiveSession } from "../services/geminiLive";
@@ -275,6 +276,115 @@ router.post("/:id/chat", async (req, res, next) => {
       aiResponse,
       status: newStatus,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// GET /api/v1/consultations/:id/pdf  (patient — authenticated)
+// Streams a clinical assessment PDF summary. Only available for approved/amended.
+// Generated in-memory; never stored on server.
+// ---------------------------------------------------------------------------
+router.get("/:id/pdf", async (req, res, next) => {
+  try {
+    const patientSub = (req as any).user?.sub as string | undefined;
+    const { rows } = await pool.query<{
+      id: string;
+      presenting_complaint: string;
+      status: string;
+      reviewed_at: Date | null;
+      doctor_draft: string | null;
+      ai_draft: string | null;
+      doctor_first_name: string;
+      doctor_last_name: string;
+      ahpra_number: string;
+      patient_id: string;
+      patient_cognito_sub: string;
+    }>(
+      `SELECT c.id, c.presenting_complaint, c.status, c.reviewed_at,
+              c.doctor_draft, c.ai_draft,
+              d.first_name AS doctor_first_name, d.last_name AS doctor_last_name,
+              d.ahpra_number,
+              p.id AS patient_id, p.cognito_sub AS patient_cognito_sub
+       FROM consultations c
+       JOIN doctors d  ON d.id = c.reviewed_by
+       JOIN patients p ON p.id = c.patient_id
+       WHERE c.id = $1`,
+      [req.params.id]
+    );
+
+    const row = rows[0];
+    if (!row) {
+      res.status(404).json({ error: "Consultation not found" });
+      return;
+    }
+    if (row.patient_cognito_sub !== patientSub) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+    if (!["approved", "amended"].includes(row.status)) {
+      res.status(400).json({ error: "PDF only available for approved or amended consultations" });
+      return;
+    }
+
+    const responseText = row.doctor_draft ?? row.ai_draft ?? "";
+    const doctorName = `Dr ${row.doctor_first_name} ${row.doctor_last_name}`;
+    const reviewedDate = row.reviewed_at
+      ? row.reviewed_at.toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })
+      : "Unknown";
+
+    const doc = new PDFDocument({ margin: 50, size: "A4" });
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="nightingale-consultation-${row.id.slice(0, 8)}.pdf"`
+    );
+    doc.pipe(res);
+
+    // Header
+    doc.fontSize(18).font("Helvetica-Bold").text("Clinical Assessment Summary", { align: "center" });
+    doc.moveDown(0.5);
+    doc.fontSize(11).font("Helvetica").text("Nightingale Health Pty Ltd", { align: "center" });
+    doc.moveDown(1.5);
+
+    // Consultation details
+    doc.fontSize(12).font("Helvetica-Bold").text("Consultation Details");
+    doc.moveDown(0.3);
+    doc.fontSize(10).font("Helvetica");
+    doc.text(`Date reviewed: ${reviewedDate}`);
+    doc.text(`Chief complaint: ${row.presenting_complaint}`);
+    doc.text(`Status: ${row.status}`);
+    doc.moveDown(1);
+
+    // Clinical response
+    doc.fontSize(12).font("Helvetica-Bold").text("Doctor's Assessment");
+    doc.moveDown(0.3);
+    doc.fontSize(10).font("Helvetica").text(responseText, { lineGap: 3 });
+    doc.moveDown(1.5);
+
+    // AHPRA footer
+    doc.fontSize(9).font("Helvetica").fillColor("#555555");
+    doc.text(
+      `Reviewed and approved by ${doctorName}  |  AHPRA Registration: ${row.ahpra_number}  |  ${reviewedDate}`,
+      { align: "center" }
+    );
+    doc.moveDown(0.5);
+    doc.text(
+      "This document is a clinical assessment summary, not a formal prescription. " +
+      "This advice is not a substitute for in-person medical care. " +
+      "If your condition worsens, seek urgent care or call 000.",
+      { align: "center" }
+    );
+
+    doc.end();
+
+    // Audit log (fire-and-forget — streaming has already started)
+    pool.query(
+      `INSERT INTO audit_log (event_type, actor_id, actor_role, consultation_id, metadata)
+       VALUES ('consultation.pdf_downloaded', $1, 'patient', $2, $3)`,
+      [row.patient_id, row.id, JSON.stringify({ doctor_id: row.id })]
+    ).catch((err) => logger.error({ err, consultationId: row.id }, "Failed to log PDF download"));
   } catch (err) {
     next(err);
   }

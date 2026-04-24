@@ -3,7 +3,7 @@
 > **Status:** In Progress — Sprint 5 in progress
 > **Phase:** 1 MVP (Months 1–6)
 > **Target:** 100 beta patients, 200 consultations completed
-> **Last updated:** 2026-04-24 (PRD-014 shipped)
+> **Last updated:** 2026-04-23 (PRD-015 shipped)
 
 ---
 
@@ -33,10 +33,11 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | [PRD-012](../shipped/PRD-012-clinical-ai-engine.md) | Clinical AI Engine | Build | Sprint 4 | Week 8–10 | **Shipped 2026-04-24** ✅ |
 | [PRD-013](../shipped/PRD-013-doctor-review-dashboard.md) | Doctor Review Dashboard | Build | Sprint 5 | Week 10–12 | **Shipped 2026-04-23** ✅ |
 | [PRD-014](../shipped/PRD-014-patient-notifications.md) | Patient Notifications | Build | Sprint 5 | Week 10–12 | **Shipped 2026-04-24** ✅ |
-| [PRD-015](PRD-015-post-consultation-followup.md) | Post-Consultation Follow-Up | Build | Sprint 6 | Week 12–14 | Not started |
+| [PRD-015](../shipped/PRD-015-post-consultation-followup.md) | Post-Consultation Follow-Up | Build | Sprint 6 | Week 12–14 | **Shipped 2026-04-23** ✅ |
 | [PRD-016](PRD-016-beta-launch-readiness.md) | Beta Launch Readiness | Build | Sprint 6 | Week 12–14 | Not started |
 | [PRD-017](../shipped/PRD-017-doctor-scheduling-availability.md) | Doctor Scheduling & Availability | Build | Sprint 5 | Week 10–12 | **Shipped 2026-04-24** ✅ |
 | [PRD-018](../shipped/PRD-018-script-renewals.md) | Script Renewal Workflow | Build | Sprint 5 | Week 10–12 | **Shipped 2026-04-24** ✅ |
+
 | [PRD-019](PRD-019-clinical-knowledge-base-proprietary.md) | Clinical Knowledge Base: Proprietary Extensions (eTG, AMH, MIMS) | Phase 2 | Post-Beta | After PRD-011 in production | Not started |
 | [PRD-020](../shipped/PRD-020-patient-web-frontend.md) | Patient Web Frontend | Build | Sprint 2 | Week 5–7 | **Shipped 2026-04-23** ✅ |
 
@@ -60,6 +61,7 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | [PRD-014](../shipped/PRD-014-patient-notifications.md) | Patient Notifications | 2026-04-24 | 11 Jest integration tests green (SendGrid mocked); response_ready + rejected email templates; SendGrid webhook handler; patient inbox page with unread badge; fire-and-forget from doctor approve/amend/reject; SMS deferred |
 | [PRD-017](../shipped/PRD-017-doctor-scheduling-availability.md) | Doctor Scheduling & Availability | 2026-04-24 | 10 Jest integration tests green; weekly schedule CRUD; date overrides; daily cap; monthly capacity widget; patient response-time estimate endpoint; audit log events; AEST timezone via Intl |
 | [PRD-018](../shipped/PRD-018-script-renewals.md) | Script Renewal Workflow | 2026-04-24 | 11 Jest integration tests green (SendGrid mocked); patient submit/list; doctor queue; approve/decline with AHPRA audit; 48h expiry alert + 7-day reminder; legal mechanism pre-prod gate pending |
+| [PRD-015](../shipped/PRD-015-post-consultation-followup.md) | Post-Consultation Follow-Up | 2026-04-23 | 9 integration tests written (DB-required); follow-up email + 3-button tracking URLs; better/same/worse response handling; FOLLOWUP_CONCERN flag + doctor re-queue; patient acknowledgement email; PDF summary endpoint (pdfkit, AHPRA footer); confirmation page; `scheduleFollowUp` wired to approve/amend; 72h no-response mark + EventBridge trigger deferred |
 
 ---
 

@@ -1,6 +1,6 @@
 # PRD-015 — Post-Consultation Follow-Up
 
-> **Status:** Not Started
+> **Status:** Shipped 2026-04-23
 > **Phase:** Sprint 6 (Week 12–14)
 > **Type:** Technical — Automated Workflows
 > **Owner:** CTO
@@ -143,6 +143,35 @@ The approved consultation result screen (see design) shows a "Download PDF Summa
 | F-026 | PDF download is logged to the audit trail: patient_id, consultation_id, timestamp |
 
 > **Note on "Prescription & Dosage" in PDF:** The design shows a "Prescription & Dosage" section in the consultation result. Since eScript integration is out of scope, this section renders the doctor's medication *recommendation* as free text (as written in the amended response), not a formal prescription. The PDF header must clearly state "Clinical Assessment Summary" not "Prescription" to avoid regulatory misrepresentation. This language must be confirmed with the healthcare lawyer before Sprint 6. See ROADMAP open decisions.
+
+---
+
+## Implementation Notes (2026-04-23)
+
+**DB:**
+- `infra/database/migrations/011_followup.sql` — adds `followup_token` UUID, `followup_send_at`, `followup_sent_at`, `followup_response`, `followup_responded_at` to `consultations`; extends status constraint with `resolved`, `unchanged`, `followup_concern`; indexes on `followup_send_at` (scheduler) and `followup_token` (tracking URL lookup)
+
+**API (`api/src/routes/followup.ts`):**
+- `POST /api/v1/followup/send` — admin/scheduler trigger; `FOR UPDATE SKIP LOCKED` prevents duplicate sends; sets `followup_sent_at` after dispatch; writes `follow_up.sent` audit
+- `GET /api/v1/followup/respond/:token?response=better|same|worse` — public (no auth); updates `followup_response`, `status`; worse → adds `FOLLOWUP_CONCERN` priority flag, writes `consultation.reopened_for_followup`, fires acknowledgement email; redirects to confirmation page
+- `export async function scheduleFollowUp(consultationId)` — sets `followup_send_at = reviewed_at + INTERVAL '36 hours'`; called from doctor.ts after approve and amend
+
+**API (`api/src/routes/consultations.ts`):**
+- `GET /api/v1/consultations/:id/pdf` — streams PDF generated in-memory via pdfkit; only for approved/amended; includes consultation detail, doctor response, AHPRA footer, disclaimer; writes `consultation.pdf_downloaded` audit
+
+**Email (`api/src/services/emailService.ts`):**
+- `sendFollowUpEmail(consultationId, opts, dbPool)` — 3-button email with tracking URLs
+- `sendFollowUpConcernAcknowledgementEmail(patientId, dbPool)` — immediate acknowledgement for "worse" responses
+
+**Frontend:**
+- `web/src/app/followup/confirmed/page.tsx` — confirmation page matching the patient's response option (better/same/worse); public route (no auth)
+
+**Tests:** `api/src/__tests__/followup.test.ts` — 9 integration tests: send idempotency, respond validation, better/same/worse responses, FOLLOWUP_CONCERN flag, audit events, scheduleFollowUp timing
+
+**Deferred (pre-production):**
+- 72h no-response mark (`followup_response = 'no_response'`) — EventBridge scheduled task
+- Scheduled trigger for `/api/v1/followup/send` in ECS/EventBridge
+- PDF "Prescription & Dosage" section wording must be confirmed with healthcare lawyer before launch
 
 ---
 

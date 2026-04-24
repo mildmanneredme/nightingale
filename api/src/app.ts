@@ -11,6 +11,7 @@ import inboxRouter from "./routes/inbox";
 import webhooksRouter from "./routes/webhooks";
 import availabilityRouter from "./routes/availability";
 import renewalsRouter from "./routes/renewals";
+import followupRouter from "./routes/followup";
 import { requireAuth, requireRole } from "./middleware/auth";
 import { errorHandler } from "./middleware/errorHandler";
 
@@ -33,6 +34,8 @@ app.use("/api/v1/renewals", requireAuth, renewalsRouter);
 app.use("/api/v1/inbox", requireAuth, requireRole("patient"), inboxRouter);
 // SendGrid delivery webhooks — no auth (called by SendGrid servers)
 app.use("/api/v1/webhooks", webhooksRouter);
+// Post-consultation follow-up: /send (admin/scheduler), /respond/:token (public)
+app.use("/api/v1/followup", followupRouter);
 
 app.use(errorHandler);
 

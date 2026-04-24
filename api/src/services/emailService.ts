@@ -538,3 +538,118 @@ export async function sendRenewalReminderEmail(
 
   return { id: notifId, sendgridMessageId: messageId };
 }
+
+// ---------------------------------------------------------------------------
+// Follow-up email functions (PRD-015)
+// ---------------------------------------------------------------------------
+
+export async function sendFollowUpEmail(
+  consultationId: string,
+  opts: {
+    patientEmail: string;
+    patientName: string | null;
+    presentingComplaint: string;
+    reviewedAt: Date | null;
+    trackingBaseUrl: string;
+  },
+  dbPool: Pool
+): Promise<void> {
+  const greeting = opts.patientName ? `Hi ${opts.patientName.split(" ")[0]}` : "Hi there";
+  const reviewDate = opts.reviewedAt
+    ? opts.reviewedAt.toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })
+    : "recently";
+
+  const betterUrl = `${opts.trackingBaseUrl}?response=better`;
+  const sameUrl   = `${opts.trackingBaseUrl}?response=same`;
+  const worseUrl  = `${opts.trackingBaseUrl}?response=worse`;
+
+  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#111827;max-width:600px;margin:0 auto;padding:24px;">
+  <img src="https://nightingale.com.au/logo.png" alt="Nightingale Health" height="32" style="margin-bottom:24px;" />
+  <p>${greeting},</p>
+  <p>It's been a day or two since your Nightingale consultation on <strong>${opts.presentingComplaint}</strong> (reviewed ${reviewDate}). We just want to check in — how are you feeling?</p>
+  <table style="width:100%;border-collapse:separate;border-spacing:0 8px;margin:24px 0;">
+    <tr>
+      <td style="width:33%;padding:4px;">
+        <a href="${betterUrl}" style="display:block;text-align:center;background:#10b981;color:#fff;font-weight:600;padding:14px;border-radius:8px;text-decoration:none;">Feeling better</a>
+      </td>
+      <td style="width:33%;padding:4px;">
+        <a href="${sameUrl}" style="display:block;text-align:center;background:#6b7280;color:#fff;font-weight:600;padding:14px;border-radius:8px;text-decoration:none;">About the same</a>
+      </td>
+      <td style="width:33%;padding:4px;">
+        <a href="${worseUrl}" style="display:block;text-align:center;background:#ef4444;color:#fff;font-weight:600;padding:14px;border-radius:8px;text-decoration:none;">Feeling worse</a>
+      </td>
+    </tr>
+  </table>
+  <p style="font-size:13px;color:#6b7280;">If your condition has significantly worsened or you are experiencing new or severe symptoms, please seek urgent medical attention or call <strong>000</strong>.</p>
+  ${EMAIL_FOOTER_HTML}
+</body></html>`;
+
+  const text = `${greeting},
+
+It's been a day or two since your Nightingale consultation on "${opts.presentingComplaint}" (reviewed ${reviewDate}). How are you feeling?
+
+Feeling better: ${betterUrl}
+About the same: ${sameUrl}
+Feeling worse:  ${worseUrl}
+
+If your condition has significantly worsened or you are experiencing new severe symptoms, please seek urgent care or call 000.
+${EMAIL_FOOTER_PLAIN}`;
+
+  const messageId = await dispatchEmail({
+    to: opts.patientEmail,
+    subject: "How are you feeling? — Nightingale follow-up",
+    html,
+    text,
+  });
+
+  logger.info({ consultationId, messageId }, "Follow-up email dispatched");
+}
+
+export async function sendFollowUpConcernAcknowledgementEmail(
+  patientId: string,
+  dbPool: Pool
+): Promise<void> {
+  const { rows } = await dbPool.query<{
+    patient_email: string;
+    patient_name: string | null;
+  }>(
+    `SELECT email AS patient_email, full_name AS patient_name FROM patients WHERE id = $1`,
+    [patientId]
+  );
+  if (!rows[0]) throw new Error(`Patient ${patientId} not found`);
+  const row = rows[0];
+
+  const greeting = row.patient_name ? `Hi ${row.patient_name.split(" ")[0]}` : "Hi there";
+
+  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#111827;max-width:600px;margin:0 auto;padding:24px;">
+  <img src="https://nightingale.com.au/logo.png" alt="Nightingale Health" height="32" style="margin-bottom:24px;" />
+  <p>${greeting},</p>
+  <p>Thank you for letting us know. We have flagged your consultation for a doctor to review and you will hear back from us shortly.</p>
+  <p>In the meantime:</p>
+  <ul>
+    <li>If you have new or worsening symptoms, please seek urgent in-person care or call your GP.</li>
+    <li>For a medical emergency, call <strong>000</strong>.</li>
+    <li>For general advice: <strong>HealthDirect 1800 022 222</strong>.</li>
+  </ul>
+  ${EMAIL_FOOTER_HTML}
+</body></html>`;
+
+  const text = `${greeting},
+
+Thank you for letting us know. We have flagged your consultation for a doctor to review and you will hear back from us shortly.
+
+If you have worsening symptoms, please seek urgent in-person care or call your GP.
+For emergencies: 000 | HealthDirect: 1800 022 222
+${EMAIL_FOOTER_PLAIN}`;
+
+  await dispatchEmail({
+    to: row.patient_email,
+    subject: "We've received your follow-up — Nightingale Health",
+    html,
+    text,
+  });
+
+  logger.info({ patientId }, "Follow-up concern acknowledgement email dispatched");
+}

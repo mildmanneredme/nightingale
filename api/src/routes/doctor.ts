@@ -1,6 +1,7 @@
 import { Router, RequestHandler } from "express";
 import { pool } from "../db";
 import { sendResponseReadyEmail, sendRejectionEmail } from "../services/emailService";
+import { scheduleFollowUp } from "./followup";
 import { logger } from "../logger";
 
 const router = Router();
@@ -168,6 +169,9 @@ router.post("/consultations/:id/approve", async (req, res, next) => {
     sendResponseReadyEmail(req.params.id, pool).catch((err) =>
       logger.error({ err, consultationId: req.params.id }, "Failed to send response_ready email")
     );
+    scheduleFollowUp(req.params.id).catch((err) =>
+      logger.error({ err, consultationId: req.params.id }, "Failed to schedule follow-up")
+    );
 
     res.status(200).json(rows[0]);
   } catch (err) {
@@ -229,6 +233,9 @@ router.post("/consultations/:id/amend", async (req, res, next) => {
     // Fire-and-forget: patient notification is non-blocking
     sendResponseReadyEmail(req.params.id, pool).catch((err) =>
       logger.error({ err, consultationId: req.params.id }, "Failed to send response_ready email after amend")
+    );
+    scheduleFollowUp(req.params.id).catch((err) =>
+      logger.error({ err, consultationId: req.params.id }, "Failed to schedule follow-up after amend")
     );
 
     res.status(200).json(rows[0]);
