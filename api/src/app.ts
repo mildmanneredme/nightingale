@@ -7,6 +7,8 @@ import consultationRouter from "./routes/consultations";
 import photoRouter from "./routes/photos";
 import doctorRouter from "./routes/doctor";
 import adminRouter from "./routes/admin";
+import inboxRouter from "./routes/inbox";
+import webhooksRouter from "./routes/webhooks";
 import { requireAuth, requireRole } from "./middleware/auth";
 import { errorHandler } from "./middleware/errorHandler";
 
@@ -21,6 +23,10 @@ app.use("/api/v1/consultations", requireAuth, consultationRouter);
 app.use("/api/v1/consultations", requireAuth, photoRouter);
 app.use("/api/v1/doctor", requireAuth, requireRole("doctor"), doctorRouter);
 app.use("/api/v1/admin", requireAuth, requireRole("admin"), adminRouter);
+// Patient inbox — authenticated, patient role
+app.use("/api/v1/inbox", requireAuth, requireRole("patient"), inboxRouter);
+// SendGrid delivery webhooks — no auth (called by SendGrid servers)
+app.use("/api/v1/webhooks", webhooksRouter);
 
 app.use(errorHandler);
 

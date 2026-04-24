@@ -65,4 +65,12 @@ export const config = {
     // Pre-signed URL expiry in seconds (15 minutes)
     presignedUrlExpiry: 900,
   },
+
+  sendgrid: {
+    // SendGrid API key — set in ECS task definition (not committed).
+    // Leave blank in test environments; emailService will skip actual sending.
+    apiKey: optional("SENDGRID_API_KEY", ""),
+    fromEmail: optional("SENDGRID_FROM_EMAIL", "noreply@nightingale.com.au"),
+    fromName: optional("SENDGRID_FROM_NAME", "Nightingale Health"),
+  },
 } as const;

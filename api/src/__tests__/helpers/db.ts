@@ -18,6 +18,7 @@ export async function resetTestDb(): Promise<void> {
   await pool.query(`
     TRUNCATE
       audit_log,
+      notifications,
       consultation_photos,
       knowledge_chunks,
       snomed_terms,

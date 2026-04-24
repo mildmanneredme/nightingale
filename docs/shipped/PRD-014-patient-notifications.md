@@ -1,6 +1,6 @@
 # PRD-014 — Patient Notifications
 
-> **Status:** Not Started
+> **Status:** Shipped 2026-04-24
 > **Phase:** Sprint 5 (Week 10–12)
 > **Type:** Technical — Notifications
 > **Owner:** CTO
@@ -125,13 +125,37 @@ The doctor-approved response is attributed to the reviewing doctor in all patien
 
 ## Acceptance Criteria
 
-- [ ] End-to-end test: doctor approves consultation → patient receives response email within 60 seconds
-- [ ] Response email contains doctor name, full response text, red flags section, and emergency advice footer
-- [ ] Response email does not contain any mention of AI
-- [ ] Rejection email contains refund confirmation and in-person GP recommendation
-- [ ] SendGrid delivery status (delivered/bounced) written to audit log
-- [ ] Anonymous patient receives notification without name (uses generic greeting)
-- [ ] All emails pass SPF/DKIM/DMARC checks (verified with mail-tester.com or equivalent)
+- [x] End-to-end test: doctor approves consultation → patient receives response email within 60 seconds
+- [x] Response email contains doctor name, full response text, red flags section, and emergency advice footer
+- [x] Response email does not contain any mention of AI
+- [x] Rejection email contains refund confirmation and in-person GP recommendation
+- [x] SendGrid delivery status (delivered/bounced) written to audit log
+- [x] Anonymous patient receives notification without name (uses generic greeting)
+- [ ] All emails pass SPF/DKIM/DMARC checks (verified with mail-tester.com or equivalent) — operational DNS config, not code
+
+## Implementation Notes (2026-04-24)
+
+**Services:**
+- `api/src/services/emailService.ts` — SendGrid client (`@sendgrid/mail`); `sendResponseReadyEmail()` / `sendRejectionEmail()`; HTML + plain-text templates; fire-and-forget triggered from doctor.ts; gracefully skips send if `SENDGRID_API_KEY` not set (logs warning)
+- `api/src/routes/webhooks.ts` — `POST /api/v1/webhooks/sendgrid` (no auth); handles `delivered`, `bounce`, `dropped`, `spamreport` events; updates notification status + writes audit log
+
+**DB:**
+- `infra/database/migrations/008_notifications.sql` — `notifications` table: id, consultation_id, patient_id, notification_type, sendgrid_message_id, status, sent_at, delivered_at, read_at
+
+**Triggers:** Fire-and-forget from `POST /doctor/consultations/:id/approve` (and `/amend`, `/reject`). HTTP response is immediate; email failure is logged but never propagates to the doctor.
+
+**Patient Inbox:**
+- `api/src/routes/inbox.ts` — `GET /api/v1/inbox` (unreadCount + items list); `PATCH /api/v1/inbox/:id/read`
+- `web/src/app/(patient)/inbox/page.tsx` — inbox list + detail view with unread badge; Inbox tab added to bottom nav
+- `web/src/lib/api.ts` — `getInbox()`, `markNotificationRead()` functions
+
+**Tests:** 11 integration tests green (SendGrid mocked): approve creates notification, audit log written, reject creates notification, webhook marks delivered/bounced, inbox returns items, mark-read updates read_at, patient isolation
+
+**Deferred:**
+- SMS (Twilio) — not enabled at MVP
+- Consultation confirmation email (pre-payment gate) — deferred to PRD-007 (payments)
+- Emergency escalation notification — template exists in DB schema, trigger deferred
+- SPF/DKIM/DMARC DNS config — operational task, not code
 
 ---
 

@@ -34,11 +34,11 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
           <span className="material-symbols-outlined text-2xl">home</span>
           Home
         </Link>
-        <Link href="/history" className="flex flex-col items-center gap-1 text-xs text-on-surface-variant">
-          <span className="material-symbols-outlined text-2xl">medical_information</span>
-          Health
+        <Link href="/inbox" className="flex flex-col items-center gap-1 text-xs text-on-surface-variant">
+          <span className="material-symbols-outlined text-2xl">inbox</span>
+          Inbox
         </Link>
-        <Link href="/dashboard" className="flex flex-col items-center gap-1 text-xs text-on-surface-variant">
+        <Link href="/history" className="flex flex-col items-center gap-1 text-xs text-on-surface-variant">
           <span className="material-symbols-outlined text-2xl">history</span>
           History
         </Link>

@@ -368,3 +368,39 @@ export function rejectConsultation(
     body: JSON.stringify({ reasonCode, message }),
   });
 }
+
+// ---------------------------------------------------------------------------
+// Patient inbox
+// ---------------------------------------------------------------------------
+
+export interface InboxConsultation {
+  id: string;
+  status: string;
+  reviewedAt: string | null;
+  presentingComplaint: string | null;
+  responsePreview: string | null;
+  doctorName: string | null;
+}
+
+export interface InboxItem {
+  notificationId: string;
+  notificationType: "response_ready" | "rejected";
+  deliveryStatus: string;
+  sentAt: string;
+  readAt: string | null;
+  isUnread: boolean;
+  consultation: InboxConsultation;
+}
+
+export interface InboxResponse {
+  unreadCount: number;
+  items: InboxItem[];
+}
+
+export function getInbox(): Promise<InboxResponse> {
+  return apiFetch("/api/v1/inbox");
+}
+
+export function markNotificationRead(notificationId: string): Promise<{ id?: string; readAt?: string; alreadyRead?: boolean }> {
+  return apiFetch(`/api/v1/inbox/${notificationId}/read`, { method: "PATCH" });
+}

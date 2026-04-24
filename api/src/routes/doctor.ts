@@ -1,5 +1,7 @@
 import { Router, RequestHandler } from "express";
 import { pool } from "../db";
+import { sendResponseReadyEmail, sendRejectionEmail } from "../services/emailService";
+import { logger } from "../logger";
 
 const router = Router();
 
@@ -162,6 +164,11 @@ router.post("/consultations/:id/approve", async (req, res, next) => {
       consultationId: req.params.id,
     });
 
+    // Fire-and-forget: patient notification is non-blocking
+    sendResponseReadyEmail(req.params.id, pool).catch((err) =>
+      logger.error({ err, consultationId: req.params.id }, "Failed to send response_ready email")
+    );
+
     res.status(200).json(rows[0]);
   } catch (err) {
     next(err);
@@ -218,6 +225,11 @@ router.post("/consultations/:id/amend", async (req, res, next) => {
       consultationId: req.params.id,
       metadata: { diff },
     });
+
+    // Fire-and-forget: patient notification is non-blocking
+    sendResponseReadyEmail(req.params.id, pool).catch((err) =>
+      logger.error({ err, consultationId: req.params.id }, "Failed to send response_ready email after amend")
+    );
 
     res.status(200).json(rows[0]);
   } catch (err) {
@@ -278,6 +290,11 @@ router.post("/consultations/:id/reject", async (req, res, next) => {
       consultationId: req.params.id,
       metadata: { reasonCode, messageHash: message ? hashString(message) : null },
     });
+
+    // Fire-and-forget: patient notification is non-blocking
+    sendRejectionEmail(req.params.id, pool).catch((err) =>
+      logger.error({ err, consultationId: req.params.id }, "Failed to send rejection email")
+    );
 
     res.status(200).json(rows[0]);
   } catch (err) {

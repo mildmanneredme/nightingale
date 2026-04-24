@@ -3,6 +3,9 @@ import { errorHandler } from "../../middleware/errorHandler";
 import patientRouter from "../../routes/patients";
 import consultationRouter from "../../routes/consultations";
 import photoRouter from "../../routes/photos";
+import doctorRouter from "../../routes/doctor";
+import inboxRouter from "../../routes/inbox";
+import webhooksRouter from "../../routes/webhooks";
 
 // Builds a test app with auth stubbed to a caller-supplied Cognito sub.
 // This avoids any real Cognito calls in tests while exercising every other
@@ -22,6 +25,9 @@ export function buildTestApp(
   app.use("/api/v1/patients", patientRouter);
   app.use("/api/v1/consultations", consultationRouter);
   app.use("/api/v1/consultations", photoRouter);
+  app.use("/api/v1/doctor", doctorRouter);
+  app.use("/api/v1/inbox", inboxRouter);
+  app.use("/api/v1/webhooks", webhooksRouter);
   app.use(errorHandler);
   return app;
 }
