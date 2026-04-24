@@ -1,3 +1,5 @@
+import { reportClientError } from "./errors";
+
 const apiUrl = () => process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
 // ---------------------------------------------------------------------------
@@ -19,7 +21,11 @@ export function getToken(): string | null {
 // ---------------------------------------------------------------------------
 
 export class ApiError extends Error {
-  constructor(public readonly status: number, message: string) {
+  constructor(
+    public readonly status: number,
+    message: string,
+    public readonly correlationId?: string
+  ) {
     super(message);
     this.name = "ApiError";
   }
@@ -45,12 +51,21 @@ async function apiFetch<T>(
   });
 
   if (!res.ok) {
+    const correlationId = res.headers.get("x-correlation-id") ?? undefined;
     let message = "Request failed";
     try {
       const body = await res.json();
       message = body.error ?? message;
     } catch {}
-    throw new ApiError(res.status, message);
+    if (res.status >= 500) {
+      reportClientError(
+        "CLIENT.FETCH.5XX",
+        message,
+        correlationId,
+        typeof window !== "undefined" ? window.location.pathname : undefined
+      );
+    }
+    throw new ApiError(res.status, message, correlationId);
   }
 
   // 204 No Content

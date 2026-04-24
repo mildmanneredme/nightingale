@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AuthContext } from "@/hooks/useAuth";
 import { getUserRole } from "@/lib/auth";
 import { setToken as apiSetToken } from "@/lib/api";
+import { ToastProvider } from "@/components/ToastProvider";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const [token, setTokenState] = useState<string | null>(null);
@@ -23,7 +24,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <AuthContext.Provider value={{ token, setToken, role }}>
-          {children}
+          <ToastProvider>
+            {children}
+          </ToastProvider>
         </AuthContext.Provider>
       </body>
     </html>

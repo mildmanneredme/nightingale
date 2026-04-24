@@ -28,10 +28,11 @@ beforeEach(() => {
   setToken("test-access-token");
 });
 
-function mockFetch(status: number, body: unknown) {
+function mockFetch(status: number, body: unknown, headers: Record<string, string> = {}) {
   (fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
     ok: status >= 200 && status < 300,
     status,
+    headers: { get: (key: string) => headers[key.toLowerCase()] ?? null },
     json: async () => body,
   });
 }
