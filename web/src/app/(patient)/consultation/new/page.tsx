@@ -53,7 +53,7 @@ export default function NewConsultationPage() {
           <div className="w-12 h-[2px] bg-outline-variant shrink-0" />
           <div className="flex items-center gap-2 shrink-0 opacity-50">
             <span className="w-8 h-8 rounded-full border-2 border-outline flex items-center justify-center font-bold text-xs text-on-surface">3</span>
-            <span className="font-label-sm text-on-surface-variant uppercase tracking-widest">Payment</span>
+            <span className="font-label-sm text-on-surface-variant uppercase tracking-widest">Result & Payment</span>
           </div>
         </div>
 
@@ -150,7 +150,7 @@ export default function NewConsultationPage() {
                 {/* Fee summary */}
                 <div className="bg-primary text-white rounded-xl p-stack-md shadow-lg overflow-hidden relative">
                   <div className="absolute -top-4 -right-4 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
-                  <h3 className="font-label-sm text-[11px] uppercase tracking-widest text-on-primary-container mb-2">Estimated Fee</h3>
+                  <h3 className="font-label-sm text-[11px] uppercase tracking-widest text-on-primary-container mb-2">Consultation Fee</h3>
                   <div className="font-manrope text-[48px] font-bold leading-tight mb-4">
                     $50<span className="text-headline-md opacity-70">.00</span>
                     <span className="font-label-sm text-xs align-middle ml-1">AUD</span>
@@ -158,7 +158,7 @@ export default function NewConsultationPage() {
                   <div className="flex items-start gap-2 bg-white/10 p-3 rounded-lg border border-white/20">
                     <span className="material-symbols-outlined text-secondary-fixed text-[18px] shrink-0">verified_user</span>
                     <p className="text-[11px] leading-relaxed font-body-md">
-                      Full refund if the doctor cannot assess your condition remotely.
+                      Payment is only collected after your consultation if a diagnosis is reached.
                     </p>
                   </div>
                 </div>
@@ -192,7 +192,7 @@ export default function NewConsultationPage() {
                 disabled={loading}
                 className="w-full md:w-auto px-10 py-4 bg-primary text-white font-manrope font-bold text-lg rounded-xl shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
               >
-                {loading ? "Starting…" : "Continue to Payment"}
+                {loading ? "Starting…" : "Commence Consultation"}
                 {!loading && <span className="material-symbols-outlined">arrow_forward</span>}
               </button>
             </div>
