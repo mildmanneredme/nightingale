@@ -1,9 +1,9 @@
-# OPS-001 — Comprehensive Error Logging & Observability
+# OPS-001 — Comprehensive Error Logging, Observability & User Error Messaging
 
 > **Status:** Not Started
 > **Phase:** Operational — Sprint 8
-> **Type:** Infrastructure / Developer Tooling
-> **Priority:** P1 — Required before beta; bugs in production are currently invisible
+> **Type:** Infrastructure / Developer Tooling / UX
+> **Priority:** P1 — Required before beta; bugs in production are currently invisible and users receive no actionable feedback when things go wrong
 > **Owner:** CTO
 > **Related audit findings:** None — new requirement driven by operational readiness
 
@@ -280,6 +280,129 @@ A runbook at `docs/ops/log-review-runbook.md` documenting how to conduct a Claud
 
 ---
 
+## User-Facing Error Display
+
+The logging system is invisible to patients and doctors. They need a parallel, parallel-but-connected layer: dismissible toast notifications that tell them what went wrong, what to do next, and — critically — include the correlation ID so support can find the exact log entry.
+
+### F-011 — Toast notification component
+
+New component `web/src/components/Toast.tsx` (and `web/src/hooks/useToast.ts`):
+
+```typescript
+// Usage from any page
+const { toast } = useToast();
+toast.error("Could not send message", {
+  detail: "Connection issue — please try again.",
+  correlationId: "req-a1b2c3d4",  // injected from X-Correlation-ID response header
+});
+```
+
+**Visual spec:**
+- Position: bottom-right, stacked (newest on top), max 3 visible at once
+- Width: 360px on desktop, full-width on mobile
+- Auto-dismiss: 8 seconds for errors, 5 seconds for warnings, 3 seconds for success
+- Manual dismiss: × button always visible
+- Severity variants: `error` (error-container colours), `warning` (amber), `success` (tertiary-container), `info` (surface-container)
+- Animation: slide in from right, fade out on dismiss
+
+**Structure of an error toast:**
+```
+┌─────────────────────────────────────────┐
+│ ● Could not send message            [×] │
+│   Connection issue — please try again.  │
+│   Reference: req-a1b2c3d4               │
+└─────────────────────────────────────────┘
+```
+
+The `Reference: req-a1b2c3d4` line only appears when a `correlationId` is provided. It lets a patient tell support "I got error req-a1b2c3d4" and the developer can find the exact log entry in CloudWatch.
+
+### F-012 — Correlation ID extraction from API responses
+
+`apiFetch()` in `api.ts` must read the `X-Correlation-ID` response header on every call and make it available alongside any error thrown:
+
+```typescript
+export class ApiError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string,
+    public readonly correlationId?: string  // NEW
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
+// In apiFetch:
+const correlationId = res.headers.get("x-correlation-id") ?? undefined;
+throw new ApiError(res.status, message, correlationId);
+```
+
+### F-013 — Standard error messages by HTTP status
+
+A lookup table in `web/src/lib/errors.ts` maps HTTP status codes to user-facing messages so every page shows consistent, non-technical copy:
+
+| Status | User-facing title | User-facing detail |
+|--------|-------------------|-------------------|
+| 400 | "Something doesn't look right" | "Please check your input and try again." |
+| 401 | "You've been signed out" | "Please sign in again to continue." |
+| 403 | "Access denied" | "You don't have permission to do this." |
+| 404 | "Not found" | "This item no longer exists or may have been removed." |
+| 409 | "Already submitted" | "This action has already been completed." |
+| 429 | "Too many requests" | "Please wait a moment before trying again." |
+| 500 | "Something went wrong on our end" | "Our team has been notified. Please try again in a few minutes." |
+| 503 | "Service temporarily unavailable" | "We're experiencing high demand. Please try again shortly." |
+| Network error | "Connection problem" | "Check your internet connection and try again." |
+
+### F-014 — Integration points: where toasts appear
+
+Every page that makes a mutating API call (form submit, button click) must show a toast on failure. Pages that currently silently ignore errors or show nothing must be updated:
+
+| Page / component | Current behaviour on error | Required behaviour |
+|------------------|---------------------------|-------------------|
+| Text chat (`/consultation/:id/text`) | Shows inline "connection issue" text in chat | Toast error + keep inline text for continuity |
+| Profile save (`/profile`) | Shows inline error div | Keep inline + also show toast |
+| Photo upload (`/consultation/:id/photos`) | Unknown — no explicit error UI | Toast with retry instruction |
+| Doctor approve/amend/reject | No visible error state | Toast error with correlationId |
+| Doctor reassign (admin portal) | `alert()` call — blocks UI | Replace with toast |
+| Script renewal submit | No visible error state | Toast error |
+| Script renewal approve/decline | No visible error state | Toast error |
+| Inbox mark-as-read | Silently catches error (`catch(() => null)`) | Keep silent — not worth surfacing |
+| Dashboard PDF download | No visible error state | Toast: "PDF not available right now" |
+
+### F-015 — Global `ToastProvider`
+
+`ToastProvider` wraps `RootLayout` so toasts work on every page without prop-drilling:
+
+```typescript
+// app/layout.tsx
+<AuthContext.Provider value={...}>
+  <ToastProvider>
+    {children}
+  </ToastProvider>
+</AuthContext.Provider>
+```
+
+The `useToast()` hook reads from `ToastContext` and is available anywhere in the component tree.
+
+### F-016 — React error boundary with toast
+
+The patient layout's error boundary (introduced in F-007 for logging) must also display a toast:
+
+```typescript
+componentDidCatch(error: Error) {
+  const correlationId = (error as any).correlationId;
+  // Log to server
+  reportClientError("CLIENT.RENDER.BOUNDARY", error.message, correlationId);
+  // Show toast
+  this.context.toast.error("Something went wrong", {
+    detail: "Please refresh the page. If the problem continues, contact support.",
+    correlationId,
+  });
+}
+```
+
+---
+
 ## Technical Design
 
 ### Correlation ID middleware
@@ -354,16 +477,26 @@ export async function query<T extends pg.QueryResultRow = pg.QueryResultRow>(
 
 ## Acceptance Criteria
 
+**Logging (server-side)**
 - [ ] Every `logger.error()` call includes `errorCode`, `correlationId`, and `feature`
 - [ ] Every HTTP response includes an `X-Correlation-ID` header
 - [ ] The global error handler logs `INTERNAL.UNHANDLED` with userId and operation for any error that arrives without a code
 - [ ] DB queries exceeding 500ms emit a `DB.QUERY.SLOW` warn log
 - [ ] `POST /api/v1/client-error` returns 204 and logs frontend errors at warn level
-- [ ] `apiFetch()` in the web client calls `reportClientError()` on 5xx responses
-- [ ] A React error boundary wraps the patient layout and reports render errors
 - [ ] In production, logs are written to CloudWatch Logs `/nightingale/api/production`
 - [ ] `docs/ops/cloudwatch-queries.md` contains at least 7 Insights queries covering the scenarios in F-009
 - [ ] `docs/ops/log-review-runbook.md` documents the Claude-assisted review process
+
+**User-facing error display**
+- [ ] `Toast` component renders with error/warning/success/info variants, auto-dismisses, and shows a `Reference: <correlationId>` line when a correlation ID is provided
+- [ ] `useToast()` hook is available from any page via `ToastProvider` in the root layout
+- [ ] `ApiError` carries the `correlationId` from the `X-Correlation-ID` response header
+- [ ] `apiFetch()` calls `reportClientError()` on 5xx responses and surfaces a toast via the standard error message table
+- [ ] All pages listed in F-014 show a toast (not a silent failure or a raw `alert()`) when their API call fails
+- [ ] The React error boundary shows a toast with a support reference when a render error is caught
+- [ ] Doctor reassign `alert()` call is replaced with a toast
+
+**General**
 - [ ] TypeScript check passes on all modified files
 - [ ] All existing tests remain green
 
