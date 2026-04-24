@@ -47,7 +47,7 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | **SEC-004** | [Session & Token Security](../shipped/SEC-004-session-token-security.md) | Security Hardening | Sprint 7 | Week 15–16 | **Shipped 2026-04-24** ✅ |
 | **SEC-005** | [Renewal Business Logic Integrity](../shipped/SEC-005-renewal-integrity.md) | Security Hardening | Sprint 7 | Week 15–16 | **Shipped 2026-04-24** ✅ |
 | **UX-001** | [Consultation Result & State Display](../shipped/UX-001-consultation-result-display.md) | UX Fixes | Sprint 7 | Week 14–15 | **Shipped 2026-04-24** ✅ |
-| **UX-002** | [Patient History & Inbox Improvements](UX-002-patient-history-inbox.md) | UX Fixes | Sprint 7 | Week 15–16 | Not started — P1 |
+| **UX-002** | [Patient History & Inbox Improvements](../shipped/UX-002-patient-history-inbox.md) | UX Fixes | Sprint 7 | Week 15–16 | **Shipped 2026-04-24** ✅ |
 | **UX-003** | [Admin Portal: Layout, Navigation & Auth](UX-003-admin-portal.md) | UX Fixes | Sprint 7 | Week 15–16 | Not started — P1 |
 | **UX-004** | [Patient Profile Completeness](UX-004-patient-profile-completeness.md) | UX Fixes | Sprint 7 | Week 16 | Not started — P2 |
 
@@ -79,6 +79,7 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | [SEC-004](../shipped/SEC-004-session-token-security.md) | Session & Token Security | 2026-04-24 | WS stream-token endpoint: single-use UUID, 2-min TTL, stored in ws_tokens; upgrade handler validates + marks used; follow-up audit log stores SHA-256 token hash (not raw token); migration 013 for ws_tokens table; 5 tests green |
 | [SEC-005](../shipped/SEC-005-renewal-integrity.md) | Renewal Business Logic Integrity | 2026-04-24 | `noPriorPrescriptionWarning` flag in doctor queue when no source consultation; `validDays` max enforcement (default 90, overridable via `RENEWAL_MAX_VALID_DAYS`); audit metadata includes `valid_days` + `max_valid_days`; 5 unit tests green |
 | [UX-001](../shipped/UX-001-consultation-result-display.md) | Consultation Result & State Display | 2026-04-24 | Amended status renders `doctor_draft`; rejected status renders rejection reason + in-person care direction + refund notice; 8 status branches covered; "Finish Consultation" button in text chat; `not-found.tsx` global page; `<ErrorState>` component; API now returns `doctorDraft` + `rejectionMessage`; TypeScript clean both API + web |
+| [UX-002](../shipped/UX-002-patient-history-inbox.md) | Patient History & Inbox Improvements | 2026-04-24 | Dashboard: full STATUS_LABELS/COLORS for all 11 statuses; PDF download button for approved/amended; empty state with branded CTA; Inbox: "View Your Assessment" link for response_ready/rejected; "Download PDF Summary" for approved/amended; expanded TYPE_LABELS; TypeScript clean |
 
 ---
 

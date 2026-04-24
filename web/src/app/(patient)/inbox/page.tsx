@@ -1,17 +1,40 @@
 "use client";
 import { useEffect, useState } from "react";
-import { getInbox, markNotificationRead, InboxItem } from "@/lib/api";
+import Link from "next/link";
+import { getInbox, markNotificationRead, InboxItem, getToken } from "@/lib/api";
 
 const TYPE_LABELS: Record<string, string> = {
   response_ready: "Response Ready",
   rejected: "Consultation Rejected",
+  renewal_approved: "Renewal Approved",
+  renewal_declined: "Renewal Declined",
+  followup: "Follow-Up Request",
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  approved: "bg-secondary-container text-on-secondary-container",
-  amended: "bg-secondary-container text-on-secondary-container",
+  approved: "bg-tertiary-container text-on-tertiary-container",
+  amended: "bg-tertiary-container text-on-tertiary-container",
   rejected: "bg-error-container text-on-error-container",
 };
+
+const PDF_STATUSES = new Set(["approved", "amended"]);
+const RESULT_TYPES = new Set(["response_ready", "rejected"]);
+
+async function downloadPdf(consultationId: string) {
+  const token = getToken();
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"}/api/v1/consultations/${consultationId}/pdf`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (!res.ok) return;
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `consultation-${consultationId}.pdf`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 export default function InboxPage() {
   const [items, setItems] = useState<InboxItem[]>([]);
@@ -48,6 +71,9 @@ export default function InboxPage() {
   }
 
   if (selected) {
+    const canViewResult = RESULT_TYPES.has(selected.notificationType);
+    const canDownloadPdf = PDF_STATUSES.has(selected.consultation.status);
+
     return (
       <div className="py-stack-lg max-w-2xl">
         <button
@@ -110,6 +136,29 @@ export default function InboxPage() {
                 We recommend visiting a GP in person. A full refund has been initiated and will
                 appear within 3–5 business days.
               </p>
+            </div>
+          )}
+
+          {/* Action buttons */}
+          {(canViewResult || canDownloadPdf) && (
+            <div className="flex flex-col gap-3 mt-5 pt-5 border-t border-outline-variant">
+              {canViewResult && (
+                <Link
+                  href={`/consultation/${selected.consultation.id}/result`}
+                  className="w-full text-center bg-primary text-on-primary rounded-lg py-3 font-semibold text-body-md hover:opacity-90"
+                >
+                  View Your Assessment
+                </Link>
+              )}
+              {canDownloadPdf && (
+                <button
+                  onClick={() => downloadPdf(selected.consultation.id)}
+                  className="w-full flex items-center justify-center gap-2 border-2 border-secondary text-secondary rounded-lg py-3 font-semibold text-body-md hover:bg-secondary-container"
+                >
+                  <span className="material-symbols-outlined text-base">download</span>
+                  Download PDF Summary
+                </button>
+              )}
             </div>
           )}
 
