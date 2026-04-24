@@ -412,6 +412,46 @@ router.get("/:id/pdf", async (req, res, next) => {
 });
 
 // ---------------------------------------------------------------------------
+// POST /api/v1/consultations/:id/stream-token  (SEC-004)
+// Issues a single-use, 2-minute WebSocket session token for voice stream auth.
+// Prevents the consultation UUID being used as a session credential.
+// ---------------------------------------------------------------------------
+router.post("/:id/stream-token", async (req, res, next) => {
+  try {
+    const { id: consultationId } = req.params;
+    const { randomUUID } = await import("crypto");
+
+    const patientId = await getPatientId(cognitoSub(req));
+    if (!patientId) {
+      res.status(404).json({ error: "Patient not found" });
+      return;
+    }
+
+    // Verify the consultation belongs to this patient
+    const { rows: cRows } = await pool.query(
+      `SELECT id FROM consultations WHERE id = $1 AND patient_id = $2`,
+      [consultationId, patientId]
+    );
+    if (!cRows[0]) {
+      res.status(404).json({ error: "Consultation not found" });
+      return;
+    }
+
+    const wsToken = randomUUID();
+
+    await pool.query(
+      `INSERT INTO ws_tokens (token, consultation_id, patient_id, expires_at)
+       VALUES ($1, $2, $3, NOW() + INTERVAL '2 minutes')`,
+      [wsToken, consultationId, patientId]
+    );
+
+    res.status(201).json({ wsToken, expiresInSeconds: 120 });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ---------------------------------------------------------------------------
 // GET /api/v1/consultations/response-time
 // Patient-facing estimated response time (no auth required — called before login).
 // ---------------------------------------------------------------------------

@@ -5,6 +5,7 @@
 // Tracking URLs are unique per consultation; no patient auth required to respond.
 
 import { Router } from "express";
+import { createHash } from "crypto";
 import { pool } from "../db";
 import { sendFollowUpEmail, sendFollowUpConcernAcknowledgementEmail } from "../services/emailService";
 import { logger } from "../logger";
@@ -58,7 +59,7 @@ router.post("/send", async (_req, res, next) => {
         await pool.query(
           `INSERT INTO audit_log (event_type, actor_id, actor_role, consultation_id, metadata)
            VALUES ('follow_up.sent', $1, 'patient', $2, $3)`,
-          [row.id, row.id, JSON.stringify({ token: row.followup_token })]
+          [row.id, row.id, JSON.stringify({ token_hash: createHash("sha256").update(row.followup_token).digest("hex") })]
         );
         sent++;
       } catch (err) {
