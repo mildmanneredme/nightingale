@@ -94,3 +94,62 @@ describe("POST /api/v1/admin/consultations/:id/reassign", () => {
     expect(res.status).toBe(400);
   });
 });
+
+// ---------------------------------------------------------------------------
+// GET /api/v1/admin/stats  (PRD-016: Beta Launch Readiness)
+// ---------------------------------------------------------------------------
+
+describe("GET /api/v1/admin/stats", () => {
+  it("returns stats with zero counts on empty DB", async () => {
+    const res = await request(adminApp)
+      .get("/api/v1/admin/stats")
+      .expect(200);
+
+    expect(res.body).toHaveProperty("patients");
+    expect(res.body).toHaveProperty("consultations");
+    expect(res.body).toHaveProperty("rates");
+    expect(res.body).toHaveProperty("followUp");
+    expect(res.body.rates.approvalPct).toBeNull(); // no reviewed consultations
+  });
+
+  it("calculates correct rates after adding consultations", async () => {
+    const doctorId = await createDoctor("doctor-sub-stats");
+    const { patientId } = await createPatientAndConsultation();
+    const pool = getTestPool();
+
+    // 2 approved, 1 amended, 1 rejected
+    for (let i = 0; i < 2; i++) {
+      await pool.query(
+        `INSERT INTO consultations
+           (patient_id, assigned_doctor_id, reviewed_by, status, consultation_type,
+            presenting_complaint, ai_draft, reviewed_at)
+         VALUES ($1, $2, $2, 'approved', 'text', 'Headache', 'Paracetamol.', NOW())`,
+        [patientId, doctorId]
+      );
+    }
+    await pool.query(
+      `INSERT INTO consultations
+         (patient_id, assigned_doctor_id, reviewed_by, status, consultation_type,
+          presenting_complaint, ai_draft, doctor_draft, reviewed_at)
+       VALUES ($1, $2, $2, 'amended', 'text', 'Cough', 'Draft.', 'Amended.', NOW())`,
+      [patientId, doctorId]
+    );
+    await pool.query(
+      `INSERT INTO consultations
+         (patient_id, assigned_doctor_id, reviewed_by, status, consultation_type,
+          presenting_complaint, reviewed_at)
+       VALUES ($1, $2, $2, 'rejected', 'text', 'Fever', NOW())`,
+      [patientId, doctorId]
+    );
+
+    const res = await request(adminApp)
+      .get("/api/v1/admin/stats")
+      .expect(200);
+
+    // 4 consultations (2 approved, 1 amended, 1 rejected) → 50% approval
+    expect(res.body.rates.approvalPct).toBe(50);
+    expect(res.body.rates.amendmentPct).toBe(25);
+    expect(res.body.rates.rejectionPct).toBe(25);
+    expect(res.body.rates.avgReviewMinutes).not.toBeNull();
+  });
+});

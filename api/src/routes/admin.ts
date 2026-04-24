@@ -72,4 +72,109 @@ router.post("/consultations/:id/reassign", async (req, res, next) => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// GET /api/v1/admin/stats  (admin — beta launch dashboard)
+// Returns patient counts, consultation counts, and approval/amendment/rejection rates.
+// ---------------------------------------------------------------------------
+router.get("/stats", async (_req, res, next) => {
+  try {
+    const { rows: totals } = await pool.query<{
+      total_patients: string;
+      total_consultations: string;
+      pending_consultations: string;
+      approved_consultations: string;
+      amended_consultations: string;
+      rejected_consultations: string;
+      emergency_escalated: string;
+      cannot_assess: string;
+      resolved_consultations: string;
+      followup_concern: string;
+    }>(
+      `SELECT
+         (SELECT COUNT(*) FROM patients)                                                AS total_patients,
+         (SELECT COUNT(*) FROM consultations)                                           AS total_consultations,
+         (SELECT COUNT(*) FROM consultations WHERE status = 'queued_for_review')        AS pending_consultations,
+         (SELECT COUNT(*) FROM consultations WHERE status = 'approved')                 AS approved_consultations,
+         (SELECT COUNT(*) FROM consultations WHERE status = 'amended')                  AS amended_consultations,
+         (SELECT COUNT(*) FROM consultations WHERE status = 'rejected')                 AS rejected_consultations,
+         (SELECT COUNT(*) FROM consultations WHERE status = 'emergency_escalated')      AS emergency_escalated,
+         (SELECT COUNT(*) FROM consultations WHERE status = 'cannot_assess')            AS cannot_assess,
+         (SELECT COUNT(*) FROM consultations WHERE status IN ('resolved','unchanged'))  AS resolved_consultations,
+         (SELECT COUNT(*) FROM consultations WHERE status = 'followup_concern')         AS followup_concern`
+    );
+
+    const t = totals[0];
+    const reviewed =
+      parseInt(t.approved_consultations) +
+      parseInt(t.amended_consultations) +
+      parseInt(t.rejected_consultations);
+
+    const approvalRate = reviewed > 0
+      ? Math.round((parseInt(t.approved_consultations) / reviewed) * 100)
+      : null;
+    const amendmentRate = reviewed > 0
+      ? Math.round((parseInt(t.amended_consultations) / reviewed) * 100)
+      : null;
+    const rejectionRate = reviewed > 0
+      ? Math.round((parseInt(t.rejected_consultations) / reviewed) * 100)
+      : null;
+
+    // Average doctor review time (reviewed_at - queued_for_review transition)
+    const { rows: reviewTime } = await pool.query<{ avg_minutes: string | null }>(
+      `SELECT ROUND(AVG(EXTRACT(EPOCH FROM (reviewed_at - created_at)) / 60))::text AS avg_minutes
+       FROM consultations
+       WHERE reviewed_at IS NOT NULL`
+    );
+
+    // Follow-up outcomes
+    const { rows: followup } = await pool.query<{
+      sent: string;
+      responded: string;
+      better: string;
+      same: string;
+      worse: string;
+    }>(
+      `SELECT
+         COUNT(*) FILTER (WHERE followup_sent_at IS NOT NULL)           AS sent,
+         COUNT(*) FILTER (WHERE followup_response IS NOT NULL)          AS responded,
+         COUNT(*) FILTER (WHERE followup_response = 'better')           AS better,
+         COUNT(*) FILTER (WHERE followup_response = 'same')             AS same,
+         COUNT(*) FILTER (WHERE followup_response = 'worse')            AS worse
+       FROM consultations`
+    );
+
+    res.json({
+      patients: {
+        total: parseInt(t.total_patients),
+      },
+      consultations: {
+        total: parseInt(t.total_consultations),
+        pending: parseInt(t.pending_consultations),
+        approved: parseInt(t.approved_consultations),
+        amended: parseInt(t.amended_consultations),
+        rejected: parseInt(t.rejected_consultations),
+        emergencyEscalated: parseInt(t.emergency_escalated),
+        cannotAssess: parseInt(t.cannot_assess),
+        resolved: parseInt(t.resolved_consultations),
+        followupConcern: parseInt(t.followup_concern),
+      },
+      rates: {
+        approvalPct: approvalRate,
+        amendmentPct: amendmentRate,
+        rejectionPct: rejectionRate,
+        avgReviewMinutes: reviewTime[0].avg_minutes ? parseInt(reviewTime[0].avg_minutes) : null,
+      },
+      followUp: {
+        sent: parseInt(followup[0].sent),
+        responded: parseInt(followup[0].responded),
+        better: parseInt(followup[0].better),
+        same: parseInt(followup[0].same),
+        worse: parseInt(followup[0].worse),
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;

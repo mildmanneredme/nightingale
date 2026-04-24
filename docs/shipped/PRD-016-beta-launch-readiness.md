@@ -1,6 +1,6 @@
 # PRD-016 — Beta Launch Readiness
 
-> **Status:** Not Started
+> **Status:** Shipped 2026-04-23 (technical implementation; compliance/operational gates remain)
 > **Phase:** Sprint 6 (Week 12–14)
 > **Type:** Technical + Operational
 > **Owner:** CTO + Founder
@@ -149,6 +149,29 @@ All items must be checked before the first real patient consultation:
 ## Dependencies
 
 All 15 prior PRDs must be complete. This PRD represents the integration gate — individual components may be done, but this PRD validates they work correctly together.
+
+---
+
+## Implementation Notes (2026-04-23)
+
+**API (`api/src/routes/admin.ts`):**
+- `GET /api/v1/admin/stats` — returns: `patients.total`, full consultation status breakdown, approval/amendment/rejection rates (%), avgReviewMinutes, follow-up sent/responded/better/same/worse counts
+
+**Frontend:**
+- `web/src/app/(admin)/beta/page.tsx` — beta launch dashboard with: overview cards (patient count, consultation count, pending queue, avg review time), doctor outcome rates, follow-up outcome breakdown, beta launch gate checklist (technical + compliance + operational)
+
+**Tests:** 2 stats tests added to `admin.test.ts` — empty-DB baseline + rate calculations after seeded consultations
+
+**Compliance/operational gates (not code — blocked on external parties):**
+- Penetration test (CREST-accredited firm)
+- Privacy Policy & Collection Notice published
+- DPAs signed (SendGrid, Stripe, Twilio, Vapi, AWS)
+- TGA pre-submission advice
+- AHPRA advertising sign-off
+- Medical Director indemnity insurance confirmed
+- Clinical governance framework signed
+- Incident response runbook
+- Beta cohort (100 patients) identified & invited
 
 ---
 
