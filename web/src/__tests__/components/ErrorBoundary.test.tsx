@@ -102,9 +102,10 @@ describe("ErrorBoundary", () => {
 
     const body = JSON.parse((init as RequestInit).body as string);
     expect(body.errorMessage).toContain("test explosion");
+    expect(body.errorCode).toBe("REACT_BOUNDARY_ERROR");
   });
 
-  it("includes the stack trace in the POST body", async () => {
+  it("sends REACT_BOUNDARY_ERROR as errorCode in the POST body", async () => {
     render(
       <ErrorBoundary>
         <Bomb shouldThrow={true} />
@@ -115,8 +116,7 @@ describe("ErrorBoundary", () => {
 
     const [, init] = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
     const body = JSON.parse((init as RequestInit).body as string);
-    // stack may be undefined in some environments, but the key should exist
-    expect(body).toHaveProperty("stack");
+    expect(body.errorCode).toBe("REACT_BOUNDARY_ERROR");
   });
 
   it("does not throw when the fetch POST fails", async () => {

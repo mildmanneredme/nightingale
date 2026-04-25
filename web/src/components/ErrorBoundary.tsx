@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import { ErrorState } from "@/components/ErrorState";
+import { reportClientError } from "@/lib/errors";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -25,25 +26,23 @@ interface State {
 // ---------------------------------------------------------------------------
 
 export class ErrorBoundary extends React.Component<Props, State> {
+  static displayName = "ErrorBoundary";
+
   constructor(props: Props) {
     super(props);
     this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(): State {
+  static getDerivedStateFromError(_error: Error): State {
     return { hasError: true };
   }
 
-  componentDidCatch(error: Error, info: React.ErrorInfo): void {
+  componentDidCatch(error: Error, _info: React.ErrorInfo): void {
     // F-014: fire-and-forget POST to /api/v1/client-error
-    fetch("/api/v1/client-error", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        errorMessage: (error?.message ?? String(error)).slice(0, 500),
-        stack: error?.stack ?? info.componentStack ?? undefined,
-      }),
-    }).catch(() => {}); // never throw from error boundary
+    reportClientError(
+      "REACT_BOUNDARY_ERROR",
+      error?.message ?? String(error),
+    );
   }
 
   render() {
