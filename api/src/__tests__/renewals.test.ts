@@ -100,7 +100,7 @@ describe("GET /api/v1/renewals", () => {
   it("returns 400 when limit exceeds 100", async () => {
     const app = buildTestApp(PATIENT_SUB, "patient");
     const res = await request(app).get("/api/v1/renewals?limit=200").expect(400);
-    expect(res.body.error).toBe("limit must not exceed 100");
+    expect(res.body.error).toBe("limit must be between 1 and 100");
   });
 });
 
@@ -126,7 +126,7 @@ describe("GET /api/v1/renewals/queue", () => {
   it("returns 400 when limit exceeds 100", async () => {
     const app = buildTestApp(DOCTOR_SUB, "doctor");
     const res = await request(app).get("/api/v1/renewals/queue?limit=101").expect(400);
-    expect(res.body.error).toBe("limit must not exceed 100");
+    expect(res.body.error).toBe("limit must be between 1 and 100");
   });
 });
 

@@ -119,7 +119,7 @@ describe("GET /api/v1/doctor/queue", () => {
     await createDoctor(DOCTOR_SUB);
     const res = await request(doctorApp).get("/api/v1/doctor/queue?limit=200");
     expect(res.status).toBe(400);
-    expect(res.body.error).toBe("limit must not exceed 100");
+    expect(res.body.error).toBe("limit must be between 1 and 100");
   });
 
   it("returns correct slice with limit and offset", async () => {

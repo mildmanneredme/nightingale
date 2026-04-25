@@ -79,7 +79,7 @@ describe("POST /api/v1/consultations", () => {
   it("returns 404 when patient has not registered", async () => {
     const res = await request(app)
       .post("/api/v1/consultations")
-      .send({ consultationType: "voice" });
+      .send({ consultationType: "voice", presentingComplaint: "sore throat" });
 
     expect(res.status).toBe(404);
   });
@@ -114,7 +114,7 @@ describe("GET /api/v1/consultations/:id", () => {
 
     const { body: created } = await request(app)
       .post("/api/v1/consultations")
-      .send({ consultationType: "voice" })
+      .send({ consultationType: "voice", presentingComplaint: "sore throat" })
       .expect(201);
 
     const res = await request(otherApp).get(`/api/v1/consultations/${created.id}`);
@@ -139,26 +139,27 @@ describe("GET /api/v1/consultations", () => {
   it("returns all consultations for the authenticated patient", async () => {
     await registerPatient(app, COGNITO_SUB);
 
-    await request(app).post("/api/v1/consultations").send({ consultationType: "voice" });
-    await request(app).post("/api/v1/consultations").send({ consultationType: "text" });
+    await request(app).post("/api/v1/consultations").send({ consultationType: "voice", presentingComplaint: "cough" });
+    await request(app).post("/api/v1/consultations").send({ consultationType: "text", presentingComplaint: "headache" });
 
     const res = await request(app).get("/api/v1/consultations");
 
     expect(res.status).toBe(200);
-    expect(res.body).toHaveLength(2);
+    expect(res.body.data).toHaveLength(2);
+    expect(res.body.pagination.total).toBe(2);
   });
 
   it("does not include consultations belonging to other patients", async () => {
     await registerPatient(app, COGNITO_SUB);
     await registerPatient(otherApp, OTHER_SUB);
 
-    await request(app).post("/api/v1/consultations").send({ consultationType: "voice" });
-    await request(otherApp).post("/api/v1/consultations").send({ consultationType: "voice" });
+    await request(app).post("/api/v1/consultations").send({ consultationType: "voice", presentingComplaint: "cough" });
+    await request(otherApp).post("/api/v1/consultations").send({ consultationType: "voice", presentingComplaint: "fever" });
 
     const res = await request(app).get("/api/v1/consultations");
 
     expect(res.status).toBe(200);
-    expect(res.body).toHaveLength(1);
+    expect(res.body.data).toHaveLength(1);
   });
 });
 
@@ -172,7 +173,7 @@ describe("POST /api/v1/consultations/:id/end", () => {
 
     const { body: created } = await request(app)
       .post("/api/v1/consultations")
-      .send({ consultationType: "voice" })
+      .send({ consultationType: "voice", presentingComplaint: "sore throat" })
       .expect(201);
 
     const transcript = [
@@ -202,7 +203,7 @@ describe("POST /api/v1/consultations/:id/end", () => {
 
     const { body: created } = await request(app)
       .post("/api/v1/consultations")
-      .send({ consultationType: "voice" })
+      .send({ consultationType: "voice", presentingComplaint: "sore throat" })
       .expect(201);
 
     const res = await request(otherApp)

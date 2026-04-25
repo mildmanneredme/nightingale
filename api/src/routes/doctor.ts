@@ -49,16 +49,21 @@ async function writeAuditLog(params: {
 // ---------------------------------------------------------------------------
 router.get("/queue", async (req, res, next) => {
   try {
+    if (Array.isArray(req.query.limit) || Array.isArray(req.query.offset)) {
+      res.status(400).json({ error: "limit and offset must be single values" });
+      return;
+    }
+
     const rawLimit = parseInt(req.query.limit as string);
     const rawOffset = parseInt(req.query.offset as string);
 
-    if (!isNaN(rawLimit) && rawLimit > 100) {
-      res.status(400).json({ error: "limit must not exceed 100" });
+    if (!isNaN(rawLimit) && (rawLimit < 1 || rawLimit > 100)) {
+      res.status(400).json({ error: "limit must be between 1 and 100" });
       return;
     }
 
     const limit = Math.min(!isNaN(rawLimit) ? rawLimit : 20, 100);
-    const offset = !isNaN(rawOffset) ? rawOffset : 0;
+    const offset = Math.max(0, !isNaN(rawOffset) ? rawOffset : 0);
 
     const doctor = await getDoctorBySub(cognitoSub(req));
     if (!doctor) {

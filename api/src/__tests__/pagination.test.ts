@@ -100,7 +100,7 @@ describe("GET /api/v1/doctor/queue — pagination", () => {
   it("returns 400 when limit > 100", async () => {
     await seedDoctorAndPatient();
     const res = await request(doctorApp).get("/api/v1/doctor/queue?limit=200").expect(400);
-    expect(res.body.error).toBe("limit must not exceed 100");
+    expect(res.body.error).toBe("limit must be between 1 and 100");
   });
 
   it("applies limit and offset correctly", async () => {
@@ -181,7 +181,7 @@ describe("GET /api/v1/renewals — pagination", () => {
     const res = await request(patientApp)
       .get("/api/v1/renewals?limit=101")
       .expect(400);
-    expect(res.body.error).toBe("limit must not exceed 100");
+    expect(res.body.error).toBe("limit must be between 1 and 100");
   });
 
   it("applies limit=5 and offset correctly", async () => {
@@ -232,7 +232,7 @@ describe("GET /api/v1/renewals/queue — pagination", () => {
     const res = await request(doctorRenewalsApp)
       .get("/api/v1/renewals/queue?limit=999")
       .expect(400);
-    expect(res.body.error).toBe("limit must not exceed 100");
+    expect(res.body.error).toBe("limit must be between 1 and 100");
   });
 });
 
@@ -274,6 +274,115 @@ describe("GET /api/v1/consultations — pagination", () => {
     const res = await request(patientApp)
       .get("/api/v1/consultations?limit=500")
       .expect(400);
-    expect(res.body.error).toBe("limit must not exceed 100");
+    expect(res.body.error).toBe("limit must be between 1 and 100");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// GET /api/v1/inbox  (patient)
+// ---------------------------------------------------------------------------
+
+describe("GET /api/v1/inbox — pagination", () => {
+  async function seedInboxItems(
+    patientId: string,
+    doctorId: string,
+    count: number
+  ): Promise<void> {
+    const pool = getTestPool();
+    for (let i = 0; i < count; i++) {
+      // Insert an approved consultation
+      const { rows: cRows } = await pool.query(
+        `INSERT INTO consultations
+           (patient_id, status, consultation_type, presenting_complaint, priority_flags,
+            assigned_doctor_id, reviewed_by, reviewed_at)
+         VALUES ($1, 'approved', 'text', $2, '{}', $3, $3, NOW())
+         RETURNING id`,
+        [patientId, `inbox complaint ${i + 1}`, doctorId]
+      );
+      const consultationId = cRows[0].id;
+
+      // Insert a notification for this consultation
+      await pool.query(
+        `INSERT INTO notifications (consultation_id, patient_id, notification_type, status)
+         VALUES ($1, $2, 'response_ready', 'delivered')`,
+        [consultationId, patientId]
+      );
+    }
+  }
+
+  it("returns envelope with correct shape and pagination metadata", async () => {
+    const { patientId, doctorId } = await seedDoctorAndPatient();
+    await seedInboxItems(patientId, doctorId, 3);
+
+    const res = await request(patientApp).get("/api/v1/inbox").expect(200);
+
+    expect(res.body).toHaveProperty("items");
+    expect(res.body).toHaveProperty("pagination");
+    expect(res.body).toHaveProperty("unreadCount");
+    expect(Array.isArray(res.body.items)).toBe(true);
+    expect(res.body.pagination).toMatchObject({
+      total: 3,
+      limit: 20,
+      offset: 0,
+      hasMore: false,
+    });
+    expect(res.body.items).toHaveLength(3);
+  });
+
+  it("returns 400 when limit > 100", async () => {
+    await seedDoctorAndPatient();
+    const res = await request(patientApp)
+      .get("/api/v1/inbox?limit=200")
+      .expect(400);
+    expect(res.body.error).toBe("limit must be between 1 and 100");
+  });
+
+  it("returns 400 when limit < 1", async () => {
+    await seedDoctorAndPatient();
+    const res = await request(patientApp)
+      .get("/api/v1/inbox?limit=0")
+      .expect(400);
+    expect(res.body.error).toBe("limit must be between 1 and 100");
+  });
+
+  it("applies limit and offset correctly and sets hasMore", async () => {
+    const { patientId, doctorId } = await seedDoctorAndPatient();
+    await seedInboxItems(patientId, doctorId, 5);
+
+    const res = await request(patientApp)
+      .get("/api/v1/inbox?limit=3&offset=0")
+      .expect(200);
+
+    expect(res.body.items).toHaveLength(3);
+    expect(res.body.pagination).toMatchObject({
+      total: 5,
+      limit: 3,
+      offset: 0,
+      hasMore: true,
+    });
+  });
+
+  it("hasMore is false on the last page", async () => {
+    const { patientId, doctorId } = await seedDoctorAndPatient();
+    await seedInboxItems(patientId, doctorId, 5);
+
+    const res = await request(patientApp)
+      .get("/api/v1/inbox?limit=3&offset=3")
+      .expect(200);
+
+    expect(res.body.items).toHaveLength(2);
+    expect(res.body.pagination.hasMore).toBe(false);
+  });
+
+  it("clamps negative offset to 0", async () => {
+    const { patientId, doctorId } = await seedDoctorAndPatient();
+    await seedInboxItems(patientId, doctorId, 2);
+
+    const res = await request(patientApp)
+      .get("/api/v1/inbox?offset=-5")
+      .expect(200);
+
+    expect(res.body.items).toHaveLength(2);
+    expect(res.body.pagination.offset).toBe(0);
   });
 });

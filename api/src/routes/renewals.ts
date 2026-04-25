@@ -99,16 +99,21 @@ router.post("/", validateBody(CreateRenewalSchema), async (req, res, next) => {
 // List the authenticated patient's renewal requests.
 router.get("/", async (req, res, next) => {
   try {
+    if (Array.isArray(req.query.limit) || Array.isArray(req.query.offset)) {
+      res.status(400).json({ error: "limit and offset must be single values" });
+      return;
+    }
+
     const rawLimit = parseInt(req.query.limit as string);
     const rawOffset = parseInt(req.query.offset as string);
 
-    if (!isNaN(rawLimit) && rawLimit > 100) {
-      res.status(400).json({ error: "limit must not exceed 100" });
+    if (!isNaN(rawLimit) && (rawLimit < 1 || rawLimit > 100)) {
+      res.status(400).json({ error: "limit must be between 1 and 100" });
       return;
     }
 
     const limit = Math.min(!isNaN(rawLimit) ? rawLimit : 20, 100);
-    const offset = !isNaN(rawOffset) ? rawOffset : 0;
+    const offset = Math.max(0, !isNaN(rawOffset) ? rawOffset : 0);
 
     const { rows: pRows } = await pool.query<{ id: string }>(
       `SELECT id FROM patients WHERE cognito_sub = $1`,
@@ -126,7 +131,7 @@ router.get("/", async (req, res, next) => {
         `SELECT r.id, r.status, r.medication_name, r.dosage, r.no_adverse_effects,
                 r.condition_unchanged, r.patient_notes, r.reminders_enabled,
                 r.review_note, r.valid_until, r.created_at, r.reviewed_at,
-                d.first_name AS doctor_first_name, d.last_name AS doctor_last_name
+                d.full_name AS doctor_full_name
          FROM renewal_requests r
          LEFT JOIN doctors d ON d.id = r.reviewed_by
          WHERE r.patient_id = $1
@@ -147,7 +152,7 @@ router.get("/", async (req, res, next) => {
       remindersEnabled: r.reminders_enabled,
       createdAt: r.created_at,
       reviewedAt: r.reviewed_at,
-      doctorName: r.doctor_last_name ? `Dr ${r.doctor_last_name}` : null,
+      doctorName: r.doctor_full_name ? `Dr ${r.doctor_full_name}` : null,
     }));
 
     res.json({
@@ -172,16 +177,21 @@ router.get("/", async (req, res, next) => {
 // Returns pending renewal requests for the doctor queue.
 router.get("/queue", requireRole("doctor"), async (req, res, next) => {
   try {
+    if (Array.isArray(req.query.limit) || Array.isArray(req.query.offset)) {
+      res.status(400).json({ error: "limit and offset must be single values" });
+      return;
+    }
+
     const rawLimit = parseInt(req.query.limit as string);
     const rawOffset = parseInt(req.query.offset as string);
 
-    if (!isNaN(rawLimit) && rawLimit > 100) {
-      res.status(400).json({ error: "limit must not exceed 100" });
+    if (!isNaN(rawLimit) && (rawLimit < 1 || rawLimit > 100)) {
+      res.status(400).json({ error: "limit must be between 1 and 100" });
       return;
     }
 
     const limit = Math.min(!isNaN(rawLimit) ? rawLimit : 20, 100);
-    const offset = !isNaN(rawOffset) ? rawOffset : 0;
+    const offset = Math.max(0, !isNaN(rawOffset) ? rawOffset : 0);
 
     const [countResult, dataResult] = await Promise.all([
       pool.query(
@@ -257,7 +267,7 @@ router.post("/:id/approve", requireRole("doctor"), validateBody(ApproveRenewalSc
     }
 
     const { rows: dRows } = await pool.query(
-      `SELECT id, ahpra_number, first_name, last_name FROM doctors WHERE cognito_sub = $1`,
+      `SELECT id, ahpra_number, full_name FROM doctors WHERE cognito_sub = $1`,
       [cognitoSub(req)]
     );
     if (!dRows[0]) { res.status(404).json({ error: "Doctor not found" }); return; }
