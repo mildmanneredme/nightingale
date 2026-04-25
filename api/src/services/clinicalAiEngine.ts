@@ -30,6 +30,7 @@ import {
 } from "./piiAnonymiser";
 import { callClaude } from "./anthropicClient";
 import { config } from "../config";
+import { getPrompt } from "../prompts/loader";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -82,90 +83,23 @@ const CANNOT_ASSESS_PATTERNS = [
   /cauda equina/i,
 ];
 
-const CANNOT_ASSESS_TEMPLATE = `Thank you for using Nightingale.
-
-After reviewing the information you've provided, the doctor has determined that your presentation requires an in-person examination to be safely assessed. This is not something that can be appropriately managed through a remote telehealth consultation at this time.
-
-**What you should do:**
-- See your GP or visit a medical centre as soon as possible
-- If your symptoms are severe or worsening, call 000 or go to your nearest emergency department
-
-**Healthdirect** can also help you find the right care: call **1800 022 222** (free, 24/7).
-
-A full refund will be processed for this consultation.
-
-This advice is not a substitute for in-person medical care. If you have any concerns about your symptoms, please contact a healthcare professional immediately.`;
-
 // ---------------------------------------------------------------------------
 // System prompt (static — cached by Anthropic prompt caching)
 // ---------------------------------------------------------------------------
-
-const AHPRA_CONSTRAINTS = `## AHPRA Advertising Compliance — MANDATORY
-- Use "assess" — NEVER "diagnose"
-- Use "recommend" — NEVER "prescribe" in patient-facing text
-- Use "may indicate" or "is consistent with" — NEVER "you have [condition]"
-- Emergency services: always "000" — NEVER "911"
-- Always include in patient-facing drafts: "This advice is not a substitute for in-person medical care"
-- Prohibited: medication brand names (unless PBS-listed), off-label uses, claims of diagnostic certainty, references to US/UK systems
-- Status: DRAFT — pending Medical Director and AHPRA advertising compliance reviewer sign-off`;
-
-const CANNOT_ASSESS_CRITERIA = `## Cannot-Assess Criteria (Medical Director pending sign-off)
-Set cannot_assess: true if the presentation involves ANY of:
-- Suspected acute abdomen, abdominal rigidity, guarding, or localised tenderness with fever
-- Significant trauma, injury, or wound requiring physical inspection
-- Acute vision changes or sudden loss of sight
-- Signs of stroke (FAST: facial droop, arm weakness, slurred speech)
-- Cauda equina syndrome (saddle anaesthesia, bilateral leg weakness, loss of bladder/bowel control)
-- Any presentation where physical examination (auscultation, palpation, percussion) is essential for safe assessment
-- Active suicidal ideation with intent or plan (escalate to 000 rather than cannot_assess)`;
-
-const OUTPUT_SCHEMA = `## Required Output Format
-
-Respond with ONLY a valid JSON object matching this exact schema. No markdown, no explanation, no preamble.
-
-{
-  "soap_note": {
-    "subjective": "string — patient-reported symptoms, history, onset, duration, severity, associated symptoms, relevant medications and allergies. Use direct quotes where appropriate. Max 400 words.",
-    "objective": "string — objective observations from transcript and photos. Always include: 'No in-person examination performed.' Note any vital signs or observations the patient reported. Max 200 words.",
-    "assessment": "string — clinical impression using differential language ('may be consistent with', 'findings suggest'). Reference retrieved guidelines. Flag any red flags prominently. Max 200 words.",
-    "plan": "string — recommended management for GP consideration: self-care options, conditions for seeking further care (including 000 triggers), follow-up recommendations, prescribing considerations (GP to determine). Max 200 words.",
-    "red_flags_detected": ["array of strings — any emergency or urgent features identified, empty array if none"]
-  },
-  "differentials": [
-    {
-      "condition": "string — condition name using SNOMED CT-AU preferred term where available",
-      "likelihood_pct": number,
-      "rationale": "string — 1-2 sentences: supporting features and features against",
-      "confidence": "high | medium | low"
-    }
-  ],
-  "draft_response": "string — plain English patient-facing response for GP review. Max 400 words. Must include when to seek further care and emergency triggers. Must end with: 'This advice is not a substitute for in-person medical care.'",
-  "cannot_assess": boolean,
-  "cannot_assess_reason": "string | null — brief reason if cannot_assess is true, null otherwise"
-}
-
-Rules for differentials:
-- Minimum 2, maximum 5 entries
-- likelihood_pct values must sum to exactly 100
-- Sort by likelihood_pct descending
-- confidence: "high" if likelihood_pct >= 60, "medium" if 20-59, "low" if < 20
-- Use Australian medication names and PBS-listed drugs only
-
-If cannot_assess is true: set draft_response to an empty string.`;
 
 function buildSystemPrompt(ragContext: string): string {
   return `You are a clinical decision support AI for Nightingale, an Australian telehealth platform.
 You assist credentialed Australian GPs by processing patient consultation transcripts into structured clinical outputs.
 All outputs are reviewed and approved by a GP before any patient communication.
 
-${AHPRA_CONSTRAINTS}
+${getPrompt("ahpra-constraints")}
 
-${CANNOT_ASSESS_CRITERIA}
+${getPrompt("cannot-assess-criteria")}
 
 ## Retrieved Australian Clinical Guidelines
 ${ragContext || "No specific guidelines retrieved for this presentation."}
 
-${OUTPUT_SCHEMA}`;
+${getPrompt("output-schema")}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -427,7 +361,8 @@ export async function runEngine(
   // 5. Build prompt
   // -------------------------------------------------------------------------
   const systemPrompt = buildSystemPrompt(ragContext);
-  const promptHash = createHash("sha256").update(systemPrompt).digest("hex").slice(0, 16);
+  const promptHash = createHash("sha256").update(systemPrompt).digest("hex").slice(0, 8);
+  logger.info({ promptHash, promptName: "system" }, "engine trigger");
 
   const transcriptText = transcript.map((t) => `${t.speaker}: ${t.text}`).join("\n");
   const preScreenCannotAssess = detectCannotAssessSignals(transcriptText);
@@ -492,7 +427,7 @@ Please generate the clinical outputs as specified.`;
   // 7. Override draft for cannot-assess cases
   // -------------------------------------------------------------------------
   if (engineOutput.cannotAssess) {
-    engineOutput.draftResponse = CANNOT_ASSESS_TEMPLATE;
+    engineOutput.draftResponse = getPrompt("cannot-assess-template");
   }
 
   // -------------------------------------------------------------------------
