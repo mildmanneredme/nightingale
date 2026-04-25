@@ -32,7 +32,7 @@ function MedSection({
         <div className="p-2 bg-secondary/10 rounded-lg text-secondary">
           <span className="material-symbols-outlined text-[20px]">{icon}</span>
         </div>
-        <h2 className="font-manrope text-headline-md text-primary">{title}</h2>
+        <h2 className="font-headline-md text-headline-md text-primary">{title}</h2>
         <span className="ml-auto font-label-sm text-on-surface-variant text-xs">{items.length} recorded</span>
       </div>
       <div className="p-6 space-y-3">
@@ -122,7 +122,7 @@ export default function HistoryPage() {
 
       <main className="pt-24 pb-20 md:pb-8 px-4 md:px-patient-margin max-w-3xl mx-auto">
         <section className="mb-stack-lg">
-          <h1 className="font-manrope text-headline-lg text-primary">Medical History</h1>
+          <h1 className="font-headline-lg text-headline-lg text-primary">Medical History</h1>
           <p className="font-body-md text-on-surface-variant mt-1">
             Keep your health information up to date for better care.
           </p>

@@ -62,7 +62,7 @@ export default function AmendPage() {
         ) : (
           <div className="mt-16 p-4 md:p-6 max-w-6xl mx-auto">
             <div className="mb-6">
-              <h1 className="font-manrope text-headline-lg text-primary">Amend Response</h1>
+              <h1 className="font-headline-lg text-headline-lg text-primary">Amend Response</h1>
               <p className="font-body-md text-on-surface-variant mt-1">
                 Edit the AI draft below to send a personalised response to the patient.
               </p>

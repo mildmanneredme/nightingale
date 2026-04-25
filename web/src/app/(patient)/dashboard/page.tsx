@@ -49,7 +49,7 @@ export default function DashboardPage() {
       <main className="pt-24 pb-20 md:pb-8 px-4 md:px-patient-margin max-w-7xl mx-auto">
         {/* Welcome */}
         <section className="mb-stack-lg">
-          <h1 className="font-manrope text-headline-lg text-primary">{greeting}</h1>
+          <h1 className="font-headline-lg text-headline-lg text-primary">{greeting}</h1>
           <p className="font-body-md text-on-surface-variant mt-1">
             Here is an overview of your health status and upcoming consultations.
           </p>
@@ -65,7 +65,7 @@ export default function DashboardPage() {
           >
             <div className="relative z-10 flex flex-col h-full justify-between min-h-[240px]">
               <div>
-                <h2 className="font-manrope text-headline-md text-white mb-2">Need medical advice?</h2>
+                <h2 className="font-headline-md text-headline-md text-white mb-2">Need medical advice?</h2>
                 <p className="text-primary-fixed-dim font-body-md max-w-md">
                   Connect with a qualified practitioner in minutes. Our digital bedside manner ensures you&apos;re heard and cared for.
                 </p>
@@ -81,7 +81,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Profile completeness */}
-          <div className="col-span-12 lg:col-span-4 bg-white rounded-xl p-6 border border-slate-100 shadow-[0_4px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between">
+          <div className="col-span-12 lg:col-span-4 bg-white rounded-xl p-6 border border-slate-100 shadow-card flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-4">
                 <span className="text-secondary font-bold text-xs uppercase tracking-wider">Health Profile</span>
@@ -115,9 +115,9 @@ export default function DashboardPage() {
           </div>
 
           {/* Consultation History table */}
-          <div className="col-span-12 bg-white rounded-xl border border-slate-100 shadow-[0_4px_12px_rgba(0,0,0,0.03)] overflow-hidden">
+          <div className="col-span-12 bg-white rounded-xl border border-slate-100 shadow-card overflow-hidden">
             <div className="px-6 py-5 border-b border-slate-50 flex items-center justify-between">
-              <h3 className="font-manrope text-headline-md text-primary">Consultation History</h3>
+              <h3 className="font-headline-md text-headline-md text-primary">Consultation History</h3>
               <Link href="/history" className="text-secondary font-bold text-sm hover:underline">
                 View All
               </Link>
@@ -202,7 +202,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Vitals Snapshot */}
-          <div className="col-span-12 md:col-span-6 bg-white rounded-xl p-6 border border-slate-100 shadow-[0_4px_12px_rgba(0,0,0,0.03)]">
+          <div className="col-span-12 md:col-span-6 bg-white rounded-xl p-6 border border-slate-100 shadow-card">
             <div className="flex items-center gap-4 mb-6">
               <div className="p-3 bg-secondary/10 rounded-xl text-secondary">
                 <span className="material-symbols-outlined">monitor_heart</span>
@@ -215,11 +215,11 @@ export default function DashboardPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="p-4 bg-slate-50 rounded-lg">
                 <p className="text-xs text-slate-500 mb-1">Heart Rate</p>
-                <p className="font-manrope text-headline-md text-primary">72 <span className="text-sm font-normal text-slate-400">bpm</span></p>
+                <p className="font-headline-md text-headline-md text-primary">72 <span className="text-sm font-normal text-slate-400">bpm</span></p>
               </div>
               <div className="p-4 bg-slate-50 rounded-lg">
                 <p className="text-xs text-slate-500 mb-1">Sleep</p>
-                <p className="font-manrope text-headline-md text-primary">7.5 <span className="text-sm font-normal text-slate-400">hrs</span></p>
+                <p className="font-headline-md text-headline-md text-primary">7.5 <span className="text-sm font-normal text-slate-400">hrs</span></p>
               </div>
             </div>
           </div>
@@ -227,7 +227,7 @@ export default function DashboardPage() {
           {/* Telehealth Tip */}
           <div className="col-span-12 md:col-span-6 bg-secondary-container/20 rounded-xl p-6 border border-secondary-container/30 relative overflow-hidden">
             <div className="relative z-10">
-              <h4 className="font-manrope text-headline-md text-primary mb-2">Preparing for your call</h4>
+              <h4 className="font-headline-md text-headline-md text-primary mb-2">Preparing for your call</h4>
               <p className="font-body-md text-on-secondary-container mb-4">
                 Ensure a quiet space and stable internet connection for your virtual appointment.
               </p>

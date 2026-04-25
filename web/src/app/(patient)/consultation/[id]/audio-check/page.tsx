@@ -81,7 +81,7 @@ export default function AudioCheckPage() {
             </span>
           </div>
 
-          <h1 className="font-manrope text-headline-lg text-primary mb-2">Microphone Check</h1>
+          <h1 className="font-headline-lg text-headline-lg text-primary mb-2">Microphone Check</h1>
           <p className="font-body-md text-on-surface-variant mb-8">
             We need access to your microphone for the voice consultation.
           </p>

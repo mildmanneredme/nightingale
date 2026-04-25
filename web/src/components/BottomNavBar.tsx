@@ -23,7 +23,7 @@ export default function BottomNavBar({ active }: BottomNavBarProps) {
           href={href}
           className={`flex flex-col items-center justify-center transition-colors ${
             active === key
-              ? "text-primary bg-blue-50 rounded-xl px-4 py-1"
+              ? "text-primary bg-primary/10 rounded-xl px-4 py-1"
               : "text-slate-400"
           }`}
         >

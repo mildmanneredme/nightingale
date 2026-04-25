@@ -89,7 +89,7 @@ export default function ResultPage() {
         <div className="flex items-center gap-4 mb-4">
           <span className="material-symbols-outlined text-5xl text-on-error-container" style={{ fontVariationSettings: "'FILL' 1" }}>emergency</span>
           <div>
-            <h1 className="font-manrope text-headline-lg text-on-error-container">Emergency Detected</h1>
+            <h1 className="font-headline-lg text-headline-lg text-on-error-container">Emergency Detected</h1>
             <p className="font-clinical-data text-on-error-container/70">Immediate action required</p>
           </div>
         </div>
@@ -109,7 +109,7 @@ export default function ResultPage() {
     return shell(
       <div className="bg-surface-container rounded-2xl p-8 text-center">
         <span className="material-symbols-outlined text-5xl text-on-surface-variant block mb-4">sentiment_dissatisfied</span>
-        <h1 className="font-manrope text-headline-lg text-on-surface mb-3">Cannot Assess Remotely</h1>
+        <h1 className="font-headline-lg text-headline-lg text-on-surface mb-3">Cannot Assess Remotely</h1>
         <p className="font-body-md text-on-surface-variant mb-4">
           We cannot assess your condition remotely. You will receive a full refund. Please see a doctor in person.
         </p>
@@ -131,7 +131,7 @@ export default function ResultPage() {
             <span className="material-symbols-outlined text-3xl text-white" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
           </div>
           <div>
-            <h1 className="font-manrope text-headline-lg text-white mb-1">Consultation Approved</h1>
+            <h1 className="font-headline-lg text-headline-lg text-white mb-1">Consultation Approved</h1>
             <p className="font-body-md text-white/80">
               {status === "amended" ? "Reviewed and amended by a registered GP." : "Reviewed and approved by a registered GP."}
             </p>
@@ -142,7 +142,7 @@ export default function ResultPage() {
         <div className="bg-white rounded-2xl border border-slate-100 shadow-card p-6 mb-4">
           <div className="flex items-center gap-2 mb-4">
             <span className="material-symbols-outlined text-secondary">description</span>
-            <h2 className="font-manrope text-headline-md text-primary">Clinical Assessment</h2>
+            <h2 className="font-headline-md text-headline-md text-primary">Clinical Assessment</h2>
           </div>
           <p className="font-body-md text-on-surface whitespace-pre-wrap leading-relaxed">{content}</p>
         </div>
@@ -151,7 +151,7 @@ export default function ResultPage() {
           <div className="bg-secondary-container/20 rounded-2xl border border-secondary-container/40 p-6 mb-4">
             <div className="flex items-center gap-2 mb-4">
               <span className="material-symbols-outlined text-secondary">medication</span>
-              <h2 className="font-manrope text-headline-md text-on-secondary-container">Prescription</h2>
+              <h2 className="font-headline-md text-headline-md text-on-secondary-container">Prescription</h2>
             </div>
             <p className="font-body-md text-on-secondary-container whitespace-pre-wrap">{consultation.prescription}</p>
           </div>
@@ -179,7 +179,7 @@ export default function ResultPage() {
               <span className="material-symbols-outlined text-on-error-container text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>cancel</span>
             </div>
             <div>
-              <h1 className="font-manrope text-headline-lg text-on-surface">Unable to Assess Remotely</h1>
+              <h1 className="font-headline-lg text-headline-lg text-on-surface">Unable to Assess Remotely</h1>
               <p className="font-clinical-data text-on-surface-variant">Doctor review complete</p>
             </div>
           </div>
@@ -213,7 +213,7 @@ export default function ResultPage() {
     return shell(
       <div className="bg-secondary-container/20 rounded-2xl border border-secondary-container/30 p-8 text-center">
         <span className="material-symbols-outlined text-4xl text-secondary block mb-4">notifications_active</span>
-        <h1 className="font-manrope text-headline-lg text-primary mb-3">Doctor Follow-Up in Progress</h1>
+        <h1 className="font-headline-lg text-headline-lg text-primary mb-3">Doctor Follow-Up in Progress</h1>
         <p className="font-body-md text-on-surface-variant">
           A doctor has been notified and will review your case again shortly. You will receive an updated assessment by email.
         </p>
@@ -227,7 +227,7 @@ export default function ResultPage() {
         <span className="material-symbols-outlined text-4xl text-secondary block mb-4" style={{ fontVariationSettings: "'FILL' 1" }}>
           {status === "resolved" ? "sentiment_satisfied" : "info"}
         </span>
-        <h1 className="font-manrope text-headline-lg text-on-surface mb-3">
+        <h1 className="font-headline-lg text-headline-lg text-on-surface mb-3">
           {status === "resolved" ? "Feeling Better" : "Condition Unchanged"}
         </h1>
         <p className="font-body-md text-on-surface-variant">
@@ -244,7 +244,7 @@ export default function ResultPage() {
     <>
       <div className="bg-white rounded-2xl border border-slate-100 shadow-card p-8 text-center mb-4">
         <span className="material-symbols-outlined text-5xl text-secondary block mb-4 animate-pulse">hourglass_top</span>
-        <h1 className="font-manrope text-headline-lg text-primary mb-3">Under Review</h1>
+        <h1 className="font-headline-lg text-headline-lg text-primary mb-3">Under Review</h1>
         <p className="font-body-md text-on-surface-variant mb-2">
           Your consultation is being reviewed by a registered GP.
         </p>

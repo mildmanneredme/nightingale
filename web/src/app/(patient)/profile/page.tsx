@@ -109,7 +109,7 @@ export default function ProfilePage() {
             {initials}
           </div>
           <div>
-            <h1 className="font-manrope text-headline-lg text-primary">{displayName}</h1>
+            <h1 className="font-headline-lg text-headline-lg text-primary">{displayName}</h1>
             <p className="font-body-md text-on-surface-variant">{patient?.email}</p>
           </div>
         </div>
@@ -122,7 +122,7 @@ export default function ProfilePage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Personal details */}
             <div className="bg-white rounded-xl border border-slate-100 shadow-card p-6 space-y-4">
-              <h2 className="font-manrope text-headline-md text-primary">Personal Details</h2>
+              <h2 className="font-headline-md text-headline-md text-primary">Personal Details</h2>
               <div className="grid grid-cols-2 gap-4">
                 <Field id="firstName" label="First Name" value={firstName} onChange={setFirstName} />
                 <Field id="lastName" label="Last Name" value={lastName} onChange={setLastName} />
@@ -142,7 +142,7 @@ export default function ProfilePage() {
             {patient?.isPaediatric && (
               <div className="bg-white rounded-xl border border-slate-100 shadow-card p-6 space-y-4">
                 <div>
-                  <h2 className="font-manrope text-headline-md text-primary">Guardian / Parent</h2>
+                  <h2 className="font-headline-md text-headline-md text-primary">Guardian / Parent</h2>
                   <p className="font-body-md text-on-surface-variant text-sm mt-1">
                     This account is registered for a minor. Keep guardian contact details current.
                   </p>

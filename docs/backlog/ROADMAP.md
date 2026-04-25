@@ -41,7 +41,7 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | [PRD-019](PRD-019-clinical-knowledge-base-proprietary.md) | Clinical Knowledge Base: Proprietary Extensions (eTG, AMH, MIMS) | Phase 2 | Post-Beta | After PRD-021 stable | Not started |
 | [PRD-020](../shipped/PRD-020-patient-web-frontend.md) | Patient Web Frontend | Build | Sprint 2 | Week 5–7 | **Shipped 2026-04-23** ✅ |
 | [PRD-021](PRD-021-clinical-knowledge-expansion.md) | Clinical Knowledge Base Expansion — 35 Additional GP Presentations | Phase 2 | Sprint 8 | After PRD-011 stable | Not started |
-| [PRD-022](PRD-022-public-marketing-site.md) | Public Marketing Site & Legal Pages | Build | Sprint 8 | Week 17–18 | **In Progress** 🔄 |
+| [PRD-022](../shipped/PRD-022-public-marketing-site.md) | Public Marketing Site & Legal Pages | Build | Sprint 8 | Week 17–18 | **Shipped 2026-04-25** ✅ |
 | — | — | — | — | — | — |
 | **SEC-001** | [Critical Authorization Fixes](../shipped/SEC-001-critical-authorization-fixes.md) | Security Hardening | Sprint 7 | Week 14–15 | **Shipped 2026-04-24** ✅ |
 | **SEC-002** | [Email & Webhook Security](../shipped/SEC-002-email-webhook-security.md) | Security Hardening | Sprint 7 | Week 14–15 | **Shipped 2026-04-24** ✅ |
@@ -88,6 +88,7 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | [UX-002](../shipped/UX-002-patient-history-inbox.md) | Patient History & Inbox Improvements | 2026-04-24 | Dashboard: full STATUS_LABELS/COLORS for all 11 statuses; PDF download button for approved/amended; empty state with branded CTA; Inbox: "View Your Assessment" link for response_ready/rejected; "Download PDF Summary" for approved/amended; expanded TYPE_LABELS; TypeScript clean |
 | [UX-003](../shipped/UX-003-admin-portal.md) | Admin Portal: Layout, Navigation & Auth | 2026-04-24 | `getUserRole()` decodes Cognito JWT groups; login routes admin→/admin/beta, doctor→/doctor/queue, patient→/dashboard; `(admin)/layout.tsx` auth+role guard + dark sidebar nav + logout; beta dashboard uses `getAdminStats()` via Bearer token, 60s auto-refresh, last-updated timestamp, loading skeleton, retry on error; `/admin/consultations` queue page with 4h alert + inline reassign dropdown; 7 unit tests green; TypeScript clean |
 | [UX-004](../shipped/UX-004-patient-profile-completeness.md) | Patient Profile Completeness | 2026-04-24 | Guardian section (name, email, relationship) visible only for paediatric accounts (`isPaediatric === true`); pre-populated from DB; saves via existing PUT /patients/me; shows "Guardian details updated" confirmation; email displayed as read-only with support note; API GET /me + PUT /me extended to return/accept guardian fields; 4 unit tests green; TypeScript clean |
+| [PRD-022](../shipped/PRD-022-public-marketing-site.md) | Public Marketing Site & Legal Pages | 2026-04-25 | 10 marketing pages in `(marketing)` route group; `MarketingNav` (hamburger mobile drawer) + `MarketingFooter` (4-col, 000 emergency strip); Home, How It Works, Pricing, Safety, FAQ, For Doctors, About, Privacy, Terms, Disclaimer; AHPRA language compliant; design system aligned (border-radius tokens, typography tokens, shadow-card, BottomNavBar tint, TopAppBar logo); TypeScript clean; resolves BUG-002 (legal pages) |
 
 ---
 

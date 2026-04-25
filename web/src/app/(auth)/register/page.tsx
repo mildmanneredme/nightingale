@@ -63,11 +63,11 @@ export default function RegisterPage() {
         <div className="absolute inset-0 opacity-20 bg-medical-pattern" />
         <div className="relative z-10 max-w-md text-on-primary-fixed">
           <div className="mb-stack-lg">
-            <span className="font-manrope font-bold text-[48px] leading-none tracking-tighter text-primary-fixed">
+            <span className="font-display-xl text-display-xl text-primary-fixed">
               Nightingale
             </span>
           </div>
-          <h1 className="font-manrope text-headline-lg text-white mb-stack-md">
+          <h1 className="font-headline-lg text-headline-lg text-white mb-stack-md">
             Your health journey, unified and secure.
           </h1>
           <p className="font-body-md text-body-lg text-primary-fixed-dim leading-relaxed mb-stack-lg">
@@ -96,7 +96,7 @@ export default function RegisterPage() {
           </div>
 
           <div className="mb-stack-lg">
-            <h2 className="font-manrope text-headline-lg text-on-surface mb-2">
+            <h2 className="font-headline-lg text-headline-lg text-on-surface mb-2">
               {step === "register" ? "Create Patient Account" : "Verify your email"}
             </h2>
             <p className="font-body-md text-on-surface-variant">

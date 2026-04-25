@@ -198,7 +198,7 @@ export default function PhotoUploadPage() {
     <>
     <TopAppBar />
     <div className="pt-24 pb-8 px-4 md:px-patient-margin max-w-2xl mx-auto">
-      <h1 className="font-manrope text-headline-lg text-primary mb-2">
+      <h1 className="font-headline-lg text-headline-lg text-primary mb-2">
         Add photos
       </h1>
       <p className="font-body-md text-on-surface-variant mb-6">

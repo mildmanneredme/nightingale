@@ -46,7 +46,7 @@ export default function NewConsultationPage() {
         </div>
 
         <div className="mb-6">
-          <h1 className="font-manrope text-headline-lg text-primary mb-1">New Consultation</h1>
+          <h1 className="font-headline-lg text-headline-lg text-primary mb-1">New Consultation</h1>
           <p className="font-body-lg text-on-surface-variant">
             Tell us what&apos;s happening so we can match you with the right specialist.
           </p>
@@ -56,7 +56,7 @@ export default function NewConsultationPage() {
 
           {/* Symptom description */}
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-card">
-            <label htmlFor="reason" className="block font-manrope text-headline-md text-primary mb-4">
+            <label htmlFor="reason" className="block font-headline-md text-headline-md text-primary mb-4">
               What brings you in today?
             </label>
             <div className="relative">

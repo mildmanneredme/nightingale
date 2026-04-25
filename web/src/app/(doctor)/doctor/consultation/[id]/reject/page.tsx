@@ -54,7 +54,7 @@ export default function RejectPage() {
 
         <div className="mt-16 p-4 md:p-6 max-w-2xl mx-auto">
           <div className="mb-6">
-            <h1 className="font-manrope text-headline-lg text-primary">Reject Consultation</h1>
+            <h1 className="font-headline-lg text-headline-lg text-primary">Reject Consultation</h1>
             <p className="font-body-md text-on-surface-variant mt-1">
               Select a reason and optionally add a message for the patient. They will receive a full refund.
             </p>

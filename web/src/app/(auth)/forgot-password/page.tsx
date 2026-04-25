@@ -51,11 +51,11 @@ export default function ForgotPasswordPage() {
         <div className="absolute inset-0 opacity-20 bg-medical-pattern" />
         <div className="relative z-10 max-w-md text-on-primary-fixed">
           <div className="mb-stack-lg">
-            <span className="font-manrope font-bold text-[48px] leading-none tracking-tighter text-primary-fixed">
+            <span className="font-display-xl text-display-xl text-primary-fixed">
               Nightingale
             </span>
           </div>
-          <h1 className="font-manrope text-headline-lg text-white mb-stack-md">
+          <h1 className="font-headline-lg text-headline-lg text-white mb-stack-md">
             Reset your password
           </h1>
           <p className="font-body-md text-body-lg text-primary-fixed-dim leading-relaxed">
@@ -76,7 +76,7 @@ export default function ForgotPasswordPage() {
           {step === "request" ? (
             <>
               <div className="mb-stack-lg">
-                <h2 className="font-manrope text-headline-lg text-on-surface mb-2">Forgot password?</h2>
+                <h2 className="font-headline-lg text-headline-lg text-on-surface mb-2">Forgot password?</h2>
                 <p className="font-body-md text-on-surface-variant">
                   Enter your email and we'll send you a reset code.
                 </p>
@@ -121,7 +121,7 @@ export default function ForgotPasswordPage() {
           ) : (
             <>
               <div className="mb-stack-lg">
-                <h2 className="font-manrope text-headline-lg text-on-surface mb-2">Check your email</h2>
+                <h2 className="font-headline-lg text-headline-lg text-on-surface mb-2">Check your email</h2>
                 <p className="font-body-md text-on-surface-variant">
                   We sent a 6-digit code to <span className="font-bold text-on-surface">{email}</span>.
                   Enter it below with your new password.

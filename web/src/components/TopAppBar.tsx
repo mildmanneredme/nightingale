@@ -18,7 +18,7 @@ export default function TopAppBar({ activeNav }: TopAppBarProps) {
   return (
     <header className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
       <div className="flex items-center gap-8">
-        <Link href="/dashboard" className="text-xl font-bold tracking-tighter text-primary font-manrope">
+        <Link href="/dashboard" className="text-xl font-bold tracking-tighter text-slate-900 font-manrope">
           Nightingale
         </Link>
         <nav className="hidden md:flex gap-6 items-center">

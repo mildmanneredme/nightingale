@@ -83,7 +83,7 @@ export default function DoctorQueuePage() {
           {/* Header + Filters */}
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
             <div>
-              <h2 className="font-manrope text-headline-lg text-primary tracking-tight">
+              <h2 className="font-headline-lg text-headline-lg text-primary tracking-tight">
                 Pending Consultations{!loading && ` (${filtered.length})`}
               </h2>
               <p className="font-clinical-data text-on-surface-variant mt-1">
@@ -152,7 +152,7 @@ export default function DoctorQueuePage() {
                           <span className="material-symbols-outlined text-3xl">person</span>
                         </div>
                         <div>
-                          <h3 className="font-manrope text-headline-md text-primary tracking-tight">
+                          <h3 className="font-headline-md text-headline-md text-primary tracking-tight">
                             Patient
                           </h3>
                           <p className="font-clinical-data text-xs text-on-surface-variant">

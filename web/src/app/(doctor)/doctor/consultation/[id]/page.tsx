@@ -71,7 +71,7 @@ export default function DoctorConsultationPage() {
                       <span className="material-symbols-outlined text-3xl">person</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h2 className="font-manrope text-headline-md text-primary">
+                      <h2 className="font-headline-md text-headline-md text-primary">
                         {consultation.patientName ?? "Anonymous Patient"}
                       </h2>
                       <div className="flex flex-wrap gap-3 mt-1">
@@ -139,7 +139,7 @@ export default function DoctorConsultationPage() {
                 {/* SOAP Note */}
                 {soap && (
                   <div className="bg-white rounded-xl border border-slate-100 shadow-card p-6">
-                    <h3 className="font-manrope text-headline-md text-primary mb-4">SOAP Note</h3>
+                    <h3 className="font-headline-md text-headline-md text-primary mb-4">SOAP Note</h3>
                     <div className="space-y-4">
                       {["subjective", "objective", "assessment", "plan"].map((section) =>
                         soap[section] ? (
@@ -156,7 +156,7 @@ export default function DoctorConsultationPage() {
                 {/* Differential Diagnoses */}
                 {consultation.differentialDiagnoses && consultation.differentialDiagnoses.length > 0 && (
                   <div className="bg-white rounded-xl border border-slate-100 shadow-card p-6">
-                    <h3 className="font-manrope text-headline-md text-primary mb-4">Differential Diagnoses</h3>
+                    <h3 className="font-headline-md text-headline-md text-primary mb-4">Differential Diagnoses</h3>
                     <ol className="space-y-2">
                       {(consultation.differentialDiagnoses as Array<{ diagnosis: string; rank: number }>).map((d, i) => (
                         <li key={i} className="flex items-center gap-3 font-body-md text-on-surface">
@@ -171,7 +171,7 @@ export default function DoctorConsultationPage() {
                 {/* Transcript */}
                 {consultation.transcript && consultation.transcript.length > 0 && (
                   <div className="bg-white rounded-xl border border-slate-100 shadow-card p-6">
-                    <h3 className="font-manrope text-headline-md text-primary mb-4">Transcript</h3>
+                    <h3 className="font-headline-md text-headline-md text-primary mb-4">Transcript</h3>
                     <div className="space-y-3 max-h-72 overflow-y-auto pr-2">
                       {consultation.transcript.map((t, i) => (
                         <div key={i} className={`flex gap-3 font-body-md ${t.speaker === "ai" ? "text-secondary" : "text-on-surface"}`}>
@@ -189,7 +189,7 @@ export default function DoctorConsultationPage() {
               {/* Right: response composer */}
               <div className="xl:col-span-2 space-y-4">
                 <div className="bg-white rounded-xl border border-slate-100 shadow-card p-6 xl:sticky xl:top-24">
-                  <h3 className="font-manrope text-headline-md text-primary mb-4">Doctor Response</h3>
+                  <h3 className="font-headline-md text-headline-md text-primary mb-4">Doctor Response</h3>
 
                   {consultation.aiDraft && (
                     <div className="mb-4">
@@ -238,7 +238,7 @@ export default function DoctorConsultationPage() {
       {showConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-gutter">
           <div className="bg-surface rounded-xl p-8 max-w-md w-full shadow-modal">
-            <h2 className="font-manrope text-headline-md text-on-surface mb-3">Send this response?</h2>
+            <h2 className="font-headline-md text-headline-md text-on-surface mb-3">Send this response?</h2>
             <p className="font-body-md text-on-surface-variant mb-6">
               This will send the AI draft response to the patient. This action cannot be undone.
             </p>
