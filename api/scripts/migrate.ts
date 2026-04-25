@@ -29,7 +29,7 @@ async function migrate() {
       END $$;
     `);
 
-    const migrationsDir = path.resolve(__dirname, "../migrations");
+    const migrationsDir = path.resolve(__dirname, "../../migrations");
     const files = fs
       .readdirSync(migrationsDir)
       .filter((f) => f.endsWith(".sql"))
