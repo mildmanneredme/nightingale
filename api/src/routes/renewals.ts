@@ -99,6 +99,17 @@ router.post("/", validateBody(CreateRenewalSchema), async (req, res, next) => {
 // List the authenticated patient's renewal requests.
 router.get("/", async (req, res, next) => {
   try {
+    const rawLimit = parseInt(req.query.limit as string);
+    const rawOffset = parseInt(req.query.offset as string);
+
+    if (!isNaN(rawLimit) && rawLimit > 100) {
+      res.status(400).json({ error: "limit must not exceed 100" });
+      return;
+    }
+
+    const limit = Math.min(!isNaN(rawLimit) ? rawLimit : 20, 100);
+    const offset = !isNaN(rawOffset) ? rawOffset : 0;
+
     const { rows: pRows } = await pool.query<{ id: string }>(
       `SELECT id FROM patients WHERE cognito_sub = $1`,
       [cognitoSub(req)]
@@ -106,19 +117,27 @@ router.get("/", async (req, res, next) => {
     if (!pRows[0]) { res.status(404).json({ error: "Patient not found" }); return; }
     const patientId = pRows[0].id;
 
-    const { rows } = await pool.query(
-      `SELECT r.id, r.status, r.medication_name, r.dosage, r.no_adverse_effects,
-              r.condition_unchanged, r.patient_notes, r.reminders_enabled,
-              r.review_note, r.valid_until, r.created_at, r.reviewed_at,
-              d.first_name AS doctor_first_name, d.last_name AS doctor_last_name
-       FROM renewal_requests r
-       LEFT JOIN doctors d ON d.id = r.reviewed_by
-       WHERE r.patient_id = $1
-       ORDER BY r.created_at DESC`,
-      [patientId]
-    );
+    const [countResult, dataResult] = await Promise.all([
+      pool.query(
+        `SELECT COUNT(*) FROM renewal_requests r WHERE r.patient_id = $1`,
+        [patientId]
+      ),
+      pool.query(
+        `SELECT r.id, r.status, r.medication_name, r.dosage, r.no_adverse_effects,
+                r.condition_unchanged, r.patient_notes, r.reminders_enabled,
+                r.review_note, r.valid_until, r.created_at, r.reviewed_at,
+                d.first_name AS doctor_first_name, d.last_name AS doctor_last_name
+         FROM renewal_requests r
+         LEFT JOIN doctors d ON d.id = r.reviewed_by
+         WHERE r.patient_id = $1
+         ORDER BY r.created_at DESC
+         LIMIT $2 OFFSET $3`,
+        [patientId, limit, offset]
+      ),
+    ]);
 
-    res.json(rows.map((r) => ({
+    const total = parseInt(countResult.rows[0].count, 10);
+    const data = dataResult.rows.map((r) => ({
       id: r.id,
       status: r.status,
       medicationName: r.medication_name,
@@ -129,7 +148,17 @@ router.get("/", async (req, res, next) => {
       createdAt: r.created_at,
       reviewedAt: r.reviewed_at,
       doctorName: r.doctor_last_name ? `Dr ${r.doctor_last_name}` : null,
-    })));
+    }));
+
+    res.json({
+      data,
+      pagination: {
+        total,
+        limit,
+        offset,
+        hasMore: offset + data.length < total,
+      },
+    });
   } catch (err) {
     next(err);
   }
@@ -143,23 +172,42 @@ router.get("/", async (req, res, next) => {
 // Returns pending renewal requests for the doctor queue.
 router.get("/queue", requireRole("doctor"), async (req, res, next) => {
   try {
-    const { rows } = await pool.query(
-      `SELECT r.id, r.status, r.medication_name, r.dosage,
-              r.no_adverse_effects, r.condition_unchanged, r.patient_notes,
-              r.created_at, r.valid_until, r.alert_48h_sent_at,
-              r.source_consultation_id,
-              p.full_name AS patient_name, p.date_of_birth AS patient_dob,
-              p.biological_sex AS patient_sex
-       FROM renewal_requests r
-       JOIN patients p ON p.id = r.patient_id
-       WHERE r.status = 'pending'
-       ORDER BY
-         -- Expiry alerts first
-         CASE WHEN r.alert_48h_sent_at IS NOT NULL THEN 0 ELSE 1 END,
-         r.created_at ASC`
-    );
+    const rawLimit = parseInt(req.query.limit as string);
+    const rawOffset = parseInt(req.query.offset as string);
 
-    res.json(rows.map((r) => ({
+    if (!isNaN(rawLimit) && rawLimit > 100) {
+      res.status(400).json({ error: "limit must not exceed 100" });
+      return;
+    }
+
+    const limit = Math.min(!isNaN(rawLimit) ? rawLimit : 20, 100);
+    const offset = !isNaN(rawOffset) ? rawOffset : 0;
+
+    const [countResult, dataResult] = await Promise.all([
+      pool.query(
+        `SELECT COUNT(*) FROM renewal_requests r WHERE r.status = 'pending'`
+      ),
+      pool.query(
+        `SELECT r.id, r.status, r.medication_name, r.dosage,
+                r.no_adverse_effects, r.condition_unchanged, r.patient_notes,
+                r.created_at, r.valid_until, r.alert_48h_sent_at,
+                r.source_consultation_id,
+                p.full_name AS patient_name, p.date_of_birth AS patient_dob,
+                p.biological_sex AS patient_sex
+         FROM renewal_requests r
+         JOIN patients p ON p.id = r.patient_id
+         WHERE r.status = 'pending'
+         ORDER BY
+           -- Expiry alerts first
+           CASE WHEN r.alert_48h_sent_at IS NOT NULL THEN 0 ELSE 1 END,
+           r.created_at ASC
+         LIMIT $1 OFFSET $2`,
+        [limit, offset]
+      ),
+    ]);
+
+    const total = parseInt(countResult.rows[0].count, 10);
+    const data = dataResult.rows.map((r) => ({
       id: r.id,
       medicationName: r.medication_name,
       dosage: r.dosage,
@@ -175,7 +223,17 @@ router.get("/queue", requireRole("doctor"), async (req, res, next) => {
         dob: r.patient_dob,
         sex: r.patient_sex,
       },
-    })));
+    }));
+
+    res.json({
+      data,
+      pagination: {
+        total,
+        limit,
+        offset,
+        hasMore: offset + data.length < total,
+      },
+    });
   } catch (err) {
     next(err);
   }

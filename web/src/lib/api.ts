@@ -1,6 +1,22 @@
 import { reportClientError } from "./errors";
 
 // ---------------------------------------------------------------------------
+// Pagination envelope
+// ---------------------------------------------------------------------------
+
+export interface Pagination {
+  total: number;
+  limit: number;
+  offset: number;
+  hasMore: boolean;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: Pagination;
+}
+
+// ---------------------------------------------------------------------------
 // Token store — in-memory for XSS safety
 // ---------------------------------------------------------------------------
 
@@ -143,8 +159,11 @@ export interface Condition {
 // Consultation endpoints
 // ---------------------------------------------------------------------------
 
-export function getConsultations(): Promise<Consultation[]> {
-  return apiFetch("/api/v1/consultations");
+export function getConsultations(
+  limit = 20,
+  offset = 0
+): Promise<PaginatedResponse<Consultation>> {
+  return apiFetch(`/api/v1/consultations?limit=${limit}&offset=${offset}`);
 }
 
 export function createConsultation(
@@ -349,8 +368,11 @@ export interface DoctorConsultation {
   conditions?: unknown;
 }
 
-export function getDoctorQueue(): Promise<DoctorQueueItem[]> {
-  return apiFetch("/api/v1/doctor/queue");
+export function getDoctorQueue(
+  limit = 20,
+  offset = 0
+): Promise<PaginatedResponse<DoctorQueueItem>> {
+  return apiFetch(`/api/v1/doctor/queue?limit=${limit}&offset=${offset}`);
 }
 
 export function getDoctorConsultation(id: string): Promise<DoctorConsultation> {
@@ -408,10 +430,14 @@ export interface InboxItem {
 export interface InboxResponse {
   unreadCount: number;
   items: InboxItem[];
+  pagination: Pagination;
 }
 
-export function getInbox(): Promise<InboxResponse> {
-  return apiFetch("/api/v1/inbox");
+export function getInbox(
+  limit = 20,
+  offset = 0
+): Promise<InboxResponse> {
+  return apiFetch(`/api/v1/inbox?limit=${limit}&offset=${offset}`);
 }
 
 export function markNotificationRead(notificationId: string): Promise<{ id?: string; readAt?: string; alreadyRead?: boolean }> {
@@ -518,8 +544,11 @@ export interface RenewalQueueItem {
   patient: { name?: string; dob?: string; sex?: string };
 }
 
-export function getRenewals(): Promise<RenewalRequest[]> {
-  return apiFetch("/api/v1/renewals");
+export function getRenewals(
+  limit = 20,
+  offset = 0
+): Promise<PaginatedResponse<RenewalRequest>> {
+  return apiFetch(`/api/v1/renewals?limit=${limit}&offset=${offset}`);
 }
 
 export function submitRenewal(data: {
@@ -534,8 +563,11 @@ export function submitRenewal(data: {
   return apiFetch("/api/v1/renewals", { method: "POST", body: JSON.stringify(data) });
 }
 
-export function getRenewalQueue(): Promise<RenewalQueueItem[]> {
-  return apiFetch("/api/v1/renewals/queue");
+export function getRenewalQueue(
+  limit = 20,
+  offset = 0
+): Promise<PaginatedResponse<RenewalQueueItem>> {
+  return apiFetch(`/api/v1/renewals/queue?limit=${limit}&offset=${offset}`);
 }
 
 export function approveRenewal(

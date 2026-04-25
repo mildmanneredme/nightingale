@@ -120,28 +120,55 @@ router.post("/", validateBody(CreateConsultationSchema), async (req, res, next) 
 // ---------------------------------------------------------------------------
 router.get("/", async (req, res, next) => {
   try {
+    const rawLimit = parseInt(req.query.limit as string);
+    const rawOffset = parseInt(req.query.offset as string);
+
+    if (!isNaN(rawLimit) && rawLimit > 100) {
+      res.status(400).json({ error: "limit must not exceed 100" });
+      return;
+    }
+
+    const limit = Math.min(!isNaN(rawLimit) ? rawLimit : 20, 100);
+    const offset = !isNaN(rawOffset) ? rawOffset : 0;
+
     const patientId = await getPatientId(cognitoSub(req));
     if (!patientId) {
       res.status(404).json({ error: "Patient not found" });
       return;
     }
 
-    const { rows } = await pool.query(
-      `SELECT
-         id,
-         status,
-         consultation_type AS "consultationType",
-         presenting_complaint AS "presentingComplaint",
-         created_at AS "createdAt",
-         session_started_at AS "sessionStartedAt",
-         session_ended_at AS "sessionEndedAt"
-       FROM consultations
-       WHERE patient_id = $1
-       ORDER BY created_at DESC`,
-      [patientId]
-    );
+    const [countResult, dataResult] = await Promise.all([
+      pool.query(
+        `SELECT COUNT(*) FROM consultations WHERE patient_id = $1`,
+        [patientId]
+      ),
+      pool.query(
+        `SELECT
+           id,
+           status,
+           consultation_type AS "consultationType",
+           presenting_complaint AS "presentingComplaint",
+           created_at AS "createdAt",
+           session_started_at AS "sessionStartedAt",
+           session_ended_at AS "sessionEndedAt"
+         FROM consultations
+         WHERE patient_id = $1
+         ORDER BY created_at DESC
+         LIMIT $2 OFFSET $3`,
+        [patientId, limit, offset]
+      ),
+    ]);
 
-    res.status(200).json(rows);
+    const total = parseInt(countResult.rows[0].count, 10);
+    res.status(200).json({
+      data: dataResult.rows,
+      pagination: {
+        total,
+        limit,
+        offset,
+        hasMore: offset + dataResult.rows.length < total,
+      },
+    });
   } catch (err) {
     next(err);
   }

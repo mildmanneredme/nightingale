@@ -49,6 +49,17 @@ async function writeAuditLog(params: {
 // ---------------------------------------------------------------------------
 router.get("/queue", async (req, res, next) => {
   try {
+    const rawLimit = parseInt(req.query.limit as string);
+    const rawOffset = parseInt(req.query.offset as string);
+
+    if (!isNaN(rawLimit) && rawLimit > 100) {
+      res.status(400).json({ error: "limit must not exceed 100" });
+      return;
+    }
+
+    const limit = Math.min(!isNaN(rawLimit) ? rawLimit : 20, 100);
+    const offset = !isNaN(rawOffset) ? rawOffset : 0;
+
     const doctor = await getDoctorBySub(cognitoSub(req));
     if (!doctor) {
       res.status(404).json({ error: "Doctor not found" });
@@ -56,28 +67,46 @@ router.get("/queue", async (req, res, next) => {
     }
 
     // Priority sort: LOW_CONFIDENCE and CANNOT_ASSESS flags first, then oldest first
-    const { rows } = await pool.query(
-      `SELECT
-         c.id,
-         c.status,
-         c.consultation_type   AS "consultationType",
-         c.presenting_complaint AS "presentingComplaint",
-         c.priority_flags      AS "priorityFlags",
-         c.created_at          AS "createdAt",
-         p.date_of_birth       AS "patientDob",
-         p.biological_sex      AS "patientSex"
-       FROM consultations c
-       JOIN patients p ON p.id = c.patient_id
-       WHERE c.assigned_doctor_id = $1
-         AND c.status = 'queued_for_review'
-       ORDER BY
-         CASE WHEN 'LOW_CONFIDENCE' = ANY(c.priority_flags) OR 'CANNOT_ASSESS' = ANY(c.priority_flags)
-              THEN 0 ELSE 1 END ASC,
-         c.created_at ASC`,
-      [doctor.id]
-    );
+    const [countResult, dataResult] = await Promise.all([
+      pool.query(
+        `SELECT COUNT(*) FROM consultations c
+         WHERE c.assigned_doctor_id = $1
+           AND c.status = 'queued_for_review'`,
+        [doctor.id]
+      ),
+      pool.query(
+        `SELECT
+           c.id,
+           c.status,
+           c.consultation_type   AS "consultationType",
+           c.presenting_complaint AS "presentingComplaint",
+           c.priority_flags      AS "priorityFlags",
+           c.created_at          AS "createdAt",
+           p.date_of_birth       AS "patientDob",
+           p.biological_sex      AS "patientSex"
+         FROM consultations c
+         JOIN patients p ON p.id = c.patient_id
+         WHERE c.assigned_doctor_id = $1
+           AND c.status = 'queued_for_review'
+         ORDER BY
+           CASE WHEN 'LOW_CONFIDENCE' = ANY(c.priority_flags) OR 'CANNOT_ASSESS' = ANY(c.priority_flags)
+                THEN 0 ELSE 1 END ASC,
+           c.created_at ASC
+         LIMIT $2 OFFSET $3`,
+        [doctor.id, limit, offset]
+      ),
+    ]);
 
-    res.status(200).json(rows);
+    const total = parseInt(countResult.rows[0].count, 10);
+    res.status(200).json({
+      data: dataResult.rows,
+      pagination: {
+        total,
+        limit,
+        offset,
+        hasMore: offset + dataResult.rows.length < total,
+      },
+    });
   } catch (err) {
     next(err);
   }

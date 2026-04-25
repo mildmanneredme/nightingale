@@ -2,9 +2,14 @@
 import { useEffect, useState } from "react";
 import { getRenewalQueue, approveRenewal, declineRenewal, RenewalQueueItem } from "@/lib/api";
 
+const PAGE_LIMIT = 20;
+
 export default function DoctorRenewalsPage() {
   const [items, setItems] = useState<RenewalQueueItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [offset, setOffset] = useState(0);
   const [actionId, setActionId] = useState<string | null>(null);
   const [reviewNote, setReviewNote] = useState("");
   const [validDays, setValidDays] = useState(28);
@@ -12,10 +17,26 @@ export default function DoctorRenewalsPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    getRenewalQueue()
-      .then(setItems)
+    getRenewalQueue(PAGE_LIMIT, 0)
+      .then((res) => {
+        setItems(res.data);
+        setHasMore(res.pagination.hasMore);
+        setOffset(res.data.length);
+      })
       .finally(() => setLoading(false));
   }, []);
+
+  async function loadMore() {
+    setLoadingMore(true);
+    try {
+      const res = await getRenewalQueue(PAGE_LIMIT, offset);
+      setItems((prev) => [...prev, ...res.data]);
+      setHasMore(res.pagination.hasMore);
+      setOffset((prev) => prev + res.data.length);
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   function openAction(id: string, m: "approve" | "decline") {
     setActionId(id);
@@ -64,6 +85,7 @@ export default function DoctorRenewalsPage() {
           <p className="text-body-lg">No pending renewal requests</p>
         </div>
       ) : (
+        <>
         <div className="space-y-3">
           {items.map((item) => (
             <div
@@ -175,6 +197,18 @@ export default function DoctorRenewalsPage() {
             </div>
           ))}
         </div>
+        {hasMore && (
+          <div className="mt-6 flex justify-center">
+            <button
+              onClick={loadMore}
+              disabled={loadingMore}
+              className="flex items-center gap-2 border border-outline text-on-surface px-6 py-2.5 rounded text-label-md hover:bg-surface-container transition-colors disabled:opacity-50"
+            >
+              {loadingMore ? "Loading…" : "Load more"}
+            </button>
+          </div>
+        )}
+        </>
       )}
     </div>
   );

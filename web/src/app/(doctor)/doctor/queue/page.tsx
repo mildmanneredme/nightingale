@@ -16,6 +16,8 @@ const FLAG_STYLES: Record<string, { bg: string; text: string }> = {
 
 const FLAGGED_STATUSES = new Set(["LOW_CONFIDENCE", "POOR_PHOTO", "INCOMPLETE_INTERVIEW", "CANNOT_ASSESS", "PEDIATRIC"]);
 
+const PAGE_LIMIT = 20;
+
 type FilterType = "ALL" | "VOICE" | "TEXT";
 
 function timeAgo(iso: string): string {
@@ -34,14 +36,31 @@ function isFlagged(item: DoctorQueueItem): boolean {
 export default function DoctorQueuePage() {
   const [queue, setQueue] = useState<DoctorQueueItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [offset, setOffset] = useState(0);
   const [filter, setFilter] = useState<FilterType>("ALL");
 
   async function load() {
     try {
-      const items = await getDoctorQueue();
-      setQueue(items);
+      const res = await getDoctorQueue(PAGE_LIMIT, 0);
+      setQueue(res.data);
+      setHasMore(res.pagination.hasMore);
+      setOffset(res.data.length);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadMore() {
+    setLoadingMore(true);
+    try {
+      const res = await getDoctorQueue(PAGE_LIMIT, offset);
+      setQueue((prev) => [...prev, ...res.data]);
+      setHasMore(res.pagination.hasMore);
+      setOffset((prev) => prev + res.data.length);
+    } finally {
+      setLoadingMore(false);
     }
   }
 
@@ -129,6 +148,7 @@ export default function DoctorQueuePage() {
               <p className="font-body-md mt-2">No consultations awaiting review.</p>
             </div>
           ) : (
+            <>
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
               {filtered.map((item) => {
                 const flagged = isFlagged(item);
@@ -220,6 +240,23 @@ export default function DoctorQueuePage() {
                 );
               })}
             </div>
+            {hasMore && (
+              <div className="mt-6 flex justify-center">
+                <button
+                  onClick={loadMore}
+                  disabled={loadingMore}
+                  className="flex items-center gap-2 bg-white border border-outline-variant px-6 py-2.5 rounded-lg text-sm font-bold font-manrope text-primary hover:bg-slate-50 transition-colors disabled:opacity-50"
+                >
+                  {loadingMore ? (
+                    <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
+                  ) : (
+                    <span className="material-symbols-outlined text-[18px]">expand_more</span>
+                  )}
+                  {loadingMore ? "Loading…" : "Load more"}
+                </button>
+              </div>
+            )}
+            </>
           )}
         </div>
       </main>

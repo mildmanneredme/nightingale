@@ -28,12 +28,31 @@ export default function DashboardPage() {
   const { token } = useAuth();
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [consultOffset, setConsultOffset] = useState(0);
 
   useEffect(() => {
-    getConsultations()
-      .then(setConsultations)
+    getConsultations(20, 0)
+      .then((res) => {
+        setConsultations(res.data);
+        setHasMore(res.pagination.hasMore);
+        setConsultOffset(res.data.length);
+      })
       .finally(() => setLoading(false));
   }, []);
+
+  async function loadMoreConsultations() {
+    setLoadingMore(true);
+    try {
+      const res = await getConsultations(20, consultOffset);
+      setConsultations((prev) => [...prev, ...res.data]);
+      setHasMore(res.pagination.hasMore);
+      setConsultOffset((prev) => prev + res.data.length);
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   const greeting = (() => {
     const h = new Date().getHours();
@@ -155,7 +174,7 @@ export default function DashboardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {consultations.slice(0, 5).map((c) => (
+                    {consultations.map((c) => (
                       <tr key={c.id} className="hover:bg-slate-50/80 transition-colors cursor-pointer group">
                         <td className="px-6 py-5">
                           <div className="flex flex-col">
@@ -197,6 +216,17 @@ export default function DashboardPage() {
                     ))}
                   </tbody>
                 </table>
+                {hasMore && (
+                  <div className="px-6 py-4 border-t border-slate-50 flex justify-center">
+                    <button
+                      onClick={loadMoreConsultations}
+                      disabled={loadingMore}
+                      className="text-primary font-bold text-sm hover:underline disabled:opacity-50"
+                    >
+                      {loadingMore ? "Loading…" : "Load more"}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

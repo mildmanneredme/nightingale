@@ -82,13 +82,25 @@ describe("POST /api/v1/renewals", () => {
 // Patient lists renewals
 // ---------------------------------------------------------------------------
 describe("GET /api/v1/renewals", () => {
-  it("returns the patient's renewal requests", async () => {
+  it("returns the patient's renewal requests with pagination envelope", async () => {
     const app = buildTestApp(PATIENT_SUB, "patient");
     const res = await request(app).get("/api/v1/renewals").expect(200);
 
-    expect(Array.isArray(res.body)).toBe(true);
-    expect(res.body.length).toBeGreaterThanOrEqual(1);
-    expect(res.body[0].medicationName).toBe("Metformin");
+    expect(Array.isArray(res.body.data)).toBe(true);
+    expect(res.body.data.length).toBeGreaterThanOrEqual(1);
+    expect(res.body.data[0].medicationName).toBe("Metformin");
+    expect(res.body.pagination).toMatchObject({
+      total: expect.any(Number),
+      limit: 20,
+      offset: 0,
+      hasMore: expect.any(Boolean),
+    });
+  });
+
+  it("returns 400 when limit exceeds 100", async () => {
+    const app = buildTestApp(PATIENT_SUB, "patient");
+    const res = await request(app).get("/api/v1/renewals?limit=200").expect(400);
+    expect(res.body.error).toBe("limit must not exceed 100");
   });
 });
 
@@ -96,13 +108,25 @@ describe("GET /api/v1/renewals", () => {
 // Doctor renewal queue
 // ---------------------------------------------------------------------------
 describe("GET /api/v1/renewals/queue", () => {
-  it("returns pending renewals for doctor", async () => {
+  it("returns pending renewals for doctor with pagination envelope", async () => {
     const app = buildTestApp(DOCTOR_SUB, "doctor");
     const res = await request(app).get("/api/v1/renewals/queue").expect(200);
 
-    expect(Array.isArray(res.body)).toBe(true);
-    expect(res.body.length).toBeGreaterThanOrEqual(1);
-    expect(res.body[0].medicationName).toBe("Metformin");
+    expect(Array.isArray(res.body.data)).toBe(true);
+    expect(res.body.data.length).toBeGreaterThanOrEqual(1);
+    expect(res.body.data[0].medicationName).toBe("Metformin");
+    expect(res.body.pagination).toMatchObject({
+      total: expect.any(Number),
+      limit: 20,
+      offset: 0,
+      hasMore: expect.any(Boolean),
+    });
+  });
+
+  it("returns 400 when limit exceeds 100", async () => {
+    const app = buildTestApp(DOCTOR_SUB, "doctor");
+    const res = await request(app).get("/api/v1/renewals/queue?limit=101").expect(400);
+    expect(res.body.error).toBe("limit must not exceed 100");
   });
 });
 
@@ -143,7 +167,7 @@ describe("POST /api/v1/renewals/:id/approve", () => {
   it("removes renewal from queue after approval", async () => {
     const app = buildTestApp(DOCTOR_SUB, "doctor");
     const res = await request(app).get("/api/v1/renewals/queue").expect(200);
-    const still = res.body.find((r: { id: string }) => r.id === renewalId);
+    const still = res.body.data.find((r: { id: string }) => r.id === renewalId);
     expect(still).toBeUndefined();
   });
 });

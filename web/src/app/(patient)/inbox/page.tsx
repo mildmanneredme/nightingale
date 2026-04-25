@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getInbox, markNotificationRead, InboxItem, getToken } from "@/lib/api";
 
+const PAGE_LIMIT = 20;
+
 const TYPE_LABELS: Record<string, string> = {
   response_ready: "Response Ready",
   rejected: "Consultation Rejected",
@@ -40,16 +42,34 @@ export default function InboxPage() {
   const [items, setItems] = useState<InboxItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [offset, setOffset] = useState(0);
   const [selected, setSelected] = useState<InboxItem | null>(null);
 
   useEffect(() => {
-    getInbox()
+    getInbox(PAGE_LIMIT, 0)
       .then((data) => {
         setItems(data.items);
         setUnreadCount(data.unreadCount);
+        setHasMore(data.pagination.hasMore);
+        setOffset(data.items.length);
       })
       .finally(() => setLoading(false));
   }, []);
+
+  async function loadMore() {
+    setLoadingMore(true);
+    try {
+      const data = await getInbox(PAGE_LIMIT, offset);
+      setItems((prev) => [...prev, ...data.items]);
+      setUnreadCount(data.unreadCount);
+      setHasMore(data.pagination.hasMore);
+      setOffset((prev) => prev + data.items.length);
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   async function openItem(item: InboxItem) {
     setSelected(item);
@@ -203,6 +223,7 @@ export default function InboxPage() {
           <p className="text-body-md mt-2">Your consultation responses will appear here.</p>
         </div>
       ) : (
+        <>
         <div className="space-y-2">
           {items.map((item) => (
             <button
@@ -253,6 +274,18 @@ export default function InboxPage() {
             </button>
           ))}
         </div>
+        {hasMore && (
+          <div className="mt-4 flex justify-center">
+            <button
+              onClick={loadMore}
+              disabled={loadingMore}
+              className="border border-outline text-on-surface px-6 py-2.5 rounded text-label-md hover:bg-surface-container transition-colors disabled:opacity-50"
+            >
+              {loadingMore ? "Loading…" : "Load more"}
+            </button>
+          </div>
+        )}
+        </>
       )}
     </div>
   );

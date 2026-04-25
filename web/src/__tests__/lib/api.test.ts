@@ -58,7 +58,7 @@ describe("ApiError", () => {
 
 describe("Authorization header", () => {
   it("attaches Bearer token to every request", async () => {
-    mockFetch(200, []);
+    mockFetch(200, { data: [], pagination: { total: 0, limit: 20, offset: 0, hasMore: false } });
     await getConsultations();
     const [, init] = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
     expect((init as RequestInit).headers).toMatchObject({
@@ -78,13 +78,13 @@ describe("Authorization header", () => {
 // ---------------------------------------------------------------------------
 
 describe("getConsultations", () => {
-  it("GETs /api/v1/consultations and returns the array", async () => {
-    const list = [{ id: "abc", status: "pending" }];
-    mockFetch(200, list);
+  it("GETs /api/v1/consultations with default pagination params and returns the envelope", async () => {
+    const envelope = { data: [{ id: "abc", status: "pending" }], pagination: { total: 1, limit: 20, offset: 0, hasMore: false } };
+    mockFetch(200, envelope);
     const result = await getConsultations();
-    expect(result).toEqual(list);
+    expect(result).toEqual(envelope);
     const [url] = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(url).toBe("/api/v1/consultations");
+    expect(url).toBe("/api/v1/consultations?limit=20&offset=0");
   });
 
   it("throws ApiError on non-2xx", async () => {

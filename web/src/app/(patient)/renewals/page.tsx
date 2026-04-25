@@ -4,6 +4,8 @@ import { getRenewals, submitRenewal, RenewalRequest, ApiError } from "@/lib/api"
 import { useToast } from "@/hooks/useToast";
 import { getErrorMessage } from "@/lib/errors";
 
+const PAGE_LIMIT = 20;
+
 const STATUS_LABELS: Record<string, string> = {
   pending: "Awaiting Review",
   approved: "Approved",
@@ -20,6 +22,9 @@ export default function RenewalsPage() {
   const { toast } = useToast();
   const [renewals, setRenewals] = useState<RenewalRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [offset, setOffset] = useState(0);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -32,10 +37,26 @@ export default function RenewalsPage() {
   const [patientNotes, setPatientNotes] = useState("");
 
   useEffect(() => {
-    getRenewals()
-      .then(setRenewals)
+    getRenewals(PAGE_LIMIT, 0)
+      .then((res) => {
+        setRenewals(res.data);
+        setHasMore(res.pagination.hasMore);
+        setOffset(res.data.length);
+      })
       .finally(() => setLoading(false));
   }, []);
+
+  async function loadMore() {
+    setLoadingMore(true);
+    try {
+      const res = await getRenewals(PAGE_LIMIT, offset);
+      setRenewals((prev) => [...prev, ...res.data]);
+      setHasMore(res.pagination.hasMore);
+      setOffset((prev) => prev + res.data.length);
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -55,8 +76,10 @@ export default function RenewalsPage() {
         conditionUnchanged,
         patientNotes: patientNotes.trim() || undefined,
       });
-      const updated = await getRenewals();
-      setRenewals(updated);
+      const updated = await getRenewals(PAGE_LIMIT, 0);
+      setRenewals(updated.data);
+      setHasMore(updated.pagination.hasMore);
+      setOffset(updated.data.length);
       setShowForm(false);
       setMedicationName("");
       setDosage("");
@@ -193,6 +216,7 @@ export default function RenewalsPage() {
           <p className="text-body-md mt-2">Request a renewal for a medication previously prescribed by a Nightingale doctor.</p>
         </div>
       ) : (
+        <>
         <div className="space-y-3">
           {renewals.map((r) => (
             <div
@@ -232,6 +256,18 @@ export default function RenewalsPage() {
             </div>
           ))}
         </div>
+        {hasMore && (
+          <div className="mt-6 flex justify-center">
+            <button
+              onClick={loadMore}
+              disabled={loadingMore}
+              className="border border-outline text-on-surface px-6 py-2.5 rounded text-label-md hover:bg-surface-container transition-colors disabled:opacity-50"
+            >
+              {loadingMore ? "Loading…" : "Load more"}
+            </button>
+          </div>
+        )}
+        </>
       )}
     </div>
   );

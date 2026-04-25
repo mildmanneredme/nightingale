@@ -75,7 +75,7 @@ afterAll(async () => {
 // ---------------------------------------------------------------------------
 
 describe("GET /api/v1/doctor/queue", () => {
-  it("returns consultations assigned to this doctor only", async () => {
+  it("returns consultations assigned to this doctor only with pagination envelope", async () => {
     const doctorId = await createDoctor(DOCTOR_SUB);
     const { consultationId } = await createPatientAndConsultation(
       "queued_for_review"
@@ -85,8 +85,14 @@ describe("GET /api/v1/doctor/queue", () => {
     const res = await request(doctorApp).get("/api/v1/doctor/queue");
 
     expect(res.status).toBe(200);
-    expect(res.body).toHaveLength(1);
-    expect(res.body[0].id).toBe(consultationId);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].id).toBe(consultationId);
+    expect(res.body.pagination).toMatchObject({
+      total: 1,
+      limit: 20,
+      offset: 0,
+      hasMore: false,
+    });
   });
 
   it("excludes other doctors' consultations", async () => {
@@ -100,12 +106,40 @@ describe("GET /api/v1/doctor/queue", () => {
     const res = await request(doctorApp).get("/api/v1/doctor/queue");
 
     expect(res.status).toBe(200);
-    expect(res.body).toHaveLength(0);
+    expect(res.body.data).toHaveLength(0);
+    expect(res.body.pagination.total).toBe(0);
   });
 
   it("returns 404 when doctor is not registered", async () => {
     const res = await request(doctorApp).get("/api/v1/doctor/queue");
     expect(res.status).toBe(404);
+  });
+
+  it("returns 400 when limit exceeds 100", async () => {
+    await createDoctor(DOCTOR_SUB);
+    const res = await request(doctorApp).get("/api/v1/doctor/queue?limit=200");
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("limit must not exceed 100");
+  });
+
+  it("returns correct slice with limit and offset", async () => {
+    const doctorId = await createDoctor(DOCTOR_SUB);
+    // Create 3 consultations
+    for (let i = 0; i < 3; i++) {
+      const { consultationId } = await createPatientAndConsultation("queued_for_review");
+      await assignDoctor(consultationId, doctorId);
+    }
+
+    const res = await request(doctorApp).get("/api/v1/doctor/queue?limit=2&offset=1");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(2);
+    expect(res.body.pagination).toMatchObject({
+      total: 3,
+      limit: 2,
+      offset: 1,
+      hasMore: false,
+    });
   });
 });
 
