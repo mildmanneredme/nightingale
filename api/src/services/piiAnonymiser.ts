@@ -27,24 +27,28 @@ const PATTERNS: Array<{ name: string; regex: RegExp; token: string }> = [
   {
     name: "medicare_number",
     // AU Medicare: 10 digits, optionally grouped as NNNN NNNNN N
+    // Australian Medicare card number: 10 digits in 4-5-1 grouping per Services Australia format
     regex: /\b\d{4}[ \-]?\d{5}[ \-]?\d\b/g,
     token: "[MEDICARE]",
   },
   {
     name: "phone_number",
     // AU mobile: 04XX XXX XXX; landline: 0N NNNN NNNN; international: +61...
+    // Australian phone numbers per ACMA numbering plan: mobile (04XX), landline (0[2-9]), or +61 international format
     regex:
       /\b(?:04\d{2}[ \-]?\d{3}[ \-]?\d{3}|0[2-9]\d[ \-]?\d{4}[ \-]?\d{4}|\+61[ \-]?[2-9]\d{3}[ \-]?\d{4})\b/g,
     token: "[PHONE]",
   },
   {
     name: "email",
+    // RFC 5322 email address (locale-independent; not AU-specific)
     regex: /\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b/g,
     token: "[EMAIL]",
   },
   {
     name: "date_of_birth",
     // Matches: DD/MM/YYYY, DD-MM-YYYY, YYYY-MM-DD, "born on ...", "DOB:"
+    // Australian date-of-birth formats: DD/MM/YYYY (AU standard AS ISO 8601), YYYY-MM-DD ISO, or salutation-prefixed ("DOB:", "born on")
     regex:
       /(?:d\.?o\.?b\.?|date of birth|born on)[:\s]+[\d\/\-]+|\b\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}\b|\b\d{4}[\/\-]\d{2}[\/\-]\d{2}\b/gi,
     token: "[DOB]",
@@ -52,6 +56,7 @@ const PATTERNS: Array<{ name: string; regex: RegExp; token: string }> = [
   {
     name: "salutation_name",
     // Strips "Mr/Mrs/Ms/Dr/Prof + Name" patterns
+    // Salutation-prefixed personal name (Mr/Mrs/Ms/Miss/Dr/Prof + Capitalised Name) per AU/UK English convention
     regex:
       /\b(?:Mr\.?|Mrs\.?|Ms\.?|Miss|Dr\.?|Prof\.?)\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?\b/g,
     token: "[PATIENT_NAME]",
@@ -59,6 +64,7 @@ const PATTERNS: Array<{ name: string; regex: RegExp; token: string }> = [
   {
     name: "medicare_card_expiry",
     // "Medicare expiry MM/YY" or standalone MM/YY after Medicare context
+    // Medicare card expiry date in MM/YY format per Services Australia card layout
     regex: /\b(?:expiry|expires?)[:\s]+\d{2}[\/\-]\d{2}\b/gi,
     token: "[MEDICARE_EXPIRY]",
   },
@@ -115,8 +121,11 @@ export async function anonymiseTranscript(turns: TranscriptTurn[]): Promise<stri
 // ---------------------------------------------------------------------------
 
 const PII_DETECTION_PATTERNS: RegExp[] = [
+  // Australian Medicare card number: 10 digits in 4-5-1 grouping per Services Australia format
   /\b\d{4}[ \-]?\d{5}[ \-]?\d\b/,                            // Medicare number
+  // RFC 5322 email address (locale-independent; not AU-specific)
   /\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b/,   // Email
+  // Australian phone numbers per ACMA numbering plan: mobile (04XX), landline (0[2-9]), or +61 international format
   /\b(?:04\d{2}[ \-]?\d{3}[ \-]?\d{3}|0[2-9]\d[ \-]?\d{4}[ \-]?\d{4}|\+61[ \-]?[2-9]\d{3}[ \-]?\d{4})\b/, // AU phone
 ];
 
