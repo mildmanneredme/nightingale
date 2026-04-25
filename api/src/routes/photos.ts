@@ -4,6 +4,7 @@ import { pool } from "../db";
 import { requireRole } from "../middleware/auth";
 import {
   uploadPhoto,
+  checkPhotoQuality,
   generatePresignedUrl,
   validatePhotoMimeType,
   validatePhotoSize,
@@ -73,15 +74,14 @@ router.post(
         return;
       }
 
-      // Client-side quality assessment result passed in body
-      const qualityPassed = req.body.qualityPassed === "true" || req.body.qualityPassed === true;
-      const qualityOverridden =
-        req.body.qualityOverridden === "true" || req.body.qualityOverridden === true;
-      let qualityIssues: string[] = [];
-      try {
-        qualityIssues = req.body.qualityIssues ? JSON.parse(req.body.qualityIssues) : [];
-      } catch {
-        qualityIssues = [];
+      // F-035: Server-side quality check — client flags are ignored entirely.
+      // Run before any DB work so we fail fast without consuming DB resources.
+      const quality = await checkPhotoQuality(file.buffer);
+      if (!quality.passed) {
+        // F-036: Return 422 with structured reason.
+        const reason = quality.issues.join(", ");
+        res.status(422).json({ error: "Image quality insufficient", reason });
+        return;
       }
 
       const patientId = await getPatientId(cognitoSub(req));
@@ -116,10 +116,11 @@ router.post(
         return;
       }
 
-      // Strip EXIF, convert HEIC→JPEG, upload to S3
+      // Strip EXIF, convert HEIC→JPEG, upload to S3.
+      // uploadPhoto re-runs quality checks internally and returns server-determined results.
       const stored = await uploadPhoto(file.buffer, consultationId);
 
-      // Persist photo record
+      // Persist photo record using server-determined quality values only.
       const { rows } = await pool.query(
         `INSERT INTO consultation_photos
            (consultation_id, s3_key, mime_type, size_bytes, width_px, height_px,
@@ -143,9 +144,9 @@ router.post(
           stored.sizeBytes,
           stored.widthPx,
           stored.heightPx,
-          qualityPassed,
-          JSON.stringify(qualityIssues),
-          qualityOverridden,
+          stored.qualityPassed,
+          JSON.stringify(stored.qualityIssues),
+          false, // quality_overridden is always false — client cannot override server quality gate
         ]
       );
 
@@ -159,9 +160,8 @@ router.post(
             consultationId,
             JSON.stringify({
               photoId: rows[0].id,
-              qualityPassed,
-              qualityOverridden,
-              qualityIssues,
+              qualityPassed: stored.qualityPassed,
+              qualityIssues: stored.qualityIssues,
             }),
           ]
         );

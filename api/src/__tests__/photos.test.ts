@@ -1,8 +1,10 @@
 import request from "supertest";
 import { buildTestApp } from "./helpers/app";
 import { resetTestDb, getTestPool, closeTestPool } from "./helpers/db";
+import * as photoStorage from "../services/photoStorage";
 
 // Mock S3 so tests don't need AWS credentials or a real bucket.
+// checkPhotoQuality defaults to passing; individual tests can override it.
 jest.mock("../services/photoStorage", () => ({
   validatePhotoMimeType: jest.fn((mime: string) =>
     ["image/jpeg", "image/png", "image/heic", "image/heif", "image/jpg"].includes(
@@ -10,12 +12,18 @@ jest.mock("../services/photoStorage", () => ({
     )
   ),
   validatePhotoSize: jest.fn((size: number) => size > 0 && size <= 10 * 1024 * 1024),
+  checkPhotoQuality: jest.fn(async (_buffer: Buffer) => ({
+    passed: true,
+    issues: [],
+  })),
   uploadPhoto: jest.fn(async (_buffer: Buffer, consultationId: string) => ({
     s3Key: `${consultationId}/mock-uuid.jpg`,
     mimeType: "image/jpeg",
     sizeBytes: 204800,
     widthPx: 1200,
     heightPx: 900,
+    qualityPassed: true,
+    qualityIssues: [],
   })),
   generatePresignedUrl: jest.fn(async (_key: string) => "https://s3.example.com/mock-presigned-url"),
 }));
@@ -91,9 +99,6 @@ describe("POST /api/v1/consultations/:id/photos", () => {
 
     const res = await request(patientApp)
       .post(`/api/v1/consultations/${consultationId}/photos`)
-      .field("qualityPassed", "true")
-      .field("qualityOverridden", "false")
-      .field("qualityIssues", "[]")
       .attach("photo", JPEG_BUFFER, { filename: "rash.jpg", contentType: "image/jpeg" });
 
     expect(res.status).toBe(201);
@@ -105,25 +110,28 @@ describe("POST /api/v1/consultations/:id/photos", () => {
       widthPx: expect.any(Number),
       heightPx: expect.any(Number),
       qualityPassed: true,
-      qualityOverridden: false,
     });
   });
 
-  it("stores quality_overridden flag when patient overrides a failed check", async () => {
+  // C-07: qualityOverride in FormData must NOT bypass server-side quality gate (F-034, F-036)
+  it("returns 422 when server-side quality check fails, even if qualityOverride: true is sent", async () => {
     await createPatient();
     const consultationId = await createConsultation();
 
+    // Simulate a low-quality image by making checkPhotoQuality return a failure
+    jest.spyOn(photoStorage, "checkPhotoQuality").mockResolvedValueOnce({
+      passed: false,
+      issues: ["blurry"],
+    });
+
     const res = await request(patientApp)
       .post(`/api/v1/consultations/${consultationId}/photos`)
-      .field("qualityPassed", "false")
-      .field("qualityOverridden", "true")
-      .field("qualityIssues", JSON.stringify(["blurry"]))
+      .field("qualityOverride", "true")   // client attempts to bypass
       .attach("photo", JPEG_BUFFER, { filename: "blurry.jpg", contentType: "image/jpeg" });
 
-    expect(res.status).toBe(201);
-    expect(res.body.qualityPassed).toBe(false);
-    expect(res.body.qualityOverridden).toBe(true);
-    expect(res.body.qualityIssues).toEqual(["blurry"]);
+    expect(res.status).toBe(422);
+    expect(res.body.error).toBe("Image quality insufficient");
+    expect(res.body.reason).toMatch(/blurry/);
   });
 
   it("returns 400 when no file is attached", async () => {
@@ -131,8 +139,7 @@ describe("POST /api/v1/consultations/:id/photos", () => {
     const consultationId = await createConsultation();
 
     const res = await request(patientApp)
-      .post(`/api/v1/consultations/${consultationId}/photos`)
-      .field("qualityPassed", "true");
+      .post(`/api/v1/consultations/${consultationId}/photos`);
 
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/photo/i);
@@ -144,7 +151,6 @@ describe("POST /api/v1/consultations/:id/photos", () => {
 
     const res = await request(patientApp)
       .post(`/api/v1/consultations/${consultationId}/photos`)
-      .field("qualityPassed", "true")
       .attach("photo", Buffer.from("fake gif"), {
         filename: "image.gif",
         contentType: "image/gif",
@@ -161,7 +167,6 @@ describe("POST /api/v1/consultations/:id/photos", () => {
     const fakeId = "00000000-0000-0000-0000-000000000099";
     const res = await request(patientApp)
       .post(`/api/v1/consultations/${fakeId}/photos`)
-      .field("qualityPassed", "true")
       .attach("photo", JPEG_BUFFER, { filename: "rash.jpg", contentType: "image/jpeg" });
 
     expect(res.status).toBe(404);
@@ -175,9 +180,6 @@ describe("POST /api/v1/consultations/:id/photos", () => {
     for (let i = 0; i < 5; i++) {
       const res = await request(patientApp)
         .post(`/api/v1/consultations/${consultationId}/photos`)
-        .field("qualityPassed", "true")
-        .field("qualityOverridden", "false")
-        .field("qualityIssues", "[]")
         .attach("photo", JPEG_BUFFER, { filename: `photo${i}.jpg`, contentType: "image/jpeg" });
       expect(res.status).toBe(201);
     }
@@ -185,7 +187,6 @@ describe("POST /api/v1/consultations/:id/photos", () => {
     // 6th upload should fail
     const res = await request(patientApp)
       .post(`/api/v1/consultations/${consultationId}/photos`)
-      .field("qualityPassed", "true")
       .attach("photo", JPEG_BUFFER, { filename: "photo6.jpg", contentType: "image/jpeg" });
 
     expect(res.status).toBe(409);
@@ -204,9 +205,6 @@ describe("GET /api/v1/consultations/:id/photos", () => {
 
     await request(patientApp)
       .post(`/api/v1/consultations/${consultationId}/photos`)
-      .field("qualityPassed", "true")
-      .field("qualityOverridden", "false")
-      .field("qualityIssues", "[]")
       .attach("photo", JPEG_BUFFER, { filename: "rash.jpg", contentType: "image/jpeg" });
 
     const res = await request(patientApp).get(`/api/v1/consultations/${consultationId}/photos`);
@@ -220,9 +218,6 @@ describe("GET /api/v1/consultations/:id/photos", () => {
 
     await request(patientApp)
       .post(`/api/v1/consultations/${consultationId}/photos`)
-      .field("qualityPassed", "true")
-      .field("qualityOverridden", "false")
-      .field("qualityIssues", "[]")
       .attach("photo", JPEG_BUFFER, { filename: "rash.jpg", contentType: "image/jpeg" });
 
     const res = await request(doctorApp).get(
@@ -250,9 +245,6 @@ describe("GET /api/v1/consultations/:id/photos/:photoId/url", () => {
 
     const uploadRes = await request(patientApp)
       .post(`/api/v1/consultations/${consultationId}/photos`)
-      .field("qualityPassed", "true")
-      .field("qualityOverridden", "false")
-      .field("qualityIssues", "[]")
       .attach("photo", JPEG_BUFFER, { filename: "rash.jpg", contentType: "image/jpeg" });
 
     const photoId = uploadRes.body.id;
@@ -271,9 +263,6 @@ describe("GET /api/v1/consultations/:id/photos/:photoId/url", () => {
 
     const uploadRes = await request(patientApp)
       .post(`/api/v1/consultations/${consultationId}/photos`)
-      .field("qualityPassed", "true")
-      .field("qualityOverridden", "false")
-      .field("qualityIssues", "[]")
       .attach("photo", JPEG_BUFFER, { filename: "rash.jpg", contentType: "image/jpeg" });
 
     const photoId = uploadRes.body.id;
@@ -301,9 +290,6 @@ describe("GET /api/v1/consultations/:id/photos/:photoId/url", () => {
 
     const uploadRes = await request(patientApp)
       .post(`/api/v1/consultations/${consultationId}/photos`)
-      .field("qualityPassed", "true")
-      .field("qualityOverridden", "false")
-      .field("qualityIssues", "[]")
       .attach("photo", JPEG_BUFFER, { filename: "rash.jpg", contentType: "image/jpeg" });
     const photoId = uploadRes.body.id;
 
@@ -321,9 +307,6 @@ describe("GET /api/v1/consultations/:id/photos/:photoId/url", () => {
 
     const uploadRes = await request(patientApp)
       .post(`/api/v1/consultations/${consultationId}/photos`)
-      .field("qualityPassed", "true")
-      .field("qualityOverridden", "false")
-      .field("qualityIssues", "[]")
       .attach("photo", JPEG_BUFFER, { filename: "rash.jpg", contentType: "image/jpeg" });
     const photoId = uploadRes.body.id;
 
