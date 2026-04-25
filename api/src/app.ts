@@ -61,7 +61,7 @@ const userWriteLimiter = rateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => (req.user as { sub: string }).sub,
+  keyGenerator: (req) => req.user.sub,
   skip: (req) => req.method !== "POST",
   message: { error: "Too many requests — please try again later" },
 });
@@ -71,10 +71,11 @@ const userReadLimiter = rateLimit({
   max: 60,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => (req.user as { sub: string }).sub,
+  keyGenerator: (req) => req.user.sub,
   skip: (req) => req.method === "POST",
   message: { error: "Too many requests — please try again later" },
 });
+// NOTE: Both limiters use the default MemoryStore — limits are per-ECS-instance, not cluster-wide.
 
 // SEC-002: Raw body required for SendGrid ECDSA signature verification.
 // Must be registered BEFORE the global express.json() middleware.

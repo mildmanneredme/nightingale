@@ -58,14 +58,6 @@ function buildRateLimitApp(options?: {
     message: { error: "Too many requests — please try again later" },
   });
 
-  // Returns a stub auth middleware that injects a known user.sub.
-  function stubAuth(sub: string): RequestHandler {
-    return (req, _res, next) => {
-      req.user = { sub, "cognito:groups": ["patient"], role: "patient", email: "test@example.com" };
-      next();
-    };
-  }
-
   const app = express();
   app.use(correlationId);
   app.use(express.json());
