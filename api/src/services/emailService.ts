@@ -95,12 +95,33 @@ export async function sendResponseReadyEmail(
     redFlags,
   });
 
-  const messageId = await dispatchEmail({
-    to: row.patient_email,
-    subject: `Your consultation response from ${doctorName}`,
-    html,
-    text: plainText,
-  });
+  let messageId: string | null = null;
+  try {
+    messageId = await dispatchEmail({
+      to: row.patient_email,
+      subject: `Your consultation response from ${doctorName}`,
+      html,
+      text: plainText,
+    });
+  } catch (emailErr) {
+    // F-032: write EMAIL_SEND_FAILED to audit_log so no send is silently lost
+    const reason = emailErr instanceof Error ? emailErr.message : String(emailErr);
+    logger.error({ emailErr, consultationId }, "sendResponseReadyEmail: SendGrid dispatch failed");
+    try {
+      await dbPool.query(
+        `INSERT INTO audit_log (event_type, actor_id, actor_role, consultation_id, metadata)
+         VALUES ('notification.email_send_failed', $1, 'system', $2, $3)`,
+        [
+          "00000000-0000-0000-0000-000000000000",
+          consultationId,
+          JSON.stringify({ event: "EMAIL_SEND_FAILED", consultationId, reason }),
+        ]
+      );
+    } catch (auditErr) {
+      logger.error({ auditErr, consultationId }, "sendResponseReadyEmail: failed to write EMAIL_SEND_FAILED to audit_log");
+    }
+    throw emailErr;
+  }
 
   const notifId = await insertNotification(dbPool, {
     consultationId,

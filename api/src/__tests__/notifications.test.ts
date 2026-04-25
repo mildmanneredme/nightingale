@@ -270,6 +270,65 @@ describe("patient inbox", () => {
 });
 
 // ---------------------------------------------------------------------------
+// F-032: EMAIL_SEND_FAILED written to audit_log when SendGrid dispatch throws
+// ---------------------------------------------------------------------------
+describe("email send failure audit log", () => {
+  it("writes EMAIL_SEND_FAILED to audit_log when dispatchEmail throws", async () => {
+    const sgMail = require("@sendgrid/mail");
+    const pool = getTestPool();
+
+    // Create a fresh consultation in queued_for_review for this test
+    const { rows: cRows } = await pool.query(
+      `INSERT INTO consultations
+         (patient_id, assigned_doctor_id, status, consultation_type, presenting_complaint,
+          ai_draft, soap_note, differential_diagnoses, priority_flags)
+       VALUES ($1, $2, 'queued_for_review', 'text', 'Headache',
+               'Rest and hydration advised.',
+               '{"subjective":"headache","objective":"no exam","assessment":"tension headache","plan":"rest"}'::jsonb,
+               '[{"diagnosis":"Tension headache","likelihood_pct":80}]'::jsonb,
+               '{}')
+       RETURNING id`,
+      [patientId, doctorId]
+    );
+    const failConsultationId = cRows[0].id;
+
+    // Make SendGrid throw on the next call
+    sgMail.send.mockRejectedValueOnce(new Error("SendGrid 503 Service Unavailable"));
+
+    // Import sendResponseReadyEmail directly and call it
+    const { sendResponseReadyEmail } = require("../services/emailService");
+
+    // Set up reviewed_by so the query works
+    await pool.query(
+      `UPDATE consultations SET reviewed_by = $1, reviewed_at = NOW(), status = 'approved' WHERE id = $2`,
+      [doctorId, failConsultationId]
+    );
+
+    await expect(sendResponseReadyEmail(failConsultationId, pool)).rejects.toThrow(
+      "SendGrid 503 Service Unavailable"
+    );
+
+    // Check audit_log contains EMAIL_SEND_FAILED entry
+    const { rows: auditRows } = await pool.query(
+      `SELECT event_type, metadata FROM audit_log WHERE consultation_id = $1`,
+      [failConsultationId]
+    );
+    const failEntry = auditRows.find(
+      (r: { event_type: string }) => r.event_type === "notification.email_send_failed"
+    );
+    expect(failEntry).toBeDefined();
+    expect(failEntry.metadata.event).toBe("EMAIL_SEND_FAILED");
+    expect(failEntry.metadata.reason).toContain("503");
+
+    // Restore mock
+    sgMail.send.mockResolvedValue([
+      { statusCode: 202, headers: { "x-message-id": "test-msg-001" } },
+      {},
+    ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Anonymous patient — generic greeting (email template unit check)
 // ---------------------------------------------------------------------------
 describe("anonymous patient notifications", () => {

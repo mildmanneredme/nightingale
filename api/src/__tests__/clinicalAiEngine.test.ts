@@ -5,7 +5,7 @@
 import request from "supertest";
 import { buildTestApp } from "./helpers/app";
 import { resetTestDb, getTestPool, closeTestPool } from "./helpers/db";
-import { runEngine, computeFlags } from "../services/clinicalAiEngine";
+import { runEngine, computeFlags, withRetry } from "../services/clinicalAiEngine";
 import { isPiiClean } from "../services/piiAnonymiser";
 
 // ---------------------------------------------------------------------------
@@ -298,6 +298,62 @@ describe("runEngine", () => {
     });
   });
 
+  // F-029: ai_failed status
+  it("sets consultation.status to ai_failed when all retries are exhausted", async () => {
+    const { callClaude } = require("../services/anthropicClient");
+    callClaude
+      .mockRejectedValueOnce(new Error("Bedrock timeout"))
+      .mockRejectedValueOnce(new Error("Bedrock timeout"))
+      .mockRejectedValueOnce(new Error("Bedrock timeout"));
+
+    const { consultationId } = await createPatientAndConsultation();
+    const pool = getTestPool();
+
+    await runEngine(consultationId, pool);
+
+    const { rows } = await pool.query(
+      `SELECT status FROM consultations WHERE id = $1`,
+      [consultationId]
+    );
+    expect(rows[0].status).toBe("ai_failed");
+
+    // Restore mock
+    callClaude.mockResolvedValue({
+      content: JSON.stringify(MOCK_ENGINE_OUTPUT),
+      inputTokens: 1200,
+      outputTokens: 800,
+      cacheReadTokens: 0,
+      cacheCreationTokens: 1200,
+    });
+  });
+
+  // F-031: 3 total attempts (MAX_RETRIES = 2 means attempts 0, 1, 2)
+  it("calls callClaude exactly 3 times before failing", async () => {
+    const { callClaude } = require("../services/anthropicClient");
+    callClaude
+      .mockRejectedValueOnce(new Error("attempt 1 fail"))
+      .mockRejectedValueOnce(new Error("attempt 2 fail"))
+      .mockRejectedValueOnce(new Error("attempt 3 fail"));
+
+    const { consultationId } = await createPatientAndConsultation();
+    const pool = getTestPool();
+
+    const callsBefore = callClaude.mock.calls.length;
+    await runEngine(consultationId, pool);
+    const callsAfter = callClaude.mock.calls.length;
+
+    expect(callsAfter - callsBefore).toBe(3);
+
+    // Restore mock
+    callClaude.mockResolvedValue({
+      content: JSON.stringify(MOCK_ENGINE_OUTPUT),
+      inputTokens: 1200,
+      outputTokens: 800,
+      cacheReadTokens: 0,
+      cacheCreationTokens: 1200,
+    });
+  });
+
   it("transitions to cannot_assess when engine flags the presentation", async () => {
     const { callClaude } = require("../services/anthropicClient");
     callClaude.mockResolvedValueOnce({
@@ -325,6 +381,46 @@ describe("runEngine", () => {
     expect(rows[0].status).toBe("cannot_assess");
     expect(rows[0].ai_draft).toContain("in-person examination");
     expect(rows[0].priority_flags).toContain("CANNOT_ASSESS");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// withRetry unit tests (F-031)
+// ---------------------------------------------------------------------------
+
+describe("withRetry", () => {
+  it("returns the result on first success without retrying", async () => {
+    const fn = jest.fn().mockResolvedValue("ok");
+    const result = await withRetry(fn, 2, 0);
+    expect(result).toBe("ok");
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it("retries up to the specified count and succeeds on the last attempt", async () => {
+    const fn = jest
+      .fn()
+      .mockRejectedValueOnce(new Error("fail 1"))
+      .mockRejectedValueOnce(new Error("fail 2"))
+      .mockResolvedValue("ok");
+    const result = await withRetry(fn, 2, 0);
+    expect(result).toBe("ok");
+    expect(fn).toHaveBeenCalledTimes(3);
+  });
+
+  it("throws the last error after all retries are exhausted", async () => {
+    const fn = jest
+      .fn()
+      .mockRejectedValueOnce(new Error("fail 1"))
+      .mockRejectedValueOnce(new Error("fail 2"))
+      .mockRejectedValueOnce(new Error("fail 3"));
+    await expect(withRetry(fn, 2, 0)).rejects.toThrow("fail 3");
+    expect(fn).toHaveBeenCalledTimes(3);
+  });
+
+  it("makes exactly retries+1 total attempts on repeated failure", async () => {
+    const fn = jest.fn().mockRejectedValue(new Error("always fails"));
+    await expect(withRetry(fn, 2, 0)).rejects.toThrow();
+    expect(fn).toHaveBeenCalledTimes(3); // 0, 1, 2
   });
 });
 

@@ -290,6 +290,30 @@ function detectCannotAssessSignals(transcriptText: string): boolean {
 }
 
 // ---------------------------------------------------------------------------
+// withRetry — exponential backoff helper (F-031)
+// Retries fn up to `retries` additional times (total attempts = retries + 1).
+// Delays: delayMs, delayMs*2, delayMs*4, ...
+// ---------------------------------------------------------------------------
+export async function withRetry<T>(
+  fn: () => Promise<T>,
+  retries: number,
+  delayMs: number
+): Promise<T> {
+  let lastError: Error = new Error("No attempts made");
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      if (attempt < retries) {
+        await new Promise((r) => setTimeout(r, delayMs * Math.pow(2, attempt)));
+      }
+    }
+  }
+  throw lastError;
+}
+
+// ---------------------------------------------------------------------------
 // runEngine — main exported function
 // ---------------------------------------------------------------------------
 
@@ -426,6 +450,8 @@ Please generate the clinical outputs as specified.`;
   let engineOutput: EngineOutput | null = null;
   let lastError: Error | null = null;
 
+  const RETRY_BASE_DELAY_MS = 1000; // 1s, 2s, 4s for attempts 0, 1, 2
+
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       const response = await callClaude(systemPrompt, [
@@ -451,6 +477,12 @@ Please generate the clinical outputs as specified.`;
         { consultationId, attempt, err: lastError.message },
         "clinicalAiEngine: attempt failed, retrying"
       );
+      if (attempt < MAX_RETRIES) {
+        // Exponential backoff: 1s after attempt 0, 2s after attempt 1
+        await new Promise((r) =>
+          setTimeout(r, RETRY_BASE_DELAY_MS * Math.pow(2, attempt))
+        );
+      }
     }
   }
 
@@ -547,22 +579,26 @@ Please generate the clinical outputs as specified.`;
 }
 
 // ---------------------------------------------------------------------------
-// flagManualTriage — called when all retries are exhausted
+// flagManualTriage — called when all retries are exhausted (F-029, F-030)
+// Sets consultation.status = 'ai_failed' so the admin queue can surface it.
 // ---------------------------------------------------------------------------
 async function flagManualTriage(
   consultationId: string,
   reason: string,
   dbPool: Pool
 ): Promise<void> {
+  // F-030: log at error level with consultationId and error message
   logger.error(
     { consultationId, reason },
-    "clinicalAiEngine: all retries exhausted — flagging for manual triage"
+    "clinicalAiEngine: all retries exhausted — setting status to ai_failed"
   );
 
   try {
+    // F-029: update consultation.status = 'ai_failed'
     await dbPool.query(
       `UPDATE consultations
-       SET priority_flags = array_append(priority_flags, 'ENGINE_FAILED'),
+       SET status = 'ai_failed',
+           priority_flags = array_append(priority_flags, 'ENGINE_FAILED'),
            updated_at = NOW()
        WHERE id = $1`,
       [consultationId]
