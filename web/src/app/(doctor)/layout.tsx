@@ -2,6 +2,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function DoctorLayout({ children }: { children: React.ReactNode }) {
   const { token } = useAuth();
@@ -13,5 +14,5 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
 
   if (!token) return null;
 
-  return <>{children}</>;
+  return <ErrorBoundary>{children}</ErrorBoundary>;
 }

@@ -5,6 +5,7 @@ import { AuthContext } from "@/hooks/useAuth";
 import { getUserRole } from "@/lib/auth";
 import { setToken as apiSetToken } from "@/lib/api";
 import { ToastProvider } from "@/components/ToastProvider";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const [token, setTokenState] = useState<string | null>(null);
@@ -29,7 +30,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <AuthContext.Provider value={{ token, setToken, role }}>
           <ToastProvider>
-            {children}
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
           </ToastProvider>
         </AuthContext.Provider>
       </body>
