@@ -54,10 +54,20 @@ export async function runMigrations(
   const client: PoolClient = await pool.connect();
 
   try {
+    // Step 0 — take an exclusive advisory lock so that concurrent ECS instances
+    // serialise here; the second instance will block until the first commits,
+    // then find all migrations already applied and exit cleanly.
+    await client.query(
+      "SELECT pg_advisory_xact_lock(hashtext('nightingale_schema_migrations'))"
+    );
+
     // Step 1 — ensure the tracking table exists (idempotent DDL)
     await client.query(CREATE_TRACKING_TABLE);
 
     // Step 2 — discover migration files sorted by name
+    if (!fs.existsSync(dir)) {
+      throw new Error(`Migrations directory not found: ${dir}`);
+    }
     const allFiles = fs
       .readdirSync(dir)
       .filter((f) => f.endsWith(".sql"))

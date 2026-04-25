@@ -86,6 +86,7 @@ function buildMockPool(client: PoolClient): Pool {
 
 /** Set up fs mocks for a given list of filenames in a fake directory. */
 function mockFs(files: Record<string, string>, dir: string) {
+  (fs.existsSync as jest.Mock).mockImplementation((p: unknown) => p === dir);
   (fs.readdirSync as jest.Mock).mockImplementation((p: unknown) => {
     if (p === dir) return Object.keys(files);
     return [];
@@ -157,6 +158,14 @@ describe("runMigrations", () => {
     // Should have had 2 BEGIN/COMMIT pairs
     const beginCount = queryCalls.filter((s) => s.toUpperCase() === "BEGIN").length;
     expect(beginCount).toBe(2);
+
+    // 002 must have been applied before 003 (alphabetical order enforced).
+    // Match on unique substrings from each migration's SQL body.
+    const idx002 = queryCalls.findIndex((q) => q.includes("ADD COLUMN bar"));
+    const idx003 = queryCalls.findIndex((q) => q.includes("idx_foo"));
+    expect(idx002).toBeGreaterThanOrEqual(0);
+    expect(idx003).toBeGreaterThanOrEqual(0);
+    expect(idx002).toBeLessThan(idx003);
 
     expect(client.release).toHaveBeenCalledTimes(1);
   });
