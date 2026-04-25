@@ -1,12 +1,21 @@
 import { Router } from "express";
 import { checkDb } from "../db";
 import { config } from "../config";
+import { getMigrationResult } from "../db/migrations";
 
 const router = Router();
 
 // Liveness — ALB and ECS use this. Fast, no DB check.
+// F-027: includes cached migration counts (no extra DB round-trip).
 router.get("/health", (_req, res) => {
-  res.json({ status: "ok", env: config.env });
+  const migrations = getMigrationResult();
+  res.json({
+    status: "ok",
+    env: config.env,
+    db: {
+      migrations: migrations ?? { applied: 0, pending: 0 },
+    },
+  });
 });
 
 // Readiness — confirms DB is reachable. Use for deployment smoke tests.
