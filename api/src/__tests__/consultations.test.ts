@@ -52,7 +52,12 @@ describe("POST /api/v1/consultations", () => {
       .send({ presentingComplaint: "sore throat" });
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/consultationType/i);
+    expect(res.body.error).toBe("Validation failed");
+    expect(res.body.details).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ field: "consultationType" }),
+      ])
+    );
   });
 
   it("returns 400 for invalid consultationType", async () => {
@@ -63,7 +68,12 @@ describe("POST /api/v1/consultations", () => {
       .send({ consultationType: "video" });
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/consultationType/i);
+    expect(res.body.error).toBe("Validation failed");
+    expect(res.body.details).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ field: "consultationType" }),
+      ])
+    );
   });
 
   it("returns 404 when patient has not registered", async () => {

@@ -14,6 +14,12 @@ import { pool } from "../db";
 import { requireRole } from "../middleware/auth";
 import { sendRenewalApprovedEmail, sendRenewalDeclinedEmail, sendRenewalReminderEmail } from "../services/emailService";
 import { logger } from "../logger";
+import { validateBody } from "../middleware/validate";
+import {
+  CreateRenewalSchema,
+  ApproveRenewalSchema,
+  DeclineRenewalSchema,
+} from "../schemas/renewal.schema";
 
 const router = Router();
 
@@ -27,7 +33,7 @@ function cognitoSub(req: Parameters<RequestHandler>[0]): string {
 
 // POST /api/v1/renewals
 // Submit a new script renewal request.
-router.post("/", async (req, res, next) => {
+router.post("/", validateBody(CreateRenewalSchema), async (req, res, next) => {
   try {
     const {
       sourceConsultationId,
@@ -46,11 +52,6 @@ router.post("/", async (req, res, next) => {
       patientNotes?: string;
       remindersEnabled?: boolean;
     };
-
-    if (!medicationName || typeof medicationName !== "string" || !medicationName.trim()) {
-      res.status(400).json({ error: "medicationName is required" });
-      return;
-    }
 
     const { rows: pRows } = await pool.query<{ id: string }>(
       `SELECT id FROM patients WHERE cognito_sub = $1`,
@@ -180,7 +181,7 @@ router.get("/queue", requireRole("doctor"), async (req, res, next) => {
 });
 
 // POST /api/v1/renewals/:id/approve  (doctor only)
-router.post("/:id/approve", requireRole("doctor"), async (req, res, next) => {
+router.post("/:id/approve", requireRole("doctor"), validateBody(ApproveRenewalSchema), async (req, res, next) => {
   try {
     const { reviewNote, validDays = 28 } = req.body as {
       reviewNote?: string;
@@ -249,7 +250,7 @@ router.post("/:id/approve", requireRole("doctor"), async (req, res, next) => {
 });
 
 // POST /api/v1/renewals/:id/decline  (doctor only)
-router.post("/:id/decline", requireRole("doctor"), async (req, res, next) => {
+router.post("/:id/decline", requireRole("doctor"), validateBody(DeclineRenewalSchema), async (req, res, next) => {
   try {
     const { reviewNote } = req.body as { reviewNote?: string };
 

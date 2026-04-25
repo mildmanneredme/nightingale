@@ -7,6 +7,12 @@ import { GeminiLiveSession } from "../services/geminiLive";
 import { sendTextMessage, TextTurn } from "../services/textConsultation";
 import { runEngine } from "../services/clinicalAiEngine";
 import { getResponseTimeEstimate } from "./availability";
+import { validateBody } from "../middleware/validate";
+import {
+  CreateConsultationSchema,
+  EndConsultationSchema,
+  ChatMessageSchema,
+} from "../schemas/consultation.schema";
 
 // Fire-and-forget engine trigger. Errors are logged but never bubble to the
 // HTTP response — the patient's consultation end is acknowledged immediately.
@@ -32,8 +38,6 @@ export function attachConsultationStream(
 
 const router = Router();
 
-const VALID_CONSULTATION_TYPES = ["voice", "text"];
-
 function cognitoSub(req: Parameters<RequestHandler>[0]): string {
   return req.user.sub;
 }
@@ -49,21 +53,10 @@ async function getPatientId(sub: string): Promise<string | null> {
 // ---------------------------------------------------------------------------
 // POST /
 // ---------------------------------------------------------------------------
-router.post("/", async (req, res, next) => {
+router.post("/", validateBody(CreateConsultationSchema), async (req, res, next) => {
   try {
     const { consultationType, presentingComplaint } = req.body;
     const idempotencyKey = req.headers["idempotency-key"] as string | undefined;
-
-    if (!consultationType) {
-      res.status(400).json({ error: "consultationType is required" });
-      return;
-    }
-    if (!VALID_CONSULTATION_TYPES.includes(consultationType)) {
-      res.status(400).json({
-        error: `consultationType must be one of: ${VALID_CONSULTATION_TYPES.join(", ")}`,
-      });
-      return;
-    }
 
     const patientId = await getPatientId(cognitoSub(req));
     if (!patientId) {
@@ -185,7 +178,7 @@ router.get("/:id", async (req, res, next) => {
 // ---------------------------------------------------------------------------
 // POST /:id/end
 // ---------------------------------------------------------------------------
-router.post("/:id/end", async (req, res, next) => {
+router.post("/:id/end", validateBody(EndConsultationSchema), async (req, res, next) => {
   try {
     const patientId = await getPatientId(cognitoSub(req));
     if (!patientId) {
@@ -229,13 +222,9 @@ router.post("/:id/end", async (req, res, next) => {
 // ---------------------------------------------------------------------------
 // POST /:id/chat — turn-by-turn text consultation
 // ---------------------------------------------------------------------------
-router.post("/:id/chat", async (req, res, next) => {
+router.post("/:id/chat", validateBody(ChatMessageSchema), async (req, res, next) => {
   try {
     const { message } = req.body;
-    if (!message || typeof message !== "string" || !message.trim()) {
-      res.status(400).json({ error: "message is required" });
-      return;
-    }
 
     const patientId = await getPatientId(cognitoSub(req));
     if (!patientId) {

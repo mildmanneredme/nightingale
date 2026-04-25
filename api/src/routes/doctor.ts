@@ -3,6 +3,12 @@ import { pool } from "../db";
 import { sendResponseReadyEmail, sendRejectionEmail } from "../services/emailService";
 import { scheduleFollowUp } from "./followup";
 import { logger } from "../logger";
+import { validateBody } from "../middleware/validate";
+import {
+  AmendConsultationSchema,
+  RejectConsultationSchema,
+  ApproveConsultationSchema,
+} from "../schemas/doctor.schema";
 
 const router = Router();
 
@@ -137,7 +143,7 @@ router.get("/consultations/:id", async (req, res, next) => {
 // ---------------------------------------------------------------------------
 // POST /consultations/:id/approve
 // ---------------------------------------------------------------------------
-router.post("/consultations/:id/approve", async (req, res, next) => {
+router.post("/consultations/:id/approve", validateBody(ApproveConsultationSchema), async (req, res, next) => {
   try {
     const doctor = await getDoctorBySub(cognitoSub(req));
     if (!doctor) {
@@ -182,13 +188,9 @@ router.post("/consultations/:id/approve", async (req, res, next) => {
 // ---------------------------------------------------------------------------
 // POST /consultations/:id/amend
 // ---------------------------------------------------------------------------
-router.post("/consultations/:id/amend", async (req, res, next) => {
+router.post("/consultations/:id/amend", validateBody(AmendConsultationSchema), async (req, res, next) => {
   try {
     const { doctorDraft } = req.body;
-    if (!doctorDraft || typeof doctorDraft !== "string" || !doctorDraft.trim()) {
-      res.status(400).json({ error: "doctorDraft is required" });
-      return;
-    }
 
     const doctor = await getDoctorBySub(cognitoSub(req));
     if (!doctor) {
@@ -247,24 +249,9 @@ router.post("/consultations/:id/amend", async (req, res, next) => {
 // ---------------------------------------------------------------------------
 // POST /consultations/:id/reject
 // ---------------------------------------------------------------------------
-
-const VALID_REASON_CODES = [
-  "physical_exam_required",
-  "insufficient_information",
-  "outside_remote_scope",
-  "other",
-];
-
-router.post("/consultations/:id/reject", async (req, res, next) => {
+router.post("/consultations/:id/reject", validateBody(RejectConsultationSchema), async (req, res, next) => {
   try {
     const { reasonCode, message } = req.body;
-
-    if (!reasonCode || !VALID_REASON_CODES.includes(reasonCode)) {
-      res.status(400).json({
-        error: `reasonCode must be one of: ${VALID_REASON_CODES.join(", ")}`,
-      });
-      return;
-    }
 
     const doctor = await getDoctorBySub(cognitoSub(req));
     if (!doctor) {

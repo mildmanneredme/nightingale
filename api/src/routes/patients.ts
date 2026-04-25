@@ -1,11 +1,15 @@
 import { Router, RequestHandler } from "express";
-import { isEmail } from "validator";
 import { pool } from "../db";
+import { validateBody } from "../middleware/validate";
+import {
+  RegisterPatientSchema,
+  UpdatePatientSchema,
+  AddAllergySchema,
+  AddMedicationSchema,
+  AddConditionSchema,
+} from "../schemas/patient.schema";
 
 const router = Router();
-
-const VALID_BIOLOGICAL_SEX = ["male", "female", "intersex", "prefer_not_to_say"];
-const VALID_SEVERITY = ["mild", "moderate", "severe"];
 
 function cognitoSub(req: Parameters<RequestHandler>[0]): string {
   return req.user.sub;
@@ -14,22 +18,9 @@ function cognitoSub(req: Parameters<RequestHandler>[0]): string {
 // ---------------------------------------------------------------------------
 // POST /register
 // ---------------------------------------------------------------------------
-router.post("/register", async (req, res, next) => {
+router.post("/register", validateBody(RegisterPatientSchema), async (req, res, next) => {
   try {
     const { email, privacyPolicyVersion } = req.body;
-
-    if (!email) {
-      res.status(400).json({ error: "email is required" });
-      return;
-    }
-    if (typeof email !== "string" || !isEmail(email)) {
-      res.status(400).json({ error: "Invalid email address format" });
-      return;
-    }
-    if (!privacyPolicyVersion) {
-      res.status(400).json({ error: "privacyPolicyVersion is required" });
-      return;
-    }
 
     const sub = cognitoSub(req);
 
@@ -114,7 +105,7 @@ router.get("/me", async (req, res, next) => {
 // ---------------------------------------------------------------------------
 // PUT /me
 // ---------------------------------------------------------------------------
-router.put("/me", async (req, res, next) => {
+router.put("/me", validateBody(UpdatePatientSchema), async (req, res, next) => {
   try {
     const sub = cognitoSub(req);
     const {
@@ -132,13 +123,6 @@ router.put("/me", async (req, res, next) => {
       guardianEmail,
       guardianRelationship,
     } = req.body;
-
-    if (biologicalSex !== undefined && !VALID_BIOLOGICAL_SEX.includes(biologicalSex)) {
-      res.status(400).json({
-        error: `biologicalSex must be one of: ${VALID_BIOLOGICAL_SEX.join(", ")}`,
-      });
-      return;
-    }
 
     const { rows } = await pool.query(
       `UPDATE patients SET
@@ -197,21 +181,10 @@ router.put("/me", async (req, res, next) => {
 // ---------------------------------------------------------------------------
 // Allergies
 // ---------------------------------------------------------------------------
-router.post("/me/allergies", async (req, res, next) => {
+router.post("/me/allergies", validateBody(AddAllergySchema), async (req, res, next) => {
   try {
     const sub = cognitoSub(req);
     const { name, severity } = req.body;
-
-    if (!name) {
-      res.status(400).json({ error: "name is required" });
-      return;
-    }
-    if (!VALID_SEVERITY.includes(severity)) {
-      res.status(400).json({
-        error: `severity must be one of: ${VALID_SEVERITY.join(", ")}`,
-      });
-      return;
-    }
 
     const patient = await pool.query(
       "SELECT id FROM patients WHERE cognito_sub = $1 AND deletion_requested_at IS NULL",
@@ -267,15 +240,10 @@ router.delete("/me/allergies/:id", async (req, res, next) => {
 // ---------------------------------------------------------------------------
 // Medications
 // ---------------------------------------------------------------------------
-router.post("/me/medications", async (req, res, next) => {
+router.post("/me/medications", validateBody(AddMedicationSchema), async (req, res, next) => {
   try {
     const sub = cognitoSub(req);
     const { name, dose, frequency } = req.body;
-
-    if (!name) {
-      res.status(400).json({ error: "name is required" });
-      return;
-    }
 
     const patient = await pool.query(
       "SELECT id FROM patients WHERE cognito_sub = $1 AND deletion_requested_at IS NULL",
@@ -331,15 +299,10 @@ router.delete("/me/medications/:id", async (req, res, next) => {
 // ---------------------------------------------------------------------------
 // Conditions
 // ---------------------------------------------------------------------------
-router.post("/me/conditions", async (req, res, next) => {
+router.post("/me/conditions", validateBody(AddConditionSchema), async (req, res, next) => {
   try {
     const sub = cognitoSub(req);
     const { name } = req.body;
-
-    if (!name) {
-      res.status(400).json({ error: "name is required" });
-      return;
-    }
 
     const patient = await pool.query(
       "SELECT id FROM patients WHERE cognito_sub = $1 AND deletion_requested_at IS NULL",

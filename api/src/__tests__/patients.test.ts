@@ -57,7 +57,12 @@ describe("POST /api/v1/patients/register", () => {
       .send({ privacyPolicyVersion: "v1.0" });
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/email/i);
+    expect(res.body.error).toBe("Validation failed");
+    expect(res.body.details).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ field: "email" }),
+      ])
+    );
   });
 
   it("returns 400 when privacyPolicyVersion is missing", async () => {
@@ -66,7 +71,12 @@ describe("POST /api/v1/patients/register", () => {
       .send({ email: "sarah@example.com" });
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/privacy/i);
+    expect(res.body.error).toBe("Validation failed");
+    expect(res.body.details).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ field: "privacyPolicyVersion" }),
+      ])
+    );
   });
 
   it("returns 409 when the cognito_sub is already registered", async () => {
@@ -149,7 +159,12 @@ describe("PUT /api/v1/patients/me", () => {
       .send({ biologicalSex: "unknown" });
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/biologicalSex/i);
+    expect(res.body.error).toBe("Validation failed");
+    expect(res.body.details).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ field: "biologicalSex" }),
+      ])
+    );
   });
 
   it("returns 404 when updating a patient who has not registered", async () => {
@@ -193,7 +208,12 @@ describe("POST /api/v1/patients/me/allergies", () => {
       .send({ name: "Penicillin", severity: "deadly" });
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/severity/i);
+    expect(res.body.error).toBe("Validation failed");
+    expect(res.body.details).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ field: "severity" }),
+      ])
+    );
   });
 
   it("allergy appears in GET /me response", async () => {
@@ -275,7 +295,12 @@ describe("POST /api/v1/patients/me/medications", () => {
       .send({ dose: "500mg" });
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/name/i);
+    expect(res.body.error).toBe("Validation failed");
+    expect(res.body.details).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ field: "name" }),
+      ])
+    );
   });
 });
 

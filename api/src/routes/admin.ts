@@ -1,6 +1,8 @@
 import { Router, RequestHandler } from "express";
 import { createHash } from "crypto";
 import { pool } from "../db";
+import { validateBody } from "../middleware/validate";
+import { ReassignConsultationSchema } from "../schemas/followup.schema";
 
 const router = Router();
 
@@ -18,13 +20,9 @@ function subToUuid(sub: string): string {
 // ---------------------------------------------------------------------------
 // POST /consultations/:id/reassign
 // ---------------------------------------------------------------------------
-router.post("/consultations/:id/reassign", async (req, res, next) => {
+router.post("/consultations/:id/reassign", validateBody(ReassignConsultationSchema), async (req, res, next) => {
   try {
     const { doctorId } = req.body;
-    if (!doctorId) {
-      res.status(400).json({ error: "doctorId is required" });
-      return;
-    }
 
     // Verify doctor exists
     const { rows: doctorRows } = await pool.query(
