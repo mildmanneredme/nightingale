@@ -1,6 +1,5 @@
 import { Router, RequestHandler } from "express";
 import multer from "multer";
-import { pool } from "../db";
 import { requireRole } from "../middleware/auth";
 import {
   uploadPhoto,
@@ -10,6 +9,17 @@ import {
   validatePhotoSize,
 } from "../services/photoStorage";
 import { logger } from "../logger";
+import {
+  findPatientIdBySub,
+  findConsultationByIdAndPatient,
+  countPhotosByConsultation,
+  insertPhoto,
+  insertPhotoAuditLog,
+  listPhotosByConsultation,
+  findDoctorIdBySub,
+  findPhotoWithConsultationAccess,
+  insertPhotoAccessAuditLog,
+} from "../repositories/photo.repository";
 
 const router = Router({ mergeParams: true });
 
@@ -23,26 +33,6 @@ const MAX_PHOTOS_PER_CONSULTATION = 5;
 
 function cognitoSub(req: Parameters<RequestHandler>[0]): string {
   return req.user.sub;
-}
-
-async function getPatientId(sub: string): Promise<string | null> {
-  const { rows } = await pool.query(
-    `SELECT id FROM patients WHERE cognito_sub = $1 AND deletion_requested_at IS NULL`,
-    [sub]
-  );
-  return rows[0]?.id ?? null;
-}
-
-// Verify the consultation belongs to the requesting patient and exists.
-async function getConsultationForPatient(
-  consultationId: string,
-  patientId: string
-): Promise<{ id: string; status: string } | null> {
-  const { rows } = await pool.query(
-    `SELECT id, status FROM consultations WHERE id = $1 AND patient_id = $2`,
-    [consultationId, patientId]
-  );
-  return rows[0] ?? null;
 }
 
 // ---------------------------------------------------------------------------
@@ -84,13 +74,13 @@ router.post(
         return;
       }
 
-      const patientId = await getPatientId(cognitoSub(req));
+      const patientId = await findPatientIdBySub(cognitoSub(req));
       if (!patientId) {
         res.status(404).json({ error: "Patient not found" });
         return;
       }
 
-      const consultation = await getConsultationForPatient(consultationId, patientId);
+      const consultation = await findConsultationByIdAndPatient(consultationId, patientId);
       if (!consultation) {
         res.status(404).json({ error: "Consultation not found" });
         return;
@@ -105,11 +95,8 @@ router.post(
       }
 
       // Enforce 5-photo cap
-      const { rows: countRows } = await pool.query(
-        `SELECT COUNT(*) AS count FROM consultation_photos WHERE consultation_id = $1`,
-        [consultationId]
-      );
-      if (parseInt(countRows[0].count, 10) >= MAX_PHOTOS_PER_CONSULTATION) {
+      const count = await countPhotosByConsultation(consultationId);
+      if (count >= MAX_PHOTOS_PER_CONSULTATION) {
         res.status(409).json({
           error: `Maximum ${MAX_PHOTOS_PER_CONSULTATION} photos per consultation`,
         });
@@ -121,54 +108,25 @@ router.post(
       const stored = await uploadPhoto(file.buffer, consultationId);
 
       // Persist photo record using server-determined quality values only.
-      const { rows } = await pool.query(
-        `INSERT INTO consultation_photos
-           (consultation_id, s3_key, mime_type, size_bytes, width_px, height_px,
-            quality_passed, quality_issues, quality_overridden)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-         RETURNING
-           id,
-           consultation_id AS "consultationId",
-           mime_type AS "mimeType",
-           size_bytes AS "sizeBytes",
-           width_px AS "widthPx",
-           height_px AS "heightPx",
-           quality_passed AS "qualityPassed",
-           quality_issues AS "qualityIssues",
-           created_at AS "createdAt"`,
-        [
-          consultationId,
-          stored.s3Key,
-          stored.mimeType,
-          stored.sizeBytes,
-          stored.widthPx,
-          stored.heightPx,
-          stored.qualityPassed,
-          JSON.stringify(stored.qualityIssues),
-          false, // quality_overridden is always false — client cannot override server quality gate
-        ]
+      const row = await insertPhoto(
+        consultationId,
+        stored.s3Key,
+        stored.mimeType,
+        stored.sizeBytes,
+        stored.widthPx,
+        stored.heightPx,
+        stored.qualityPassed,
+        stored.qualityIssues
       );
 
       // Audit log
       try {
-        await pool.query(
-          `INSERT INTO audit_log (event_type, actor_id, actor_role, consultation_id, metadata)
-           VALUES ('photo.uploaded', $1, 'patient', $2, $3)`,
-          [
-            patientId,
-            consultationId,
-            JSON.stringify({
-              photoId: rows[0].id,
-              qualityPassed: stored.qualityPassed,
-              qualityIssues: stored.qualityIssues,
-            }),
-          ]
-        );
+        await insertPhotoAuditLog(patientId, consultationId, row.id, stored.qualityPassed, stored.qualityIssues);
       } catch (err) {
         logger.error({ err }, "photos: failed to write audit log for photo.uploaded");
       }
 
-      res.status(201).json(rows[0]);
+      res.status(201).json(row);
     } catch (err) {
       next(err);
     }
@@ -186,43 +144,24 @@ router.get("/:consultationId/photos", async (req, res, next) => {
     const role: string = user.role ?? "patient";
 
     if (role === "patient") {
-      const patientId = await getPatientId(cognitoSub(req));
+      const patientId = await findPatientIdBySub(cognitoSub(req));
       if (!patientId) {
         res.status(404).json({ error: "Patient not found" });
         return;
       }
-      const consultation = await getConsultationForPatient(consultationId, patientId);
+      const consultation = await findConsultationByIdAndPatient(consultationId, patientId);
       if (!consultation) {
         res.status(404).json({ error: "Consultation not found" });
         return;
       }
       // Patient sees count only — photos are clinical records, not a personal gallery
-      const { rows } = await pool.query(
-        `SELECT COUNT(*) AS count FROM consultation_photos WHERE consultation_id = $1`,
-        [consultationId]
-      );
-      res.json({ count: parseInt(rows[0].count, 10) });
+      const count = await countPhotosByConsultation(consultationId);
+      res.json({ count });
       return;
     }
 
     // Doctor / admin: full metadata list
-    const { rows } = await pool.query(
-      `SELECT
-         id,
-         consultation_id AS "consultationId",
-         mime_type AS "mimeType",
-         size_bytes AS "sizeBytes",
-         width_px AS "widthPx",
-         height_px AS "heightPx",
-         quality_passed AS "qualityPassed",
-         quality_issues AS "qualityIssues",
-         quality_overridden AS "qualityOverridden",
-         created_at AS "createdAt"
-       FROM consultation_photos
-       WHERE consultation_id = $1
-       ORDER BY created_at ASC`,
-      [consultationId]
-    );
+    const rows = await listPhotosByConsultation(consultationId);
     res.json(rows);
   } catch (err) {
     next(err);
@@ -246,48 +185,28 @@ router.get(
       let doctorId: string | null = null;
       if (!isAdmin) {
         const sub = req.user.sub;
-        const { rows: dRows } = await pool.query(
-          `SELECT id FROM doctors WHERE cognito_sub = $1`,
-          [sub]
-        );
-        if (!dRows[0]) {
+        const dRow = await findDoctorIdBySub(sub);
+        if (!dRow) {
           res.status(403).json({ error: "Doctor record not found" });
           return;
         }
-        doctorId = dRows[0].id as string;
+        doctorId = dRow.id;
       }
 
-      const { rows } = await pool.query(
-        `SELECT cp.id, cp.s3_key
-         FROM consultation_photos cp
-         JOIN consultations c ON c.id = cp.consultation_id
-         WHERE cp.id = $1
-           AND cp.consultation_id = $2
-           AND ($3::boolean OR c.assigned_doctor_id = $4)`,
-        [photoId, consultationId, isAdmin, doctorId]
-      );
+      const photo = await findPhotoWithConsultationAccess(photoId, consultationId, isAdmin, doctorId);
 
-      if (!rows[0]) {
+      if (!photo) {
         res.status(404).json({ error: "Photo not found" });
         return;
       }
 
-      const url = await generatePresignedUrl(rows[0].s3_key);
+      const url = await generatePresignedUrl(photo.s3_key);
 
       // Audit log
       const actorId = req.user.sub;
       const actorRole: string = req.user.role ?? "doctor";
       try {
-        await pool.query(
-          `INSERT INTO audit_log (event_type, actor_id, actor_role, consultation_id, metadata)
-           VALUES ('photo.access_url_generated', $1, $2, $3, $4)`,
-          [
-            actorId,
-            actorRole,
-            consultationId,
-            JSON.stringify({ photoId, expirySeconds: 900 }),
-          ]
-        );
+        await insertPhotoAccessAuditLog(actorId, actorRole, consultationId, photoId);
       } catch (err) {
         logger.error({ err }, "photos: failed to write audit log for photo.access_url_generated");
       }

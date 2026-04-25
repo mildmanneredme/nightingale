@@ -5,12 +5,25 @@
 // Tracking URLs are unique per consultation; no patient auth required to respond.
 
 import { Router } from "express";
-import { createHash } from "crypto";
-import { pool } from "../db";
 import { sendFollowUpEmail, sendFollowUpConcernAcknowledgementEmail } from "../services/emailService";
 import { logger } from "../logger";
 import { validateBody } from "../middleware/validate";
 import { SendFollowUpSchema } from "../schemas/followup.schema";
+import {
+  findFollowUpsDue,
+  countFollowUpEmailsSent,
+  markFollowUpSent,
+  insertFollowUpSentAuditLog,
+  insertFollowUpEmailSentAuditLog,
+  findConsultationByFollowUpToken,
+  updateFollowUpResponse,
+  insertFollowUpResponseAuditLog,
+  appendFollowUpConcernFlag,
+  insertConsultationReopenedAuditLog,
+  scheduleFollowUpQuery,
+  hashToken,
+} from "../repositories/followup.repository";
+import { pool } from "../db";
 
 const router = Router();
 
@@ -32,18 +45,7 @@ router.post("/send", validateBody(SendFollowUpSchema), async (_req, res, next) =
 
     // Lock rows to prevent duplicate sends under concurrent scheduler invocations.
     // F-050: followup_sent_at IS NULL guard removed — audit_log count is the sole guard.
-    const { rows: due } = await pool.query(
-      `SELECT c.id, c.followup_token, c.presenting_complaint,
-              c.reviewed_at, c.status,
-              p.email AS patient_email, p.full_name AS patient_name
-       FROM consultations c
-       JOIN patients p ON p.id = c.patient_id
-       WHERE c.followup_send_at IS NOT NULL
-         AND c.followup_send_at <= NOW()
-         AND c.status IN ('approved', 'amended')
-       FOR UPDATE SKIP LOCKED
-       LIMIT 50`
-    );
+    const due = await findFollowUpsDue();
 
     let sent = 0;
     let blocked = 0;
@@ -51,12 +53,7 @@ router.post("/send", validateBody(SendFollowUpSchema), async (_req, res, next) =
     for (const row of due) {
       try {
         // F-050: Determine send count from audit_log (no separate column)
-        const { rows: countRows } = await pool.query(
-          `SELECT COUNT(*) AS cnt FROM audit_log
-           WHERE event_type = 'FOLLOWUP_EMAIL_SENT' AND consultation_id = $1`,
-          [row.id]
-        );
-        const sendCount = parseInt(countRows[0].cnt, 10);
+        const sendCount = await countFollowUpEmailsSent(row.id);
 
         // F-048: Skip if at or above the limit
         if (sendCount >= maxSends) {
@@ -81,22 +78,12 @@ router.post("/send", validateBody(SendFollowUpSchema), async (_req, res, next) =
           pool
         );
 
-        await pool.query(
-          `UPDATE consultations SET followup_sent_at = NOW() WHERE id = $1`,
-          [row.id]
-        );
+        const token_hash = hashToken(row.followup_token);
+        await markFollowUpSent(row.id);
         // Preserve existing audit event for backward compatibility
-        await pool.query(
-          `INSERT INTO audit_log (event_type, actor_id, actor_role, consultation_id, metadata)
-           VALUES ('follow_up.sent', $1, 'patient', $2, $3)`,
-          [row.id, row.id, JSON.stringify({ token_hash: createHash("sha256").update(row.followup_token).digest("hex") })]
-        );
+        await insertFollowUpSentAuditLog(row.id, token_hash);
         // F-049: Write FOLLOWUP_EMAIL_SENT event — used as the send-count source of truth
-        await pool.query(
-          `INSERT INTO audit_log (event_type, actor_id, actor_role, consultation_id, metadata)
-           VALUES ('FOLLOWUP_EMAIL_SENT', $1, 'patient', $2, $3)`,
-          [row.id, row.id, JSON.stringify({ consultationId: row.id, token_hash: createHash("sha256").update(row.followup_token).digest("hex") })]
-        );
+        await insertFollowUpEmailSentAuditLog(row.id, token_hash);
         sent++;
       } catch (err) {
         logger.error({ err, consultationId: row.id }, "Failed to send follow-up email");
@@ -130,15 +117,8 @@ router.get("/respond/:token", async (req, res, next) => {
       return;
     }
 
-    const { rows } = await pool.query(
-      `SELECT id, status, patient_id, assigned_doctor_id,
-              followup_response, presenting_complaint
-       FROM consultations
-       WHERE followup_token = $1`,
-      [token]
-    );
+    const consultation = await findConsultationByFollowUpToken(token);
 
-    const consultation = rows[0];
     if (!consultation) {
       res.status(404).json({ error: "Follow-up link not found or expired" });
       return;
@@ -155,40 +135,18 @@ router.get("/respond/:token", async (req, res, next) => {
       response === "same"   ? "unchanged" :
                               "followup_concern";
 
-    await pool.query(
-      `UPDATE consultations
-       SET followup_response = $1,
-           followup_responded_at = NOW(),
-           status = $2,
-           updated_at = NOW()
-       WHERE id = $3`,
-      [response, newStatus, consultation.id]
-    );
+    await updateFollowUpResponse(consultation.id, response, newStatus);
 
-    await pool.query(
-      `INSERT INTO audit_log (event_type, actor_id, actor_role, consultation_id, metadata)
-       VALUES ('follow_up.response_received', $1, 'patient', $2, $3)`,
-      [consultation.patient_id, consultation.id,
-       JSON.stringify({ response_option: response, new_status: newStatus })]
-    );
+    await insertFollowUpResponseAuditLog(consultation.patient_id, consultation.id, response, newStatus);
 
     if (response === "worse") {
       // Add FOLLOWUP_CONCERN priority flag and re-queue for doctor
-      await pool.query(
-        `UPDATE consultations
-         SET priority_flags = array_append(
-               COALESCE(priority_flags, '{}'),
-               'FOLLOWUP_CONCERN'
-             )
-         WHERE id = $1`,
-        [consultation.id]
-      );
+      await appendFollowUpConcernFlag(consultation.id);
 
-      await pool.query(
-        `INSERT INTO audit_log (event_type, actor_id, actor_role, consultation_id, metadata)
-         VALUES ('consultation.reopened_for_followup', $1, 'patient', $2, $3)`,
-        [consultation.patient_id, consultation.id,
-         JSON.stringify({ doctor_id: consultation.assigned_doctor_id })]
+      await insertConsultationReopenedAuditLog(
+        consultation.patient_id,
+        consultation.id,
+        consultation.assigned_doctor_id
       );
 
       // Send acknowledgement to patient (fire-and-forget)
@@ -214,22 +172,7 @@ router.get("/respond/:token", async (req, res, next) => {
 // Sets followup_send_at = reviewed_at + 36 hours for an eligible consultation.
 // ---------------------------------------------------------------------------
 export async function scheduleFollowUp(consultationId: string): Promise<void> {
-  await pool.query(
-    `UPDATE consultations
-     SET followup_send_at = reviewed_at + INTERVAL '36 hours'
-     WHERE id = $1
-       AND status IN ('approved', 'amended')
-       AND followup_send_at IS NULL`,
-    [consultationId]
-  );
-
-  await pool.query(
-    `INSERT INTO audit_log (event_type, actor_id, actor_role, consultation_id, metadata)
-     SELECT 'follow_up.scheduled', patient_id, 'patient', $1,
-            jsonb_build_object('send_at', (reviewed_at + INTERVAL '36 hours'))
-     FROM consultations WHERE id = $1`,
-    [consultationId]
-  );
+  await scheduleFollowUpQuery(consultationId);
 }
 
 export default router;

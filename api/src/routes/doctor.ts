@@ -1,5 +1,4 @@
 import { Router, RequestHandler } from "express";
-import { pool } from "../db";
 import { sendResponseReadyEmail, sendRejectionEmail } from "../services/emailService";
 import { scheduleFollowUp } from "./followup";
 import { logger } from "../logger";
@@ -9,39 +8,23 @@ import {
   RejectConsultationSchema,
   ApproveConsultationSchema,
 } from "../schemas/doctor.schema";
+import {
+  findDoctorBySub,
+  insertAuditLog,
+  countQueuedConsultationsForDoctor,
+  listQueuedConsultationsForDoctor,
+  findConsultationDetailForDoctor,
+  approveConsultation,
+  findAiDraftForConsultation,
+  amendConsultation,
+  rejectConsultation,
+} from "../repositories/doctor.repository";
+import { pool } from "../db";
 
 const router = Router();
 
 function cognitoSub(req: Parameters<RequestHandler>[0]): string {
   return req.user.sub;
-}
-
-async function getDoctorBySub(sub: string) {
-  const { rows } = await pool.query(
-    `SELECT id, full_name, ahpra_number, email FROM doctors WHERE cognito_sub = $1`,
-    [sub]
-  );
-  return rows[0] ?? null;
-}
-
-async function writeAuditLog(params: {
-  eventType: string;
-  actorId: string;
-  ahpraNumber: string;
-  consultationId?: string;
-  metadata?: Record<string, unknown>;
-}) {
-  await pool.query(
-    `INSERT INTO audit_log (event_type, actor_id, actor_role, ahpra_number, consultation_id, metadata)
-     VALUES ($1, $2, 'doctor', $3, $4, $5)`,
-    [
-      params.eventType,
-      params.actorId,
-      params.ahpraNumber,
-      params.consultationId ?? null,
-      JSON.stringify(params.metadata ?? {}),
-    ]
-  );
 }
 
 // ---------------------------------------------------------------------------
@@ -65,51 +48,25 @@ router.get("/queue", async (req, res, next) => {
     const limit = Math.min(!isNaN(rawLimit) ? rawLimit : 20, 100);
     const offset = Math.max(0, !isNaN(rawOffset) ? rawOffset : 0);
 
-    const doctor = await getDoctorBySub(cognitoSub(req));
+    const doctor = await findDoctorBySub(cognitoSub(req));
     if (!doctor) {
       res.status(404).json({ error: "Doctor not found" });
       return;
     }
 
     // Priority sort: LOW_CONFIDENCE and CANNOT_ASSESS flags first, then oldest first
-    const [countResult, dataResult] = await Promise.all([
-      pool.query(
-        `SELECT COUNT(*) FROM consultations c
-         WHERE c.assigned_doctor_id = $1
-           AND c.status = 'queued_for_review'`,
-        [doctor.id]
-      ),
-      pool.query(
-        `SELECT
-           c.id,
-           c.status,
-           c.consultation_type   AS "consultationType",
-           c.presenting_complaint AS "presentingComplaint",
-           c.priority_flags      AS "priorityFlags",
-           c.created_at          AS "createdAt",
-           p.date_of_birth       AS "patientDob",
-           p.biological_sex      AS "patientSex"
-         FROM consultations c
-         JOIN patients p ON p.id = c.patient_id
-         WHERE c.assigned_doctor_id = $1
-           AND c.status = 'queued_for_review'
-         ORDER BY
-           CASE WHEN 'LOW_CONFIDENCE' = ANY(c.priority_flags) OR 'CANNOT_ASSESS' = ANY(c.priority_flags)
-                THEN 0 ELSE 1 END ASC,
-           c.created_at ASC
-         LIMIT $2 OFFSET $3`,
-        [doctor.id, limit, offset]
-      ),
+    const [total, rows] = await Promise.all([
+      countQueuedConsultationsForDoctor(doctor.id),
+      listQueuedConsultationsForDoctor(doctor.id, limit, offset),
     ]);
 
-    const total = parseInt(countResult.rows[0].count, 10);
     res.status(200).json({
-      data: dataResult.rows,
+      data: rows,
       pagination: {
         total,
         limit,
         offset,
-        hasMore: offset + dataResult.rows.length < total,
+        hasMore: offset + rows.length < total,
       },
     });
   } catch (err) {
@@ -122,53 +79,27 @@ router.get("/queue", async (req, res, next) => {
 // ---------------------------------------------------------------------------
 router.get("/consultations/:id", async (req, res, next) => {
   try {
-    const doctor = await getDoctorBySub(cognitoSub(req));
+    const doctor = await findDoctorBySub(cognitoSub(req));
     if (!doctor) {
       res.status(404).json({ error: "Doctor not found" });
       return;
     }
 
-    const { rows } = await pool.query(
-      `SELECT
-         c.id,
-         c.status,
-         c.consultation_type    AS "consultationType",
-         c.presenting_complaint AS "presentingComplaint",
-         c.transcript,
-         c.red_flags            AS "redFlags",
-         c.soap_note            AS "soapNote",
-         c.differential_diagnoses AS "differentialDiagnoses",
-         c.ai_draft             AS "aiDraft",
-         c.priority_flags       AS "priorityFlags",
-         c.created_at           AS "createdAt",
-         p.full_name            AS "patientName",
-         p.date_of_birth        AS "patientDob",
-         p.biological_sex       AS "patientSex",
-         (SELECT json_agg(json_build_object('allergen', a.name, 'severity', a.severity))
-          FROM patient_allergies a WHERE a.patient_id = p.id) AS allergies,
-         (SELECT json_agg(json_build_object('name', m.name, 'dose', m.dose))
-          FROM patient_medications m WHERE m.patient_id = p.id) AS medications,
-         (SELECT json_agg(json_build_object('name', con.name))
-          FROM patient_conditions con WHERE con.patient_id = p.id) AS conditions
-       FROM consultations c
-       JOIN patients p ON p.id = c.patient_id
-       WHERE c.id = $1 AND c.assigned_doctor_id = $2`,
-      [req.params.id, doctor.id]
-    );
+    const row = await findConsultationDetailForDoctor(req.params.id, doctor.id);
 
-    if (!rows[0]) {
+    if (!row) {
       res.status(404).json({ error: "Consultation not found" });
       return;
     }
 
-    await writeAuditLog({
+    await insertAuditLog({
       eventType: "consultation.doctor_review_opened",
       actorId: doctor.id,
       ahpraNumber: doctor.ahpra_number,
       consultationId: req.params.id,
     });
 
-    res.status(200).json(rows[0]);
+    res.status(200).json(row);
   } catch (err) {
     next(err);
   }
@@ -179,26 +110,20 @@ router.get("/consultations/:id", async (req, res, next) => {
 // ---------------------------------------------------------------------------
 router.post("/consultations/:id/approve", validateBody(ApproveConsultationSchema), async (req, res, next) => {
   try {
-    const doctor = await getDoctorBySub(cognitoSub(req));
+    const doctor = await findDoctorBySub(cognitoSub(req));
     if (!doctor) {
       res.status(404).json({ error: "Doctor not found" });
       return;
     }
 
-    const { rows } = await pool.query(
-      `UPDATE consultations
-       SET status = 'approved', reviewed_by = $1, reviewed_at = NOW(), updated_at = NOW()
-       WHERE id = $2 AND assigned_doctor_id = $1
-       RETURNING id, status`,
-      [doctor.id, req.params.id]
-    );
+    const row = await approveConsultation(req.params.id, doctor.id);
 
-    if (!rows[0]) {
+    if (!row) {
       res.status(404).json({ error: "Consultation not found" });
       return;
     }
 
-    await writeAuditLog({
+    await insertAuditLog({
       eventType: "consultation.approved",
       actorId: doctor.id,
       ahpraNumber: doctor.ahpra_number,
@@ -213,7 +138,7 @@ router.post("/consultations/:id/approve", validateBody(ApproveConsultationSchema
       logger.error({ err, consultationId: req.params.id }, "Failed to schedule follow-up")
     );
 
-    res.status(200).json(rows[0]);
+    res.status(200).json(row);
   } catch (err) {
     next(err);
   }
@@ -226,39 +151,25 @@ router.post("/consultations/:id/amend", validateBody(AmendConsultationSchema), a
   try {
     const { doctorDraft } = req.body;
 
-    const doctor = await getDoctorBySub(cognitoSub(req));
+    const doctor = await findDoctorBySub(cognitoSub(req));
     if (!doctor) {
       res.status(404).json({ error: "Doctor not found" });
       return;
     }
 
     // Fetch current ai_draft for diff
-    const { rows: fetchRows } = await pool.query(
-      `SELECT ai_draft FROM consultations WHERE id = $1 AND assigned_doctor_id = $2`,
-      [req.params.id, doctor.id]
-    );
-    if (!fetchRows[0]) {
+    const fetchRow = await findAiDraftForConsultation(req.params.id, doctor.id);
+    if (!fetchRow) {
       res.status(404).json({ error: "Consultation not found" });
       return;
     }
 
-    const originalDraft = fetchRows[0].ai_draft ?? "";
+    const originalDraft = fetchRow.ai_draft ?? "";
     const diff = computeDiff(originalDraft, doctorDraft.trim());
 
-    const { rows } = await pool.query(
-      `UPDATE consultations
-       SET status = 'amended',
-           doctor_draft = $1,
-           amendment_diff = $2,
-           reviewed_by = $3,
-           reviewed_at = NOW(),
-           updated_at = NOW()
-       WHERE id = $4 AND assigned_doctor_id = $3
-       RETURNING id, status`,
-      [doctorDraft.trim(), diff, doctor.id, req.params.id]
-    );
+    const row = await amendConsultation(req.params.id, doctor.id, doctorDraft.trim(), diff);
 
-    await writeAuditLog({
+    await insertAuditLog({
       eventType: "consultation.amended",
       actorId: doctor.id,
       ahpraNumber: doctor.ahpra_number,
@@ -274,7 +185,7 @@ router.post("/consultations/:id/amend", validateBody(AmendConsultationSchema), a
       logger.error({ err, consultationId: req.params.id }, "Failed to schedule follow-up after amend")
     );
 
-    res.status(200).json(rows[0]);
+    res.status(200).json(row);
   } catch (err) {
     next(err);
   }
@@ -287,31 +198,20 @@ router.post("/consultations/:id/reject", validateBody(RejectConsultationSchema),
   try {
     const { reasonCode, message } = req.body;
 
-    const doctor = await getDoctorBySub(cognitoSub(req));
+    const doctor = await findDoctorBySub(cognitoSub(req));
     if (!doctor) {
       res.status(404).json({ error: "Doctor not found" });
       return;
     }
 
-    const { rows } = await pool.query(
-      `UPDATE consultations
-       SET status = 'rejected',
-           rejection_reason_code = $1,
-           rejection_message = $2,
-           reviewed_by = $3,
-           reviewed_at = NOW(),
-           updated_at = NOW()
-       WHERE id = $4 AND assigned_doctor_id = $3
-       RETURNING id, status`,
-      [reasonCode, message ?? null, doctor.id, req.params.id]
-    );
+    const row = await rejectConsultation(req.params.id, doctor.id, reasonCode, message ?? null);
 
-    if (!rows[0]) {
+    if (!row) {
       res.status(404).json({ error: "Consultation not found" });
       return;
     }
 
-    await writeAuditLog({
+    await insertAuditLog({
       eventType: "consultation.rejected",
       actorId: doctor.id,
       ahpraNumber: doctor.ahpra_number,
@@ -324,7 +224,7 @@ router.post("/consultations/:id/reject", validateBody(RejectConsultationSchema),
       logger.error({ err, consultationId: req.params.id }, "Failed to send rejection email")
     );
 
-    res.status(200).json(rows[0]);
+    res.status(200).json(row);
   } catch (err) {
     next(err);
   }

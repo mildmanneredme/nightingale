@@ -4,7 +4,12 @@
 // Patients can mark items as read; they cannot reply.
 
 import { Router, RequestHandler } from "express";
-import { pool } from "../db";
+import {
+  findPatientIdBySub,
+  countInboxItems,
+  listInboxItems,
+  markNotificationRead,
+} from "../repositories/inbox.repository";
 
 const router = Router();
 
@@ -35,50 +40,19 @@ router.get("/", async (req, res, next) => {
     const limit = Math.min(!isNaN(rawLimit) ? rawLimit : 20, 100);
     const offset = Math.max(0, !isNaN(rawOffset) ? rawOffset : 0);
 
-    const { rows: patientRows } = await pool.query<{ id: string }>(
-      `SELECT id FROM patients WHERE cognito_sub = $1`,
-      [cognitoSub(req)]
-    );
-    if (!patientRows[0]) {
+    const patientRow = await findPatientIdBySub(cognitoSub(req));
+    if (!patientRow) {
       res.status(404).json({ error: "Patient not found" });
       return;
     }
-    const patientId = patientRows[0].id;
+    const patientId = patientRow.id;
 
-    const [countResult, dataResult] = await Promise.all([
-      pool.query(
-        `SELECT COUNT(*) FROM notifications n
-         JOIN consultations c ON c.id = n.consultation_id
-         WHERE n.patient_id = $1
-           AND c.status IN ('approved', 'amended', 'rejected')`,
-        [patientId]
-      ),
-      pool.query(
-        `SELECT
-           n.id                AS notification_id,
-           n.notification_type,
-           n.status            AS delivery_status,
-           n.sent_at,
-           n.read_at,
-           c.id                AS consultation_id,
-           c.status            AS consultation_status,
-           c.reviewed_at,
-           c.presenting_complaint,
-           COALESCE(c.doctor_draft, c.ai_draft, '') AS response_preview,
-           d.full_name         AS doctor_full_name
-         FROM notifications n
-         JOIN consultations c ON c.id = n.consultation_id
-         LEFT JOIN doctors d  ON d.id = c.reviewed_by
-         WHERE n.patient_id = $1
-           AND c.status IN ('approved', 'amended', 'rejected')
-         ORDER BY n.sent_at DESC
-         LIMIT $2 OFFSET $3`,
-        [patientId, limit, offset]
-      ),
+    const [total, rows] = await Promise.all([
+      countInboxItems(patientId),
+      listInboxItems(patientId, limit, offset),
     ]);
 
-    const total = parseInt(countResult.rows[0].count, 10);
-    const items = dataResult.rows.map((r) => ({
+    const items = rows.map((r) => ({
       notificationId: r.notification_id,
       notificationType: r.notification_type,
       deliveryStatus: r.delivery_status,
@@ -119,31 +93,22 @@ router.get("/", async (req, res, next) => {
 // ---------------------------------------------------------------------------
 router.patch("/:notificationId/read", async (req, res, next) => {
   try {
-    const { rows: patientRows } = await pool.query<{ id: string }>(
-      `SELECT id FROM patients WHERE cognito_sub = $1`,
-      [cognitoSub(req)]
-    );
-    if (!patientRows[0]) {
+    const patientRow = await findPatientIdBySub(cognitoSub(req));
+    if (!patientRow) {
       res.status(404).json({ error: "Patient not found" });
       return;
     }
-    const patientId = patientRows[0].id;
+    const patientId = patientRow.id;
 
-    const { rows } = await pool.query(
-      `UPDATE notifications
-       SET read_at = NOW()
-       WHERE id = $1 AND patient_id = $2 AND read_at IS NULL
-       RETURNING id, read_at`,
-      [req.params.notificationId, patientId]
-    );
+    const row = await markNotificationRead(req.params.notificationId, patientId);
 
-    if (!rows[0]) {
+    if (!row) {
       // Already read or not found — both are acceptable; return 200
       res.status(200).json({ alreadyRead: true });
       return;
     }
 
-    res.status(200).json({ id: rows[0].id, readAt: rows[0].read_at });
+    res.status(200).json({ id: row.id, readAt: row.read_at });
   } catch (err) {
     next(err);
   }

@@ -5,8 +5,26 @@
 // Response-time estimate exposed to patient-facing flows.
 
 import { Router, RequestHandler } from "express";
-import { pool } from "../db";
 import { logger } from "../logger";
+import {
+  AvailabilityWindow,
+  findAvailabilityByDoctor,
+  insertDefaultAvailability,
+  findDateOverride,
+  countTodayReviews,
+  findDoctorIdBySub,
+  findDoctorIdAndAhpraNumberBySub,
+  listUpcomingDateOverrides,
+  upsertAvailability,
+  insertAvailabilityUpdatedAuditLog,
+  upsertDateOverride,
+  deleteDateOverride,
+  countMonthlyReviews,
+  insertCapacityAlertAuditLog,
+  insertDailyCapReachedAuditLog,
+  findAllActiveDoctorsWithAvailability,
+  countQueuedConsultations,
+} from "../repositories/availability.repository";
 
 const router = Router();
 
@@ -16,12 +34,6 @@ const router = Router();
 
 function cognitoSub(req: Parameters<RequestHandler>[0]): string {
   return req.user.sub;
-}
-
-interface AvailabilityWindow {
-  day: number;     // 0=Sunday … 6=Saturday
-  start_time: string; // "HH:MM" in AEST
-  end_time: string;   // "HH:MM" in AEST
 }
 
 // Australia/Sydney is UTC+10 (AEST) or UTC+11 (AEDT, last Sun Oct – first Sun Apr).
@@ -48,12 +60,8 @@ function timeGte(a: string, b: string): boolean {
 
 // Returns the doctor's active availability row, creating a default if none exists.
 async function ensureAvailability(doctorId: string) {
-  const { rows } = await pool.query(
-    `SELECT id, weekly_windows, daily_cap
-     FROM doctor_availability WHERE doctor_id = $1`,
-    [doctorId]
-  );
-  if (rows[0]) return rows[0];
+  const existing = await findAvailabilityByDoctor(doctorId);
+  if (existing) return existing;
 
   // Default schedule: Mon–Fri 8am–6pm AEST, daily cap 20
   const defaultWindows: AvailabilityWindow[] = [1, 2, 3, 4, 5].map((day) => ({
@@ -61,12 +69,7 @@ async function ensureAvailability(doctorId: string) {
     start_time: "08:00",
     end_time: "18:00",
   }));
-  const { rows: created } = await pool.query(
-    `INSERT INTO doctor_availability (doctor_id, weekly_windows, daily_cap)
-     VALUES ($1, $2, 20) RETURNING id, weekly_windows, daily_cap`,
-    [doctorId, JSON.stringify(defaultWindows)]
-  );
-  return created[0];
+  return insertDefaultAvailability(doctorId, defaultWindows);
 }
 
 // Checks if a doctor is currently within an available window (today, AEST).
@@ -75,17 +78,12 @@ async function isDoctorCurrentlyAvailable(doctorId: string): Promise<boolean> {
   const today = date.toISOString().slice(0, 10);
 
   // Check date override first
-  const { rows: overrides } = await pool.query(
-    `SELECT available, windows FROM doctor_date_overrides
-     WHERE doctor_id = $1 AND override_date = $2`,
-    [doctorId, today]
-  );
-  if (overrides[0]) {
-    if (!overrides[0].available) return false;
+  const override = await findDateOverride(doctorId, today);
+  if (override) {
+    if (!override.available) return false;
     // Has custom windows
-    if (overrides[0].windows) {
-      const windows = overrides[0].windows as AvailabilityWindow[];
-      return windows.some((w) => timeGte(timeStr, w.start_time) && timeLt(timeStr, w.end_time));
+    if (override.windows) {
+      return override.windows.some((w) => timeGte(timeStr, w.start_time) && timeLt(timeStr, w.end_time));
     }
   }
 
@@ -101,14 +99,7 @@ async function isDoctorCurrentlyAvailable(doctorId: string): Promise<boolean> {
 async function getTodayReviewCount(doctorId: string): Promise<number> {
   const { date } = sydneyNow();
   const today = date.toISOString().slice(0, 10);
-  const { rows } = await pool.query(
-    `SELECT COUNT(*)::int AS cnt
-     FROM consultations
-     WHERE reviewed_by = $1
-       AND reviewed_at::date = $2`,
-    [doctorId, today]
-  );
-  return rows[0]?.cnt ?? 0;
+  return countTodayReviews(doctorId, today);
 }
 
 // ---------------------------------------------------------------------------
@@ -117,23 +108,12 @@ async function getTodayReviewCount(doctorId: string): Promise<number> {
 // ---------------------------------------------------------------------------
 router.get("/", async (req, res, next) => {
   try {
-    const { rows: dRows } = await pool.query(
-      `SELECT id FROM doctors WHERE cognito_sub = $1`,
-      [cognitoSub(req)]
-    );
-    if (!dRows[0]) { res.status(404).json({ error: "Doctor not found" }); return; }
-    const doctorId = dRows[0].id;
+    const doctorRow = await findDoctorIdBySub(cognitoSub(req));
+    if (!doctorRow) { res.status(404).json({ error: "Doctor not found" }); return; }
+    const doctorId = doctorRow.id;
 
     const avail = await ensureAvailability(doctorId);
-
-    // Overrides for next 60 days
-    const { rows: overrides } = await pool.query(
-      `SELECT override_date, available, windows, note
-       FROM doctor_date_overrides
-       WHERE doctor_id = $1 AND override_date >= CURRENT_DATE AND override_date < CURRENT_DATE + INTERVAL '60 days'
-       ORDER BY override_date`,
-      [doctorId]
-    );
+    const overrides = await listUpcomingDateOverrides(doctorId);
 
     res.json({
       weeklyWindows: avail.weekly_windows,
@@ -170,36 +150,19 @@ router.put("/", async (req, res, next) => {
       return;
     }
 
-    const { rows: dRows } = await pool.query(
-      `SELECT id, ahpra_number FROM doctors WHERE cognito_sub = $1`,
-      [cognitoSub(req)]
-    );
-    if (!dRows[0]) { res.status(404).json({ error: "Doctor not found" }); return; }
-    const doctorId = dRows[0].id;
+    const doctorRow = await findDoctorIdAndAhpraNumberBySub(cognitoSub(req));
+    if (!doctorRow) { res.status(404).json({ error: "Doctor not found" }); return; }
+    const doctorId = doctorRow.id;
 
     const avail = await ensureAvailability(doctorId);
 
     const newWindows = weeklyWindows ?? avail.weekly_windows;
     const newCap = dailyCap ?? avail.daily_cap;
 
-    const { rows } = await pool.query(
-      `INSERT INTO doctor_availability (doctor_id, weekly_windows, daily_cap)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (doctor_id) DO UPDATE
-         SET weekly_windows = EXCLUDED.weekly_windows,
-             daily_cap = EXCLUDED.daily_cap,
-             updated_at = NOW()
-       RETURNING weekly_windows, daily_cap`,
-      [doctorId, JSON.stringify(newWindows), newCap]
-    );
+    const updated = await upsertAvailability(doctorId, newWindows, newCap);
+    await insertAvailabilityUpdatedAuditLog(doctorId, newCap);
 
-    await pool.query(
-      `INSERT INTO audit_log (event_type, actor_id, actor_role, metadata)
-       VALUES ('doctor.availability_updated', $1, 'doctor', $2)`,
-      [doctorId, JSON.stringify({ doctor_id: doctorId, daily_cap: newCap })]
-    );
-
-    res.json({ weeklyWindows: rows[0].weekly_windows, dailyCap: rows[0].daily_cap });
+    res.json({ weeklyWindows: updated.weekly_windows, dailyCap: updated.daily_cap });
   } catch (err) {
     next(err);
   }
@@ -227,30 +190,18 @@ router.post("/overrides", async (req, res, next) => {
       return;
     }
 
-    const { rows: dRows } = await pool.query(
-      `SELECT id FROM doctors WHERE cognito_sub = $1`,
-      [cognitoSub(req)]
-    );
-    if (!dRows[0]) { res.status(404).json({ error: "Doctor not found" }); return; }
-    const doctorId = dRows[0].id;
+    const doctorRow = await findDoctorIdBySub(cognitoSub(req));
+    if (!doctorRow) { res.status(404).json({ error: "Doctor not found" }); return; }
+    const doctorId = doctorRow.id;
 
-    const { rows } = await pool.query(
-      `INSERT INTO doctor_date_overrides (doctor_id, override_date, available, windows, note)
-       VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (doctor_id, override_date) DO UPDATE
-         SET available = EXCLUDED.available,
-             windows = EXCLUDED.windows,
-             note = EXCLUDED.note
-       RETURNING id, override_date, available, windows, note`,
-      [doctorId, date, available, windows ? JSON.stringify(windows) : null, note ?? null]
-    );
+    const row = await upsertDateOverride(doctorId, date, available, windows ?? null, note ?? null);
 
     res.status(201).json({
-      id: rows[0].id,
-      date: rows[0].override_date,
-      available: rows[0].available,
-      windows: rows[0].windows,
-      note: rows[0].note,
+      id: row.id,
+      date: row.override_date,
+      available: row.available,
+      windows: row.windows,
+      note: row.note,
     });
   } catch (err) {
     next(err);
@@ -263,18 +214,10 @@ router.post("/overrides", async (req, res, next) => {
 // ---------------------------------------------------------------------------
 router.delete("/overrides/:date", async (req, res, next) => {
   try {
-    const { rows: dRows } = await pool.query(
-      `SELECT id FROM doctors WHERE cognito_sub = $1`,
-      [cognitoSub(req)]
-    );
-    if (!dRows[0]) { res.status(404).json({ error: "Doctor not found" }); return; }
-    const doctorId = dRows[0].id;
+    const doctorRow = await findDoctorIdBySub(cognitoSub(req));
+    if (!doctorRow) { res.status(404).json({ error: "Doctor not found" }); return; }
 
-    await pool.query(
-      `DELETE FROM doctor_date_overrides WHERE doctor_id = $1 AND override_date = $2`,
-      [doctorId, req.params.date]
-    );
-
+    await deleteDateOverride(doctorRow.id, req.params.date);
     res.status(204).send();
   } catch (err) {
     next(err);
@@ -287,25 +230,13 @@ router.delete("/overrides/:date", async (req, res, next) => {
 // ---------------------------------------------------------------------------
 router.get("/capacity", async (req, res, next) => {
   try {
-    const { rows: dRows } = await pool.query(
-      `SELECT id FROM doctors WHERE cognito_sub = $1`,
-      [cognitoSub(req)]
-    );
-    if (!dRows[0]) { res.status(404).json({ error: "Doctor not found" }); return; }
-    const doctorId = dRows[0].id;
+    const doctorRow = await findDoctorIdBySub(cognitoSub(req));
+    if (!doctorRow) { res.status(404).json({ error: "Doctor not found" }); return; }
+    const doctorId = doctorRow.id;
 
     const avail = await ensureAvailability(doctorId);
 
-    // Consultations reviewed this calendar month
-    const { rows: monthRows } = await pool.query(
-      `SELECT COUNT(*)::int AS reviewed_this_month
-       FROM consultations
-       WHERE reviewed_by = $1
-         AND reviewed_at >= date_trunc('month', NOW())
-         AND reviewed_at < date_trunc('month', NOW()) + INTERVAL '1 month'`,
-      [doctorId]
-    );
-    const reviewedThisMonth = monthRows[0]?.reviewed_this_month ?? 0;
+    const reviewedThisMonth = await countMonthlyReviews(doctorId);
 
     // Monthly cap: daily_cap × 22 (approx. working days per month)
     const monthlyCapEstimate = avail.daily_cap * 22;
@@ -317,20 +248,11 @@ router.get("/capacity", async (req, res, next) => {
 
     // Log alert if utilisation hits 80%+ (once per day to avoid spam)
     if (utilisationPct >= 80) {
-      await pool.query(
-        `INSERT INTO audit_log (event_type, actor_id, actor_role, metadata)
-         VALUES ('doctor.capacity_alert', $1, 'doctor', $2)
-         ON CONFLICT DO NOTHING`,
-        [doctorId, JSON.stringify({ utilisation_pct: utilisationPct, reviewed_this_month: reviewedThisMonth })]
-      ).catch(() => {}); // ignore if audit_log has no unique constraint — just log best-effort
+      await insertCapacityAlertAuditLog(doctorId, utilisationPct, reviewedThisMonth);
     }
 
     if (dailyCapHit) {
-      await pool.query(
-        `INSERT INTO audit_log (event_type, actor_id, actor_role, metadata)
-         VALUES ('doctor.daily_cap_reached', $1, 'doctor', $2)`,
-        [doctorId, JSON.stringify({ daily_cap: avail.daily_cap, today_count: todayCount })]
-      ).catch(() => {});
+      await insertDailyCapReachedAuditLog(doctorId, avail.daily_cap, todayCount);
     }
 
     res.json({
@@ -356,12 +278,7 @@ export async function getResponseTimeEstimate(): Promise<{
   nextSlotAt: string | null;
 }> {
   // Fetch all active doctors with their availability
-  const { rows: doctors } = await pool.query(
-    `SELECT d.id, da.weekly_windows, da.daily_cap
-     FROM doctors d
-     JOIN doctor_availability da ON da.doctor_id = d.id
-     WHERE d.is_active = TRUE`
-  );
+  const doctors = await findAllActiveDoctorsWithAvailability();
 
   for (const doc of doctors) {
     const available = await isDoctorCurrentlyAvailable(doc.id);
@@ -371,10 +288,7 @@ export async function getResponseTimeEstimate(): Promise<{
     if (todayCount >= doc.daily_cap) continue;
 
     // Doctor is available and under cap — estimate based on queue length
-    const { rows: queueRows } = await pool.query(
-      `SELECT COUNT(*)::int AS cnt FROM consultations WHERE status = 'queued_for_review'`
-    );
-    const queueLength = queueRows[0]?.cnt ?? 0;
+    const queueLength = await countQueuedConsultations();
     const minutesPerReview = 10;
     const estimatedMins = Math.max(30, queueLength * minutesPerReview);
     const hours = Math.ceil(estimatedMins / 60);
@@ -399,14 +313,10 @@ export async function getResponseTimeEstimate(): Promise<{
 
     for (const doc of doctors) {
       // Check override
-      const { rows: overrideRows } = await pool.query(
-        `SELECT available, windows FROM doctor_date_overrides
-         WHERE doctor_id = $1 AND override_date = $2`,
-        [doc.id, checkDateStr]
-      );
-      if (overrideRows[0] && !overrideRows[0].available) continue;
+      const override = await findDateOverride(doc.id, checkDateStr);
+      if (override && !override.available) continue;
 
-      const windows: AvailabilityWindow[] = overrideRows[0]?.windows ?? doc.weekly_windows ?? [];
+      const windows: AvailabilityWindow[] = override?.windows ?? doc.weekly_windows ?? [];
       const dayWindows = windows.filter((w) => w.day === checkDay);
 
       for (const w of dayWindows) {

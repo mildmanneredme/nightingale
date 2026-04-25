@@ -8,8 +8,16 @@
 
 import { Router, Request, Response, NextFunction } from "express";
 import { EventWebhook } from "@sendgrid/eventwebhook";
-import { pool } from "../db";
 import { logger } from "../logger";
+import {
+  findNotificationBySendgridMessageId,
+  markNotificationDelivered,
+  insertNotificationDeliveredAuditLog,
+  markNotificationBounced,
+  insertNotificationFailedAuditLog,
+  markNotificationFailed,
+  insertSpamReportAuditLog,
+} from "../repositories/webhook.repository";
 
 const router = Router();
 
@@ -73,41 +81,29 @@ router.post("/sendgrid", async (req: Request, res: Response, next: NextFunction)
       const baseMessageId = evt.sg_message_id.split(".")[0];
 
       // Look up the notification record by SendGrid message ID
-      const { rows } = await pool.query<{ id: string; consultation_id: string; patient_id: string }>(
-        `SELECT id, consultation_id, patient_id
-         FROM notifications
-         WHERE sendgrid_message_id = $1`,
-        [baseMessageId]
-      );
+      const notification = await findNotificationBySendgridMessageId(baseMessageId);
 
-      const notification = rows[0];
       if (!notification) {
         logger.warn({ sg_message_id: baseMessageId, event: evt.event }, "Unknown SendGrid message ID");
         continue;
       }
 
       if (evt.event === "delivered") {
-        await pool.query(
-          `UPDATE notifications SET status = 'delivered', delivered_at = NOW() WHERE id = $1`,
-          [notification.id]
-        );
-        await pool.query(
-          `INSERT INTO audit_log (event_type, actor_id, actor_role, consultation_id, metadata)
-           VALUES ('notification.delivered', $1, 'patient', $2, $3)`,
-          [notification.patient_id, notification.consultation_id,
-           JSON.stringify({ notification_id: notification.id })]
+        await markNotificationDelivered(notification.id);
+        await insertNotificationDeliveredAuditLog(
+          notification.patient_id,
+          notification.consultation_id,
+          notification.id
         );
 
       } else if (evt.event === "bounce" || evt.event === "dropped") {
-        await pool.query(
-          `UPDATE notifications SET status = 'bounced' WHERE id = $1`,
-          [notification.id]
-        );
-        await pool.query(
-          `INSERT INTO audit_log (event_type, actor_id, actor_role, consultation_id, metadata)
-           VALUES ('notification.delivery_failed', $1, 'patient', $2, $3)`,
-          [notification.patient_id, notification.consultation_id,
-           JSON.stringify({ notification_id: notification.id, event: evt.event, reason: evt.reason ?? null })]
+        await markNotificationBounced(notification.id);
+        await insertNotificationFailedAuditLog(
+          notification.patient_id,
+          notification.consultation_id,
+          notification.id,
+          evt.event,
+          evt.reason ?? null
         );
         logger.error(
           { notification_id: notification.id, event: evt.event, reason: evt.reason },
@@ -115,15 +111,11 @@ router.post("/sendgrid", async (req: Request, res: Response, next: NextFunction)
         );
 
       } else if (evt.event === "spamreport") {
-        await pool.query(
-          `UPDATE notifications SET status = 'failed' WHERE id = $1`,
-          [notification.id]
-        );
-        await pool.query(
-          `INSERT INTO audit_log (event_type, actor_id, actor_role, consultation_id, metadata)
-           VALUES ('notification.delivery_failed', $1, 'patient', $2, $3)`,
-          [notification.patient_id, notification.consultation_id,
-           JSON.stringify({ notification_id: notification.id, event: "spamreport" })]
+        await markNotificationFailed(notification.id);
+        await insertSpamReportAuditLog(
+          notification.patient_id,
+          notification.consultation_id,
+          notification.id
         );
       }
     }

@@ -11,7 +11,6 @@
 
 import { Router, RequestHandler } from "express";
 import { z } from "zod";
-import { pool } from "../db";
 import { requireRole } from "../middleware/auth";
 import { sendRenewalApprovedEmail, sendRenewalDeclinedEmail, sendRenewalReminderEmail } from "../services/emailService";
 import { logger } from "../logger";
@@ -21,6 +20,29 @@ import {
   ApproveRenewalSchema,
   DeclineRenewalSchema,
 } from "../schemas/renewal.schema";
+import {
+  findPatientIdBySub,
+  verifyConsultationOwnership,
+  insertRenewal,
+  insertRenewalRequestedAuditLog,
+  countRenewalsByPatient,
+  listRenewalsByPatient,
+  countPendingRenewals,
+  listPendingRenewals,
+  findDoctorBySub,
+  findDoctorBySubForDecline,
+  approveRenewal,
+  insertRenewalApprovedAuditLog,
+  declineRenewal,
+  insertRenewalDeclinedAuditLog,
+  findRenewalsExpiring48h,
+  markAlert48hSent,
+  insertExpiryAlertAuditLog,
+  findRenewalsExpiring7d,
+  markReminder7dSent,
+  insertPatientReminderAuditLog,
+} from "../repositories/renewal.repository";
+import { pool } from "../db";
 
 const router = Router();
 
@@ -54,42 +76,33 @@ router.post("/", validateBody(CreateRenewalSchema), async (req, res, next) => {
       remindersEnabled?: boolean;
     };
 
-    const { rows: pRows } = await pool.query<{ id: string }>(
-      `SELECT id FROM patients WHERE cognito_sub = $1`,
-      [cognitoSub(req)]
-    );
-    if (!pRows[0]) { res.status(404).json({ error: "Patient not found" }); return; }
-    const patientId = pRows[0].id;
+    const patient = await findPatientIdBySub(cognitoSub(req));
+    if (!patient) { res.status(404).json({ error: "Patient not found" }); return; }
+    const patientId = patient.id;
 
     // If sourceConsultationId provided, verify it belongs to this patient
     if (sourceConsultationId) {
-      const { rows: cRows } = await pool.query(
-        `SELECT id FROM consultations WHERE id = $1 AND patient_id = $2`,
-        [sourceConsultationId, patientId]
-      );
-      if (!cRows[0]) {
+      const owned = await verifyConsultationOwnership(sourceConsultationId, patientId);
+      if (!owned) {
         res.status(404).json({ error: "Source consultation not found" });
         return;
       }
     }
 
-    const { rows } = await pool.query(
-      `INSERT INTO renewal_requests
-         (patient_id, source_consultation_id, medication_name, dosage,
-          no_adverse_effects, condition_unchanged, patient_notes, reminders_enabled)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       RETURNING id, status, medication_name, dosage, created_at`,
-      [patientId, sourceConsultationId ?? null, medicationName.trim(), dosage ?? null,
-       noAdverseEffects, conditionUnchanged, patientNotes ?? null, remindersEnabled]
+    const row = await insertRenewal(
+      patientId,
+      sourceConsultationId ?? null,
+      medicationName.trim(),
+      dosage ?? null,
+      noAdverseEffects,
+      conditionUnchanged,
+      patientNotes ?? null,
+      remindersEnabled
     );
 
-    await pool.query(
-      `INSERT INTO audit_log (event_type, actor_id, actor_role, metadata)
-       VALUES ('renewal.requested', $1, 'patient', $2)`,
-      [patientId, JSON.stringify({ renewal_id: rows[0].id, medication: medicationName })]
-    );
+    await insertRenewalRequestedAuditLog(patientId, row.id, medicationName);
 
-    res.status(201).json(rows[0]);
+    res.status(201).json(row);
   } catch (err) {
     next(err);
   }
@@ -115,34 +128,16 @@ router.get("/", async (req, res, next) => {
     const limit = Math.min(!isNaN(rawLimit) ? rawLimit : 20, 100);
     const offset = Math.max(0, !isNaN(rawOffset) ? rawOffset : 0);
 
-    const { rows: pRows } = await pool.query<{ id: string }>(
-      `SELECT id FROM patients WHERE cognito_sub = $1`,
-      [cognitoSub(req)]
-    );
-    if (!pRows[0]) { res.status(404).json({ error: "Patient not found" }); return; }
-    const patientId = pRows[0].id;
+    const patient = await findPatientIdBySub(cognitoSub(req));
+    if (!patient) { res.status(404).json({ error: "Patient not found" }); return; }
+    const patientId = patient.id;
 
-    const [countResult, dataResult] = await Promise.all([
-      pool.query(
-        `SELECT COUNT(*) FROM renewal_requests r WHERE r.patient_id = $1`,
-        [patientId]
-      ),
-      pool.query(
-        `SELECT r.id, r.status, r.medication_name, r.dosage, r.no_adverse_effects,
-                r.condition_unchanged, r.patient_notes, r.reminders_enabled,
-                r.review_note, r.valid_until, r.created_at, r.reviewed_at,
-                d.full_name AS doctor_full_name
-         FROM renewal_requests r
-         LEFT JOIN doctors d ON d.id = r.reviewed_by
-         WHERE r.patient_id = $1
-         ORDER BY r.created_at DESC
-         LIMIT $2 OFFSET $3`,
-        [patientId, limit, offset]
-      ),
+    const [total, rows] = await Promise.all([
+      countRenewalsByPatient(patientId),
+      listRenewalsByPatient(patientId, limit, offset),
     ]);
 
-    const total = parseInt(countResult.rows[0].count, 10);
-    const data = dataResult.rows.map((r) => ({
+    const data = rows.map((r) => ({
       id: r.id,
       status: r.status,
       medicationName: r.medication_name,
@@ -193,31 +188,12 @@ router.get("/queue", requireRole("doctor"), async (req, res, next) => {
     const limit = Math.min(!isNaN(rawLimit) ? rawLimit : 20, 100);
     const offset = Math.max(0, !isNaN(rawOffset) ? rawOffset : 0);
 
-    const [countResult, dataResult] = await Promise.all([
-      pool.query(
-        `SELECT COUNT(*) FROM renewal_requests r WHERE r.status = 'pending'`
-      ),
-      pool.query(
-        `SELECT r.id, r.status, r.medication_name, r.dosage,
-                r.no_adverse_effects, r.condition_unchanged, r.patient_notes,
-                r.created_at, r.valid_until, r.alert_48h_sent_at,
-                r.source_consultation_id,
-                p.full_name AS patient_name, p.date_of_birth AS patient_dob,
-                p.biological_sex AS patient_sex
-         FROM renewal_requests r
-         JOIN patients p ON p.id = r.patient_id
-         WHERE r.status = 'pending'
-         ORDER BY
-           -- Expiry alerts first
-           CASE WHEN r.alert_48h_sent_at IS NOT NULL THEN 0 ELSE 1 END,
-           r.created_at ASC
-         LIMIT $1 OFFSET $2`,
-        [limit, offset]
-      ),
+    const [total, rows] = await Promise.all([
+      countPendingRenewals(),
+      listPendingRenewals(limit, offset),
     ]);
 
-    const total = parseInt(countResult.rows[0].count, 10);
-    const data = dataResult.rows.map((r) => ({
+    const data = rows.map((r) => ({
       id: r.id,
       medicationName: r.medication_name,
       dosage: r.dosage,
@@ -266,41 +242,23 @@ router.post("/:id/approve", requireRole("doctor"), validateBody(ApproveRenewalSc
       return;
     }
 
-    const { rows: dRows } = await pool.query(
-      `SELECT id, ahpra_number, full_name FROM doctors WHERE cognito_sub = $1`,
-      [cognitoSub(req)]
-    );
-    if (!dRows[0]) { res.status(404).json({ error: "Doctor not found" }); return; }
-    const doctor = dRows[0];
+    const doctor = await findDoctorBySub(cognitoSub(req));
+    if (!doctor) { res.status(404).json({ error: "Doctor not found" }); return; }
 
-    const { rows } = await pool.query(
-      `UPDATE renewal_requests
-       SET status = 'approved',
-           reviewed_by = $1,
-           reviewed_at = NOW(),
-           review_note = $2,
-           valid_until = (NOW() + ($3 || ' days')::INTERVAL)::DATE,
-           updated_at = NOW()
-       WHERE id = $4 AND status = 'pending'
-       RETURNING id, status, patient_id, medication_name, dosage, valid_until`,
-      [doctor.id, reviewNote ?? null, validDays, req.params.id]
-    );
+    const row = await approveRenewal(req.params.id, doctor.id, reviewNote ?? null, validDays);
 
-    if (!rows[0]) {
+    if (!row) {
       res.status(404).json({ error: "Renewal request not found or already reviewed" });
       return;
     }
 
-    await pool.query(
-      `INSERT INTO audit_log (event_type, actor_id, actor_role, ahpra_number, metadata)
-       VALUES ('renewal.approved', $1, 'doctor', $2, $3)`,
-      [doctor.id, doctor.ahpra_number,
-       JSON.stringify({
-         renewal_id: rows[0].id,
-         medication: rows[0].medication_name,
-         valid_until: rows[0].valid_until,
-         patient_id: rows[0].patient_id,
-       })]
+    await insertRenewalApprovedAuditLog(
+      doctor.id,
+      doctor.ahpra_number,
+      row.id,
+      row.medication_name,
+      row.valid_until,
+      row.patient_id
     );
 
     // Fire-and-forget notification
@@ -309,9 +267,9 @@ router.post("/:id/approve", requireRole("doctor"), validateBody(ApproveRenewalSc
     );
 
     res.json({
-      id: rows[0].id,
-      status: rows[0].status,
-      validUntil: rows[0].valid_until,
+      id: row.id,
+      status: row.status,
+      validUntil: row.valid_until,
     });
   } catch (err) {
     next(err);
@@ -323,42 +281,23 @@ router.post("/:id/decline", requireRole("doctor"), validateBody(DeclineRenewalSc
   try {
     const { reviewNote } = req.body as { reviewNote?: string };
 
-    const { rows: dRows } = await pool.query(
-      `SELECT id, ahpra_number FROM doctors WHERE cognito_sub = $1`,
-      [cognitoSub(req)]
-    );
-    if (!dRows[0]) { res.status(404).json({ error: "Doctor not found" }); return; }
-    const doctor = dRows[0];
+    const doctor = await findDoctorBySubForDecline(cognitoSub(req));
+    if (!doctor) { res.status(404).json({ error: "Doctor not found" }); return; }
 
-    const { rows } = await pool.query(
-      `UPDATE renewal_requests
-       SET status = 'declined',
-           reviewed_by = $1,
-           reviewed_at = NOW(),
-           review_note = $2,
-           updated_at = NOW()
-       WHERE id = $3 AND status = 'pending'
-       RETURNING id, status, patient_id, medication_name`,
-      [doctor.id, reviewNote ?? null, req.params.id]
-    );
+    const row = await declineRenewal(req.params.id, doctor.id, reviewNote ?? null);
 
-    if (!rows[0]) {
+    if (!row) {
       res.status(404).json({ error: "Renewal request not found or already reviewed" });
       return;
     }
 
-    await pool.query(
-      `INSERT INTO audit_log (event_type, actor_id, actor_role, ahpra_number, metadata)
-       VALUES ('renewal.declined', $1, 'doctor', $2, $3)`,
-      [doctor.id, doctor.ahpra_number,
-       JSON.stringify({ renewal_id: rows[0].id, medication: rows[0].medication_name })]
-    );
+    await insertRenewalDeclinedAuditLog(doctor.id, doctor.ahpra_number, row.id, row.medication_name);
 
     sendRenewalDeclinedEmail(req.params.id, pool).catch((err) =>
       logger.error({ err, renewalId: req.params.id }, "Failed to send renewal declined email")
     );
 
-    res.json({ id: rows[0].id, status: rows[0].status });
+    res.json({ id: row.id, status: row.status });
   } catch (err) {
     next(err);
   }
@@ -372,54 +311,21 @@ router.post("/:id/decline", requireRole("doctor"), validateBody(DeclineRenewalSc
 // ---------------------------------------------------------------------------
 router.post("/expiry-check", requireRole("admin"), validateBody(z.object({})), async (_req, res, next) => {
   try {
-    // 48h alert: approved renewals expiring within 48 hours where alert not yet sent
-    const { rows: expiring48h } = await pool.query(
-      `SELECT id, patient_id, medication_name
-       FROM renewal_requests
-       WHERE status = 'approved'
-         AND valid_until IS NOT NULL
-         AND valid_until <= (NOW() + INTERVAL '48 hours')::DATE
-         AND valid_until >= CURRENT_DATE
-         AND alert_48h_sent_at IS NULL`
-    );
+    const expiring48h = await findRenewalsExpiring48h();
 
     for (const r of expiring48h) {
-      await pool.query(
-        `UPDATE renewal_requests SET alert_48h_sent_at = NOW() WHERE id = $1`,
-        [r.id]
-      );
-      await pool.query(
-        `INSERT INTO audit_log (event_type, actor_id, actor_role, metadata)
-         VALUES ('renewal.expiry_alert_sent', $1, 'patient', $2)`,
-        [r.patient_id, JSON.stringify({ renewal_id: r.id, medication: r.medication_name })]
-      );
+      await markAlert48hSent(r.id);
+      await insertExpiryAlertAuditLog(r.patient_id, r.id, r.medication_name);
     }
 
-    // 7-day reminder: send patient reminder for renewals expiring within 7 days
-    const { rows: expiring7d } = await pool.query(
-      `SELECT id, patient_id, medication_name
-       FROM renewal_requests
-       WHERE status = 'approved'
-         AND valid_until IS NOT NULL
-         AND valid_until <= (NOW() + INTERVAL '7 days')::DATE
-         AND valid_until > (NOW() + INTERVAL '48 hours')::DATE
-         AND reminder_7d_sent_at IS NULL
-         AND reminders_enabled = TRUE`
-    );
+    const expiring7d = await findRenewalsExpiring7d();
 
     for (const r of expiring7d) {
       await sendRenewalReminderEmail(r.id, pool).catch((err) =>
         logger.error({ err, renewalId: r.id }, "Failed to send renewal reminder email")
       );
-      await pool.query(
-        `UPDATE renewal_requests SET reminder_7d_sent_at = NOW() WHERE id = $1`,
-        [r.id]
-      );
-      await pool.query(
-        `INSERT INTO audit_log (event_type, actor_id, actor_role, metadata)
-         VALUES ('renewal.patient_reminder_sent', $1, 'patient', $2)`,
-        [r.patient_id, JSON.stringify({ renewal_id: r.id, medication: r.medication_name })]
-      );
+      await markReminder7dSent(r.id);
+      await insertPatientReminderAuditLog(r.patient_id, r.id, r.medication_name);
     }
 
     res.json({

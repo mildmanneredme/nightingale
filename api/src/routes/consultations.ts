@@ -2,7 +2,6 @@ import { Router, RequestHandler } from "express";
 import { z } from "zod";
 import WebSocket from "ws";
 import PDFDocument from "pdfkit";
-import { pool } from "../db";
 import { logger } from "../logger";
 import { GeminiLiveSession } from "../services/geminiLive";
 import { sendTextMessage, TextTurn } from "../services/textConsultation";
@@ -14,6 +13,22 @@ import {
   EndConsultationSchema,
   ChatMessageSchema,
 } from "../schemas/consultation.schema";
+import {
+  findPatientIdBySub,
+  findExistingConsultationByIdempotencyKey,
+  insertConsultation,
+  countConsultationsByPatient,
+  listConsultationsByPatient,
+  findConsultationByIdAndPatient,
+  endConsultation,
+  findConsultationForChat,
+  updateConsultationChat,
+  setConsultationAiFailed,
+  findConsultationForPdf,
+  insertPdfAuditLog,
+  findConsultationOwnership,
+  insertWsToken,
+} from "../repositories/consultation.repository";
 
 // Fire-and-forget engine trigger. Errors are logged but never bubble to the
 // HTTP response — the patient's consultation end is acknowledged immediately.
@@ -24,12 +39,7 @@ function triggerEngine(consultationId: string): void {
     runEngine(consultationId).catch(async (err) => {
       logger.error({ err, consultationId }, "consultations: clinical AI engine failed — setting ai_failed");
       try {
-        await pool.query(
-          `UPDATE consultations
-           SET status = 'ai_failed', updated_at = NOW()
-           WHERE id = $1 AND status = 'transcript_ready'`,
-          [consultationId]
-        );
+        await setConsultationAiFailed(consultationId);
       } catch (dbErr) {
         logger.error({ dbErr, consultationId }, "consultations: failed to set ai_failed status");
       }
@@ -57,14 +67,6 @@ function cognitoSub(req: Parameters<RequestHandler>[0]): string {
   return req.user.sub;
 }
 
-async function getPatientId(sub: string): Promise<string | null> {
-  const { rows } = await pool.query(
-    `SELECT id FROM patients WHERE cognito_sub = $1 AND deletion_requested_at IS NULL`,
-    [sub]
-  );
-  return rows[0]?.id ?? null;
-}
-
 // ---------------------------------------------------------------------------
 // POST /
 // ---------------------------------------------------------------------------
@@ -73,7 +75,7 @@ router.post("/", validateBody(CreateConsultationSchema), async (req, res, next) 
     const { consultationType, presentingComplaint } = req.body;
     const idempotencyKey = req.headers["idempotency-key"] as string | undefined;
 
-    const patientId = await getPatientId(cognitoSub(req));
+    const patientId = await findPatientIdBySub(cognitoSub(req));
     if (!patientId) {
       res.status(404).json({ error: "Patient not found" });
       return;
@@ -81,37 +83,15 @@ router.post("/", validateBody(CreateConsultationSchema), async (req, res, next) 
 
     // SEC-003: Idempotency — return existing consultation if same key used within 24h
     if (idempotencyKey) {
-      const { rows: existing } = await pool.query<{ id: string; status: string; consultation_type: string; presenting_complaint: string | null; created_at: Date }>(
-        `SELECT id, status,
-                consultation_type AS "consultationType",
-                presenting_complaint AS "presentingComplaint",
-                created_at AS "createdAt"
-         FROM consultations
-         WHERE patient_id = $1
-           AND idempotency_key = $2
-           AND created_at >= NOW() - INTERVAL '24 hours'
-         LIMIT 1`,
-        [patientId, idempotencyKey]
-      );
-      if (existing[0]) {
-        res.status(200).json(existing[0]);
+      const existing = await findExistingConsultationByIdempotencyKey(patientId, idempotencyKey);
+      if (existing) {
+        res.status(200).json(existing);
         return;
       }
     }
 
-    const { rows } = await pool.query(
-      `INSERT INTO consultations (patient_id, consultation_type, presenting_complaint, idempotency_key)
-       VALUES ($1, $2, $3, $4)
-       RETURNING
-         id,
-         status,
-         consultation_type AS "consultationType",
-         presenting_complaint AS "presentingComplaint",
-         created_at AS "createdAt"`,
-      [patientId, consultationType, presentingComplaint ?? null, idempotencyKey ?? null]
-    );
-
-    res.status(201).json(rows[0]);
+    const row = await insertConsultation(patientId, consultationType, presentingComplaint ?? null, idempotencyKey ?? null);
+    res.status(201).json(row);
   } catch (err) {
     next(err);
   }
@@ -138,42 +118,24 @@ router.get("/", async (req, res, next) => {
     const limit = Math.min(!isNaN(rawLimit) ? rawLimit : 20, 100);
     const offset = Math.max(0, !isNaN(rawOffset) ? rawOffset : 0);
 
-    const patientId = await getPatientId(cognitoSub(req));
+    const patientId = await findPatientIdBySub(cognitoSub(req));
     if (!patientId) {
       res.status(404).json({ error: "Patient not found" });
       return;
     }
 
-    const [countResult, dataResult] = await Promise.all([
-      pool.query(
-        `SELECT COUNT(*) FROM consultations WHERE patient_id = $1`,
-        [patientId]
-      ),
-      pool.query(
-        `SELECT
-           id,
-           status,
-           consultation_type AS "consultationType",
-           presenting_complaint AS "presentingComplaint",
-           created_at AS "createdAt",
-           session_started_at AS "sessionStartedAt",
-           session_ended_at AS "sessionEndedAt"
-         FROM consultations
-         WHERE patient_id = $1
-         ORDER BY created_at DESC
-         LIMIT $2 OFFSET $3`,
-        [patientId, limit, offset]
-      ),
+    const [total, rows] = await Promise.all([
+      countConsultationsByPatient(patientId),
+      listConsultationsByPatient(patientId, limit, offset),
     ]);
 
-    const total = parseInt(countResult.rows[0].count, 10);
     res.status(200).json({
-      data: dataResult.rows,
+      data: rows,
       pagination: {
         total,
         limit,
         offset,
-        hasMore: offset + dataResult.rows.length < total,
+        hasMore: offset + rows.length < total,
       },
     });
   } catch (err) {
@@ -186,37 +148,19 @@ router.get("/", async (req, res, next) => {
 // ---------------------------------------------------------------------------
 router.get("/:id", async (req, res, next) => {
   try {
-    const patientId = await getPatientId(cognitoSub(req));
+    const patientId = await findPatientIdBySub(cognitoSub(req));
     if (!patientId) {
       res.status(404).json({ error: "Patient not found" });
       return;
     }
 
-    const { rows } = await pool.query(
-      `SELECT
-         id,
-         status,
-         consultation_type AS "consultationType",
-         presenting_complaint AS "presentingComplaint",
-         transcript,
-         red_flags AS "redFlags",
-         ai_draft AS "assessment",
-         doctor_draft AS "doctorDraft",
-         rejection_message AS "rejectionMessage",
-         created_at AS "createdAt",
-         session_started_at AS "sessionStartedAt",
-         session_ended_at AS "sessionEndedAt"
-       FROM consultations
-       WHERE id = $1 AND patient_id = $2`,
-      [req.params.id, patientId]
-    );
-
-    if (!rows[0]) {
+    const row = await findConsultationByIdAndPatient(req.params.id, patientId);
+    if (!row) {
       res.status(404).json({ error: "Consultation not found" });
       return;
     }
 
-    res.status(200).json(rows[0]);
+    res.status(200).json(row);
   } catch (err) {
     next(err);
   }
@@ -227,40 +171,24 @@ router.get("/:id", async (req, res, next) => {
 // ---------------------------------------------------------------------------
 router.post("/:id/end", validateBody(EndConsultationSchema), async (req, res, next) => {
   try {
-    const patientId = await getPatientId(cognitoSub(req));
+    const patientId = await findPatientIdBySub(cognitoSub(req));
     if (!patientId) {
       res.status(404).json({ error: "Patient not found" });
       return;
     }
 
     const { transcript } = req.body;
+    const row = await endConsultation(req.params.id, patientId, transcript);
 
-    const { rows } = await pool.query(
-      `UPDATE consultations
-       SET
-         status = 'transcript_ready',
-         transcript = $1,
-         session_ended_at = NOW(),
-         updated_at = NOW()
-       WHERE id = $2 AND patient_id = $3
-       RETURNING
-         id,
-         status,
-         consultation_type AS "consultationType",
-         transcript,
-         session_ended_at AS "sessionEndedAt"`,
-      [JSON.stringify(transcript ?? []), req.params.id, patientId]
-    );
-
-    if (!rows[0]) {
+    if (!row) {
       res.status(404).json({ error: "Consultation not found" });
       return;
     }
 
     // Trigger the clinical AI engine in the background
-    triggerEngine(rows[0].id);
+    triggerEngine(row.id);
 
-    res.status(200).json(rows[0]);
+    res.status(200).json(row);
   } catch (err) {
     next(err);
   }
@@ -273,19 +201,13 @@ router.post("/:id/chat", validateBody(ChatMessageSchema), async (req, res, next)
   try {
     const { message } = req.body;
 
-    const patientId = await getPatientId(cognitoSub(req));
+    const patientId = await findPatientIdBySub(cognitoSub(req));
     if (!patientId) {
       res.status(404).json({ error: "Patient not found" });
       return;
     }
 
-    const { rows } = await pool.query(
-      `SELECT id, status, consultation_type, transcript
-       FROM consultations
-       WHERE id = $1 AND patient_id = $2`,
-      [req.params.id, patientId]
-    );
-    const consultation = rows[0];
+    const consultation = await findConsultationForChat(req.params.id, patientId);
     if (!consultation || consultation.consultation_type !== "text") {
       res.status(404).json({ error: "Consultation not found" });
       return;
@@ -295,7 +217,7 @@ router.post("/:id/chat", validateBody(ChatMessageSchema), async (req, res, next)
       return;
     }
 
-    const history: TextTurn[] = consultation.transcript ?? [];
+    const history: TextTurn[] = (consultation.transcript as TextTurn[]) ?? [];
     const patientTurn: TextTurn = {
       speaker: "patient",
       text: message.trim(),
@@ -315,16 +237,7 @@ router.post("/:id/chat", validateBody(ChatMessageSchema), async (req, res, next)
     if (aiResponse.type === "emergency") newStatus = "emergency_escalated";
     if (aiResponse.type === "complete") newStatus = "transcript_ready";
 
-    await pool.query(
-      `UPDATE consultations
-       SET status = $1,
-           transcript = $2,
-           session_started_at = CASE WHEN session_started_at IS NULL THEN NOW() ELSE session_started_at END,
-           session_ended_at = CASE WHEN $1 IN ('transcript_ready', 'emergency_escalated') THEN NOW() ELSE session_ended_at END,
-           updated_at = NOW()
-       WHERE id = $3`,
-      [newStatus, JSON.stringify(finalHistory), req.params.id]
-    );
+    await updateConsultationChat(req.params.id, newStatus, finalHistory);
 
     // Trigger the clinical AI engine when the text consultation reaches transcript_ready
     if (newStatus === "transcript_ready") {
@@ -349,32 +262,8 @@ router.post("/:id/chat", validateBody(ChatMessageSchema), async (req, res, next)
 router.get("/:id/pdf", async (req, res, next) => {
   try {
     const patientSub = req.user.sub;
-    const { rows } = await pool.query<{
-      id: string;
-      presenting_complaint: string;
-      status: string;
-      reviewed_at: Date | null;
-      doctor_draft: string | null;
-      ai_draft: string | null;
-      doctor_first_name: string;
-      doctor_last_name: string;
-      ahpra_number: string;
-      patient_id: string;
-      patient_cognito_sub: string;
-    }>(
-      `SELECT c.id, c.presenting_complaint, c.status, c.reviewed_at,
-              c.doctor_draft, c.ai_draft,
-              d.first_name AS doctor_first_name, d.last_name AS doctor_last_name,
-              d.ahpra_number,
-              p.id AS patient_id, p.cognito_sub AS patient_cognito_sub
-       FROM consultations c
-       JOIN doctors d  ON d.id = c.reviewed_by
-       JOIN patients p ON p.id = c.patient_id
-       WHERE c.id = $1`,
-      [req.params.id]
-    );
+    const row = await findConsultationForPdf(req.params.id);
 
-    const row = rows[0];
     if (!row) {
       res.status(404).json({ error: "Consultation not found" });
       return;
@@ -440,11 +329,9 @@ router.get("/:id/pdf", async (req, res, next) => {
     doc.end();
 
     // Audit log (fire-and-forget — streaming has already started)
-    pool.query(
-      `INSERT INTO audit_log (event_type, actor_id, actor_role, consultation_id, metadata)
-       VALUES ('consultation.pdf_downloaded', $1, 'patient', $2, $3)`,
-      [row.patient_id, row.id, JSON.stringify({ doctor_id: row.id })]
-    ).catch((err) => logger.error({ err, consultationId: row.id }, "Failed to log PDF download"));
+    insertPdfAuditLog(row.patient_id, row.id, row.id).catch((err) =>
+      logger.error({ err, consultationId: row.id }, "Failed to log PDF download")
+    );
   } catch (err) {
     next(err);
   }
@@ -460,29 +347,21 @@ router.post("/:id/stream-token", validateBody(z.object({})), async (req, res, ne
     const { id: consultationId } = req.params;
     const { randomUUID } = await import("crypto");
 
-    const patientId = await getPatientId(cognitoSub(req));
+    const patientId = await findPatientIdBySub(cognitoSub(req));
     if (!patientId) {
       res.status(404).json({ error: "Patient not found" });
       return;
     }
 
     // Verify the consultation belongs to this patient
-    const { rows: cRows } = await pool.query(
-      `SELECT id FROM consultations WHERE id = $1 AND patient_id = $2`,
-      [consultationId, patientId]
-    );
-    if (!cRows[0]) {
+    const owned = await findConsultationOwnership(consultationId, patientId);
+    if (!owned) {
       res.status(404).json({ error: "Consultation not found" });
       return;
     }
 
     const wsToken = randomUUID();
-
-    await pool.query(
-      `INSERT INTO ws_tokens (token, consultation_id, patient_id, expires_at)
-       VALUES ($1, $2, $3, NOW() + INTERVAL '2 minutes')`,
-      [wsToken, consultationId, patientId]
-    );
+    await insertWsToken(wsToken, consultationId, patientId);
 
     res.status(201).json({ wsToken, expiresInSeconds: 120 });
   } catch (err) {
