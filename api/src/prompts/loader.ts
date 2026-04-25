@@ -3,6 +3,7 @@ import { join } from "path";
 import { logger } from "../logger";
 
 export const EXPECTED_PROMPTS = [
+  "system-preamble",
   "ahpra-constraints",
   "cannot-assess-criteria",
   "output-schema",
