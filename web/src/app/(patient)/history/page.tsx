@@ -1,9 +1,10 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   getMe, addAllergy, deleteAllergy, addMedication, deleteMedication, addCondition, deleteCondition,
   Patient,
 } from "@/lib/api";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import TopAppBar from "@/components/TopAppBar";
 import BottomNavBar from "@/components/BottomNavBar";
 
@@ -77,27 +78,24 @@ function MedSection({
 }
 
 export default function HistoryPage() {
-  const [patient, setPatient] = useState<Patient | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [allergyInput, setAllergyInput] = useState("");
   const [medInput, setMedInput] = useState("");
   const [conditionInput, setConditionInput] = useState("");
 
-  async function refresh() {
-    const p = await getMe();
-    setPatient(p);
-  }
+  // F-053: useQuery for initial fetch; F-056: use isLoading from query
+  const { data: patient, isLoading: loading } = useQuery({
+    queryKey: ["patient-me"],
+    queryFn: getMe,
+  });
 
-  useEffect(() => {
-    refresh().finally(() => setLoading(false));
-  }, []);
-
+  // F-054: invalidate after mutations
   async function handleAddAllergy(e: React.FormEvent) {
     e.preventDefault();
     if (!allergyInput.trim()) return;
     await addAllergy(allergyInput.trim(), "mild");
     setAllergyInput("");
-    await refresh();
+    await queryClient.invalidateQueries({ queryKey: ["patient-me"] });
   }
 
   async function handleAddMedication(e: React.FormEvent) {
@@ -105,7 +103,7 @@ export default function HistoryPage() {
     if (!medInput.trim()) return;
     await addMedication(medInput.trim());
     setMedInput("");
-    await refresh();
+    await queryClient.invalidateQueries({ queryKey: ["patient-me"] });
   }
 
   async function handleAddCondition(e: React.FormEvent) {
@@ -113,7 +111,7 @@ export default function HistoryPage() {
     if (!conditionInput.trim()) return;
     await addCondition(conditionInput.trim());
     setConditionInput("");
-    await refresh();
+    await queryClient.invalidateQueries({ queryKey: ["patient-me"] });
   }
 
   return (
@@ -141,7 +139,7 @@ export default function HistoryPage() {
               inputValue={allergyInput}
               onInputChange={setAllergyInput}
               onAdd={handleAddAllergy}
-              onDelete={async (id) => { await deleteAllergy(id); await refresh(); }}
+              onDelete={async (id) => { await deleteAllergy(id); await queryClient.invalidateQueries({ queryKey: ["patient-me"] }); }}
               placeholder="e.g. Penicillin, Peanuts…"
             />
             <MedSection
@@ -151,7 +149,7 @@ export default function HistoryPage() {
               inputValue={medInput}
               onInputChange={setMedInput}
               onAdd={handleAddMedication}
-              onDelete={async (id) => { await deleteMedication(id); await refresh(); }}
+              onDelete={async (id) => { await deleteMedication(id); await queryClient.invalidateQueries({ queryKey: ["patient-me"] }); }}
               placeholder="e.g. Metformin 500mg…"
             />
             <MedSection
@@ -161,7 +159,7 @@ export default function HistoryPage() {
               inputValue={conditionInput}
               onInputChange={setConditionInput}
               onAdd={handleAddCondition}
-              onDelete={async (id) => { await deleteCondition(id); await refresh(); }}
+              onDelete={async (id) => { await deleteCondition(id); await queryClient.invalidateQueries({ queryKey: ["patient-me"] }); }}
               placeholder="e.g. Type 2 Diabetes…"
             />
           </div>

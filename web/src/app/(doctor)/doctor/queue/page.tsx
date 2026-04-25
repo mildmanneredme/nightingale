@@ -1,7 +1,8 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { getDoctorQueue, DoctorQueueItem } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
 import DoctorSideNav from "@/components/DoctorSideNav";
 
 const FLAG_STYLES: Record<string, { bg: string; text: string }> = {
@@ -34,41 +35,37 @@ function isFlagged(item: DoctorQueueItem): boolean {
 }
 
 export default function DoctorQueuePage() {
-  const [queue, setQueue] = useState<DoctorQueueItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [extraQueue, setExtraQueue] = useState<DoctorQueueItem[]>([]);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(false);
+  const [hasMore, setHasMore] = useState<boolean | null>(null);
   const [offset, setOffset] = useState(0);
   const [filter, setFilter] = useState<FilterType>("ALL");
 
-  async function load() {
-    try {
-      const res = await getDoctorQueue(PAGE_LIMIT, 0);
-      setQueue(res.data);
-      setHasMore(res.pagination.hasMore);
-      setOffset(res.data.length);
-    } finally {
-      setLoading(false);
-    }
-  }
+  // F-053/F-055: staleTime:0 (always revalidate), refetchInterval replaces setInterval
+  const { data: initialData, isLoading: loading, refetch } = useQuery({
+    queryKey: ["doctor-queue"],
+    queryFn: () => getDoctorQueue(PAGE_LIMIT, 0),
+    staleTime: 0,
+    refetchInterval: 30_000,
+  });
+
+  const initialQueue = initialData?.data ?? [];
+  const initialHasMore = initialData?.pagination.hasMore ?? false;
+  const queue = [...initialQueue, ...extraQueue];
+  const showHasMore = hasMore ?? initialHasMore;
+  const effectiveOffset = offset === 0 ? initialQueue.length : offset;
 
   async function loadMore() {
     setLoadingMore(true);
     try {
-      const res = await getDoctorQueue(PAGE_LIMIT, offset);
-      setQueue((prev) => [...prev, ...res.data]);
+      const res = await getDoctorQueue(PAGE_LIMIT, effectiveOffset);
+      setExtraQueue((prev) => [...prev, ...res.data]);
       setHasMore(res.pagination.hasMore);
-      setOffset((prev) => prev + res.data.length);
+      setOffset(effectiveOffset + res.data.length);
     } finally {
       setLoadingMore(false);
     }
   }
-
-  useEffect(() => {
-    load();
-    const poll = setInterval(load, 30000);
-    return () => clearInterval(poll);
-  }, []);
 
   const filtered = queue.filter((item) => {
     if (filter === "VOICE") return item.consultationType === "voice";
@@ -126,7 +123,7 @@ export default function DoctorQueuePage() {
                 ))}
               </div>
               <button
-                onClick={load}
+                onClick={() => refetch()}
                 className="flex items-center gap-2 bg-white border border-outline-variant px-3 py-2 rounded-lg text-xs font-bold font-manrope text-primary hover:bg-slate-50 transition-colors"
               >
                 <span className="material-symbols-outlined text-[18px]">refresh</span>
@@ -240,7 +237,7 @@ export default function DoctorQueuePage() {
                 );
               })}
             </div>
-            {hasMore && (
+            {showHasMore && (
               <div className="mt-6 flex justify-center">
                 <button
                   onClick={loadMore}

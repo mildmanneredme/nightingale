@@ -3,9 +3,26 @@ import "./globals.css";
 import { useState } from "react";
 import { AuthContext } from "@/hooks/useAuth";
 import { getUserRole } from "@/lib/auth";
-import { setToken as apiSetToken } from "@/lib/api";
+import { setToken as apiSetToken, ApiError } from "@/lib/api";
 import { ToastProvider } from "@/components/ToastProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+// P-01 F-052 / P-02 F-057–F-059: QueryClient defined at module scope so it
+// persists across renders within a session.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000, // F-052
+      retry: (failureCount, error) => {
+        // F-058: do not retry 4xx errors
+        if (error instanceof ApiError && error.status < 500) return false;
+        return failureCount < 2; // F-057: up to 2 retries
+      },
+      retryDelay: (attempt) => (attempt === 0 ? 1000 : 2000), // F-059
+    },
+  },
+});
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const [token, setTokenState] = useState<string | null>(null);
@@ -29,11 +46,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <AuthContext.Provider value={{ token, setToken, role }}>
-          <ToastProvider>
-            <ErrorBoundary>
-              {children}
-            </ErrorBoundary>
-          </ToastProvider>
+          <QueryClientProvider client={queryClient}>
+            <ToastProvider>
+              <ErrorBoundary>
+                {children}
+              </ErrorBoundary>
+            </ToastProvider>
+          </QueryClientProvider>
         </AuthContext.Provider>
       </body>
     </html>

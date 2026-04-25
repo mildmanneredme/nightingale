@@ -1,6 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { getRenewals, submitRenewal, RenewalRequest, ApiError } from "@/lib/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/useToast";
 import { getErrorMessage } from "@/lib/errors";
 
@@ -20,13 +21,12 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function RenewalsPage() {
   const { toast } = useToast();
-  const [renewals, setRenewals] = useState<RenewalRequest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const [extraRenewals, setExtraRenewals] = useState<RenewalRequest[]>([]);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(false);
+  const [hasMore, setHasMore] = useState<boolean | null>(null);
   const [offset, setOffset] = useState(0);
   const [showForm, setShowForm] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
 
   // Form fields
@@ -36,27 +36,54 @@ export default function RenewalsPage() {
   const [conditionUnchanged, setConditionUnchanged] = useState(true);
   const [patientNotes, setPatientNotes] = useState("");
 
-  useEffect(() => {
-    getRenewals(PAGE_LIMIT, 0)
-      .then((res) => {
-        setRenewals(res.data);
-        setHasMore(res.pagination.hasMore);
-        setOffset(res.data.length);
-      })
-      .finally(() => setLoading(false));
-  }, []);
+  // F-053: useQuery for initial fetch; F-056: use isLoading from query
+  const { data: initialData, isLoading: loading } = useQuery({
+    queryKey: ["renewals"],
+    queryFn: () => getRenewals(PAGE_LIMIT, 0),
+  });
+
+  const initialRenewals = initialData?.data ?? [];
+  const initialHasMore = initialData?.pagination.hasMore ?? false;
+  const renewals = [...initialRenewals, ...extraRenewals];
+  const showHasMore = hasMore ?? initialHasMore;
+  const effectiveOffset = offset === 0 ? initialRenewals.length : offset;
 
   async function loadMore() {
     setLoadingMore(true);
     try {
-      const res = await getRenewals(PAGE_LIMIT, offset);
-      setRenewals((prev) => [...prev, ...res.data]);
+      const res = await getRenewals(PAGE_LIMIT, effectiveOffset);
+      setExtraRenewals((prev) => [...prev, ...res.data]);
       setHasMore(res.pagination.hasMore);
-      setOffset((prev) => prev + res.data.length);
+      setOffset(effectiveOffset + res.data.length);
     } finally {
       setLoadingMore(false);
     }
   }
+
+  // F-054: useMutation with invalidateQueries on success
+  const submitMutation = useMutation({
+    mutationFn: (data: {
+      medicationName: string;
+      dosage?: string;
+      noAdverseEffects: boolean;
+      conditionUnchanged: boolean;
+      patientNotes?: string;
+    }) => submitRenewal(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["renewals"] });
+      setExtraRenewals([]);
+      setHasMore(null);
+      setOffset(0);
+      setShowForm(false);
+      setMedicationName("");
+      setDosage("");
+      setPatientNotes("");
+    },
+    onError: (err: unknown) => {
+      const { title, detail } = err instanceof ApiError ? getErrorMessage(err.status) : getErrorMessage(0);
+      toast.error(title, { detail, correlationId: err instanceof ApiError ? err.correlationId : undefined });
+    },
+  });
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -65,31 +92,14 @@ export default function RenewalsPage() {
       setValidationError("If you have experienced adverse effects or your condition has changed, please start a new consultation.");
       return;
     }
-
-    setSubmitting(true);
     setValidationError(null);
-    try {
-      await submitRenewal({
-        medicationName: medicationName.trim(),
-        dosage: dosage.trim() || undefined,
-        noAdverseEffects,
-        conditionUnchanged,
-        patientNotes: patientNotes.trim() || undefined,
-      });
-      const updated = await getRenewals(PAGE_LIMIT, 0);
-      setRenewals(updated.data);
-      setHasMore(updated.pagination.hasMore);
-      setOffset(updated.data.length);
-      setShowForm(false);
-      setMedicationName("");
-      setDosage("");
-      setPatientNotes("");
-    } catch (err: unknown) {
-      const { title, detail } = err instanceof ApiError ? getErrorMessage(err.status) : getErrorMessage(0);
-      toast.error(title, { detail, correlationId: err instanceof ApiError ? err.correlationId : undefined });
-    } finally {
-      setSubmitting(false);
-    }
+    submitMutation.mutate({
+      medicationName: medicationName.trim(),
+      dosage: dosage.trim() || undefined,
+      noAdverseEffects,
+      conditionUnchanged,
+      patientNotes: patientNotes.trim() || undefined,
+    });
   }
 
   if (loading) {
@@ -192,10 +202,10 @@ export default function RenewalsPage() {
             <div className="flex gap-3">
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={submitMutation.isPending}
                 className="bg-primary text-on-primary px-6 py-2 rounded text-label-md font-semibold disabled:opacity-50"
               >
-                {submitting ? "Submitting…" : "Submit Request"}
+                {submitMutation.isPending ? "Submitting…" : "Submit Request"}
               </button>
               <button
                 type="button"
@@ -209,7 +219,7 @@ export default function RenewalsPage() {
         </div>
       )}
 
-      {renewals.length === 0 && !showForm ? (
+      {renewals.length === 0 && !showForm && !loading ? (
         <div className="text-center py-12 text-on-surface-variant">
           <span className="material-symbols-outlined text-5xl block mb-3">medication</span>
           <p className="text-body-lg">No renewal requests</p>
@@ -256,7 +266,7 @@ export default function RenewalsPage() {
             </div>
           ))}
         </div>
-        {hasMore && (
+        {showHasMore && (
           <div className="mt-6 flex justify-center">
             <button
               onClick={loadMore}

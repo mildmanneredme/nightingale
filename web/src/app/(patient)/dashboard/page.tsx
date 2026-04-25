@@ -1,8 +1,9 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { getConsultations, Consultation, getToken } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
 import TopAppBar from "@/components/TopAppBar";
 import BottomNavBar from "@/components/BottomNavBar";
 import StatusBadge from "@/components/StatusBadge";
@@ -26,29 +27,32 @@ async function downloadPdf(id: string) {
 
 export default function DashboardPage() {
   const { token } = useAuth();
-  const [consultations, setConsultations] = useState<Consultation[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [extraConsultations, setExtraConsultations] = useState<Consultation[]>([]);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(false);
+  const [hasMore, setHasMore] = useState<boolean | null>(null);
   const [consultOffset, setConsultOffset] = useState(0);
 
-  useEffect(() => {
-    getConsultations(20, 0)
-      .then((res) => {
-        setConsultations(res.data);
-        setHasMore(res.pagination.hasMore);
-        setConsultOffset(res.data.length);
-      })
-      .finally(() => setLoading(false));
-  }, []);
+  // F-053: use useQuery for the initial fetch; F-056: use isLoading from query
+  const { data: initialData, isLoading } = useQuery({
+    queryKey: ["consultations"],
+    queryFn: () => getConsultations(20, 0),
+    staleTime: 30_000,
+    enabled: !!token,
+  });
+
+  const initialConsultations = initialData?.data ?? [];
+  const initialHasMore = initialData?.pagination.hasMore ?? false;
+  const consultations = [...initialConsultations, ...extraConsultations];
+  const showHasMore = hasMore ?? initialHasMore;
+  const effectiveOffset = consultOffset === 0 ? initialConsultations.length : consultOffset;
 
   async function loadMoreConsultations() {
     setLoadingMore(true);
     try {
-      const res = await getConsultations(20, consultOffset);
-      setConsultations((prev) => [...prev, ...res.data]);
+      const res = await getConsultations(20, effectiveOffset);
+      setExtraConsultations((prev) => [...prev, ...res.data]);
       setHasMore(res.pagination.hasMore);
-      setConsultOffset((prev) => prev + res.data.length);
+      setConsultOffset(effectiveOffset + res.data.length);
     } finally {
       setLoadingMore(false);
     }
@@ -142,7 +146,7 @@ export default function DashboardPage() {
               </Link>
             </div>
 
-            {loading ? (
+            {isLoading ? (
               <div className="px-6 py-12 text-center text-on-surface-variant">
                 <span className="material-symbols-outlined text-4xl block mb-2 animate-spin">progress_activity</span>
                 Loading…
@@ -216,7 +220,7 @@ export default function DashboardPage() {
                     ))}
                   </tbody>
                 </table>
-                {hasMore && (
+                {showHasMore && (
                   <div className="px-6 py-4 border-t border-slate-50 flex justify-center">
                     <button
                       onClick={loadMoreConsultations}

@@ -1,38 +1,40 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { getRenewalQueue, approveRenewal, declineRenewal, RenewalQueueItem } from "@/lib/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 const PAGE_LIMIT = 20;
 
 export default function DoctorRenewalsPage() {
-  const [items, setItems] = useState<RenewalQueueItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const [extraItems, setExtraItems] = useState<RenewalQueueItem[]>([]);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(false);
+  const [hasMore, setHasMore] = useState<boolean | null>(null);
   const [offset, setOffset] = useState(0);
   const [actionId, setActionId] = useState<string | null>(null);
   const [reviewNote, setReviewNote] = useState("");
   const [validDays, setValidDays] = useState(28);
   const [mode, setMode] = useState<"approve" | "decline" | null>(null);
-  const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    getRenewalQueue(PAGE_LIMIT, 0)
-      .then((res) => {
-        setItems(res.data);
-        setHasMore(res.pagination.hasMore);
-        setOffset(res.data.length);
-      })
-      .finally(() => setLoading(false));
-  }, []);
+  // F-053: useQuery for initial fetch; F-056: use isLoading from query
+  const { data: initialData, isLoading: loading } = useQuery({
+    queryKey: ["doctor-renewals"],
+    queryFn: () => getRenewalQueue(PAGE_LIMIT, 0),
+  });
+
+  const initialItems = initialData?.data ?? [];
+  const initialHasMore = initialData?.pagination.hasMore ?? false;
+  const items = [...initialItems, ...extraItems];
+  const showHasMore = hasMore ?? initialHasMore;
+  const effectiveOffset = offset === 0 ? initialItems.length : offset;
 
   async function loadMore() {
     setLoadingMore(true);
     try {
-      const res = await getRenewalQueue(PAGE_LIMIT, offset);
-      setItems((prev) => [...prev, ...res.data]);
+      const res = await getRenewalQueue(PAGE_LIMIT, effectiveOffset);
+      setExtraItems((prev) => [...prev, ...res.data]);
       setHasMore(res.pagination.hasMore);
-      setOffset((prev) => prev + res.data.length);
+      setOffset(effectiveOffset + res.data.length);
     } finally {
       setLoadingMore(false);
     }
@@ -45,21 +47,28 @@ export default function DoctorRenewalsPage() {
     setValidDays(28);
   }
 
-  async function handleSubmitAction() {
-    if (!actionId || !mode) return;
-    setSubmitting(true);
-    try {
-      if (mode === "approve") {
-        await approveRenewal(actionId, reviewNote || undefined, validDays);
-      } else {
-        await declineRenewal(actionId, reviewNote || undefined);
-      }
-      setItems((prev) => prev.filter((i) => i.id !== actionId));
+  // F-054: useMutation with invalidateQueries on success
+  const actionMutation = useMutation({
+    mutationFn: ({ id, m, note, days }: { id: string; m: "approve" | "decline"; note?: string; days?: number }) =>
+      m === "approve"
+        ? approveRenewal(id, note, days)
+        : declineRenewal(id, note),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["doctor-renewals"] });
+      setExtraItems((prev) => prev.filter((i) => i.id !== variables.id));
       setActionId(null);
       setMode(null);
-    } finally {
-      setSubmitting(false);
-    }
+    },
+  });
+
+  async function handleSubmitAction() {
+    if (!actionId || !mode) return;
+    actionMutation.mutate({
+      id: actionId,
+      m: mode,
+      note: reviewNote || undefined,
+      days: validDays,
+    });
   }
 
   if (loading) {
@@ -161,14 +170,14 @@ export default function DoctorRenewalsPage() {
                   <div className="flex gap-2">
                     <button
                       onClick={handleSubmitAction}
-                      disabled={submitting}
+                      disabled={actionMutation.isPending}
                       className={`px-4 py-2 rounded text-label-md font-semibold disabled:opacity-50 ${
                         mode === "approve"
                           ? "bg-primary text-on-primary"
                           : "bg-error text-on-error"
                       }`}
                     >
-                      {submitting ? "Saving…" : mode === "approve" ? "Confirm Approval" : "Confirm Decline"}
+                      {actionMutation.isPending ? "Saving…" : mode === "approve" ? "Confirm Approval" : "Confirm Decline"}
                     </button>
                     <button
                       onClick={() => { setActionId(null); setMode(null); }}
@@ -197,7 +206,7 @@ export default function DoctorRenewalsPage() {
             </div>
           ))}
         </div>
-        {hasMore && (
+        {showHasMore && (
           <div className="mt-6 flex justify-center">
             <button
               onClick={loadMore}

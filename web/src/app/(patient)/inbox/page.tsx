@@ -1,7 +1,8 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { getInbox, markNotificationRead, InboxItem, getToken } from "@/lib/api";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const PAGE_LIMIT = 20;
 
@@ -39,33 +40,35 @@ async function downloadPdf(consultationId: string) {
 }
 
 export default function InboxPage() {
-  const [items, setItems] = useState<InboxItem[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const [extraItems, setExtraItems] = useState<InboxItem[]>([]);
+  const [extraUnread, setExtraUnread] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(false);
+  const [hasMore, setHasMore] = useState<boolean | null>(null);
   const [offset, setOffset] = useState(0);
   const [selected, setSelected] = useState<InboxItem | null>(null);
 
-  useEffect(() => {
-    getInbox(PAGE_LIMIT, 0)
-      .then((data) => {
-        setItems(data.items);
-        setUnreadCount(data.unreadCount);
-        setHasMore(data.pagination.hasMore);
-        setOffset(data.items.length);
-      })
-      .finally(() => setLoading(false));
-  }, []);
+  // F-053: useQuery for initial fetch; F-056: use isLoading from query
+  const { data: initialData, isLoading: loading } = useQuery({
+    queryKey: ["inbox"],
+    queryFn: () => getInbox(PAGE_LIMIT, 0),
+  });
+
+  const initialItems = initialData?.items ?? [];
+  const initialHasMore = initialData?.pagination.hasMore ?? false;
+  const initialUnread = initialData?.unreadCount ?? 0;
+  const items = [...initialItems, ...extraItems];
+  const unreadCount = Math.max(0, initialUnread + extraUnread);
+  const showHasMore = hasMore ?? initialHasMore;
+  const effectiveOffset = offset === 0 ? initialItems.length : offset;
 
   async function loadMore() {
     setLoadingMore(true);
     try {
-      const data = await getInbox(PAGE_LIMIT, offset);
-      setItems((prev) => [...prev, ...data.items]);
-      setUnreadCount(data.unreadCount);
+      const data = await getInbox(PAGE_LIMIT, effectiveOffset);
+      setExtraItems((prev) => [...prev, ...data.items]);
       setHasMore(data.pagination.hasMore);
-      setOffset((prev) => prev + data.items.length);
+      setOffset(effectiveOffset + data.items.length);
     } finally {
       setLoadingMore(false);
     }
@@ -75,14 +78,27 @@ export default function InboxPage() {
     setSelected(item);
     if (item.isUnread) {
       await markNotificationRead(item.notificationId).catch(() => null);
-      setItems((prev) =>
+      // Optimistically update the read state and invalidate to sync
+      setExtraUnread((c) => c - 1);
+      queryClient.setQueryData(["inbox"], (old: typeof initialData) => {
+        if (!old) return old;
+        return {
+          ...old,
+          unreadCount: Math.max(0, old.unreadCount - 1),
+          items: old.items.map((i) =>
+            i.notificationId === item.notificationId
+              ? { ...i, isUnread: false, readAt: new Date().toISOString() }
+              : i
+          ),
+        };
+      });
+      setExtraItems((prev) =>
         prev.map((i) =>
           i.notificationId === item.notificationId
             ? { ...i, isUnread: false, readAt: new Date().toISOString() }
             : i
         )
       );
-      setUnreadCount((c) => Math.max(0, c - 1));
     }
   }
 
@@ -274,7 +290,7 @@ export default function InboxPage() {
             </button>
           ))}
         </div>
-        {hasMore && (
+        {showHasMore && (
           <div className="mt-4 flex justify-center">
             <button
               onClick={loadMore}
