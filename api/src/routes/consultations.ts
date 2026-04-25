@@ -312,7 +312,7 @@ router.post("/:id/chat", async (req, res, next) => {
 // ---------------------------------------------------------------------------
 router.get("/:id/pdf", async (req, res, next) => {
   try {
-    const patientSub = req.user?.sub;
+    const patientSub = req.user.sub;
     const { rows } = await pool.query<{
       id: string;
       presenting_complaint: string;

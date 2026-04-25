@@ -11,7 +11,7 @@ declare global {
       /** Authenticated Cognito user attached by requireAuth middleware. */
       user: {
         sub: string;
-        role: string;
+        role?: string;
         email: string;
         /** Cognito user-pool groups the token was issued with. */
         "cognito:groups": string[];
