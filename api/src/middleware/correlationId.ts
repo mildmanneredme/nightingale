@@ -5,7 +5,7 @@ export const correlationId: RequestHandler = (req, res, next) => {
   const id =
     (req.headers["x-correlation-id"] as string | undefined) ??
     `req-${randomBytes(4).toString("hex")}`;
-  (req as any).correlationId = id;
+  req.correlationId = id;
   res.setHeader("X-Correlation-ID", id);
   next();
 };

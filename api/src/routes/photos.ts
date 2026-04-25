@@ -21,7 +21,7 @@ const upload = multer({
 const MAX_PHOTOS_PER_CONSULTATION = 5;
 
 function cognitoSub(req: Parameters<RequestHandler>[0]): string {
-  return (req as any).user.sub as string;
+  return req.user.sub;
 }
 
 async function getPatientId(sub: string): Promise<string | null> {
@@ -183,7 +183,7 @@ router.post(
 router.get("/:consultationId/photos", async (req, res, next) => {
   try {
     const { consultationId } = req.params;
-    const user = (req as any).user;
+    const user = req.user;
     const role: string = user.role ?? "patient";
 
     if (role === "patient") {
@@ -240,13 +240,13 @@ router.get(
   async (req, res, next) => {
     try {
       const { consultationId, photoId } = req.params;
-      const groups: string[] = (req as any).user?.["cognito:groups"] ?? [];
+      const groups: string[] = req.user?.["cognito:groups"] ?? [];
       const isAdmin = groups.includes("admin");
 
       // Doctors may only access photos from their assigned consultation (SEC-001)
       let doctorId: string | null = null;
       if (!isAdmin) {
-        const sub = (req as any).user.sub as string;
+        const sub = req.user.sub;
         const { rows: dRows } = await pool.query(
           `SELECT id FROM doctors WHERE cognito_sub = $1`,
           [sub]
@@ -276,8 +276,8 @@ router.get(
       const url = await generatePresignedUrl(rows[0].s3_key);
 
       // Audit log
-      const actorId = (req as any).user.sub;
-      const actorRole: string = (req as any).user.role ?? "doctor";
+      const actorId = req.user.sub;
+      const actorRole: string = req.user.role ?? "doctor";
       try {
         await pool.query(
           `INSERT INTO audit_log (event_type, actor_id, actor_role, consultation_id, metadata)

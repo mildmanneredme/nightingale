@@ -21,7 +21,7 @@ describe("correlationId middleware", () => {
   const app = express();
   app.use(correlationId);
   app.get("/ping", (req, res) => {
-    res.json({ id: (req as any).correlationId });
+    res.json({ id: req.correlationId });
   });
 
   it("generates req- prefix ID when no header present", async () => {

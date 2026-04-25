@@ -9,9 +9,9 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   logger.error(
     {
       errorCode,
-      correlationId: (req as any).correlationId,
+      correlationId: req.correlationId,
       operation: `${req.method} ${req.route?.path ?? req.path}`,
-      userId: (req as any).user?.sub ?? null,
+      userId: req.user?.sub ?? null,
       httpStatus,
       err,
     },

@@ -25,7 +25,7 @@ export function buildTestApp(
   app.use(express.json());
 
   const stubAuth: RequestHandler = (req, _res, next) => {
-    (req as any).user = { sub: cognitoSub, "cognito:groups": [role] };
+    req.user = { sub: cognitoSub, "cognito:groups": [role], role, email: "" };
     next();
   };
   app.use(stubAuth);

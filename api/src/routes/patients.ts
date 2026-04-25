@@ -8,7 +8,7 @@ const VALID_BIOLOGICAL_SEX = ["male", "female", "intersex", "prefer_not_to_say"]
 const VALID_SEVERITY = ["mild", "moderate", "severe"];
 
 function cognitoSub(req: Parameters<RequestHandler>[0]): string {
-  return (req as any).user.sub as string;
+  return req.user.sub;
 }
 
 // ---------------------------------------------------------------------------

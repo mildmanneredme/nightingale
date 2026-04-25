@@ -23,7 +23,7 @@ function getVerifier() {
 
 export function requireRole(...roles: string[]): RequestHandler {
   return (req, res, next) => {
-    const groups: string[] = (req as any).user?.["cognito:groups"] ?? [];
+    const groups: string[] = req.user?.["cognito:groups"] ?? [];
     if (!roles.some((r) => groups.includes(r))) {
       res.status(403).json({ error: "Insufficient permissions" });
       return;
@@ -42,7 +42,7 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
   try {
     const payload = await getVerifier().verify(token);
     // Attach claims to request for downstream use
-    (req as any).user = payload;
+    req.user = payload as unknown as Express.Request["user"];
     next();
   } catch (err) {
     logger.warn({ err }, "JWT verification failed");

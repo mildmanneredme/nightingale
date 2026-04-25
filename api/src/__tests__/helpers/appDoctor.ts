@@ -8,7 +8,7 @@ export function buildDoctorApp(doctorCognitoSub: string): express.Application {
   app.use(express.json());
 
   const stubAuth: RequestHandler = (req, _res, next) => {
-    (req as any).user = { sub: doctorCognitoSub, "cognito:groups": ["doctor"] };
+    req.user = { sub: doctorCognitoSub, "cognito:groups": ["doctor"], role: "doctor", email: "" };
     next();
   };
   app.use(stubAuth);

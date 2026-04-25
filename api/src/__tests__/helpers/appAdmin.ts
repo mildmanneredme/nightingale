@@ -8,7 +8,7 @@ export function buildAdminApp(adminCognitoSub: string): express.Application {
   app.use(express.json());
 
   const stubAuth: RequestHandler = (req, _res, next) => {
-    (req as any).user = { sub: adminCognitoSub, "cognito:groups": ["admin"] };
+    req.user = { sub: adminCognitoSub, "cognito:groups": ["admin"], role: "admin", email: "" };
     next();
   };
   app.use(stubAuth);

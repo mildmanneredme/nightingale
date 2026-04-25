@@ -32,7 +32,7 @@ function buildWebhookApp(): express.Application {
   app.use("/api/v1/webhooks/sendgrid", express.raw({ type: "*/*" }));
   app.use(express.json());
   const stubAuth: RequestHandler = (req, _res, next) => {
-    (req as any).user = { sub: "system", "cognito:groups": ["admin"] };
+    req.user = { sub: "system", "cognito:groups": ["admin"], role: "admin", email: "" };
     next();
   };
   app.use(stubAuth);

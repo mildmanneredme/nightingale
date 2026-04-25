@@ -35,7 +35,7 @@ const router = Router();
 const VALID_CONSULTATION_TYPES = ["voice", "text"];
 
 function cognitoSub(req: Parameters<RequestHandler>[0]): string {
-  return (req as any).user.sub as string;
+  return req.user.sub;
 }
 
 async function getPatientId(sub: string): Promise<string | null> {
@@ -312,7 +312,7 @@ router.post("/:id/chat", async (req, res, next) => {
 // ---------------------------------------------------------------------------
 router.get("/:id/pdf", async (req, res, next) => {
   try {
-    const patientSub = (req as any).user?.sub as string | undefined;
+    const patientSub = req.user?.sub;
     const { rows } = await pool.query<{
       id: string;
       presenting_complaint: string;

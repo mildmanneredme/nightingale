@@ -5,7 +5,7 @@ import { pool } from "../db";
 const router = Router();
 
 function cognitoSub(req: Parameters<RequestHandler>[0]): string {
-  return (req as any).user.sub as string;
+  return req.user.sub;
 }
 
 // Converts any string to a deterministic UUID v3-style using MD5.

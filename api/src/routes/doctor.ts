@@ -7,7 +7,7 @@ import { logger } from "../logger";
 const router = Router();
 
 function cognitoSub(req: Parameters<RequestHandler>[0]): string {
-  return (req as any).user.sub as string;
+  return req.user.sub;
 }
 
 async function getDoctorBySub(sub: string) {
