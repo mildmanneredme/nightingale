@@ -1,4 +1,5 @@
 import { CognitoJwtVerifier } from "aws-jwt-verify";
+import { CognitoJwtPayload } from "aws-jwt-verify/jwt-model";
 import { RequestHandler } from "express";
 import { config } from "../config";
 import { logger } from "../logger";
@@ -19,6 +20,15 @@ function getVerifier() {
     });
   }
   return verifier;
+}
+
+/**
+ * Verifies a raw Cognito JWT string and returns the decoded payload.
+ * Throws if the token is missing, invalid, or expired.
+ * Used by both the HTTP middleware (requireAuth) and the WS upgrade handler (C-02).
+ */
+export async function verifyJwt(token: string): Promise<CognitoJwtPayload> {
+  return getVerifier().verify(token);
 }
 
 export function requireRole(...roles: string[]): RequestHandler {
