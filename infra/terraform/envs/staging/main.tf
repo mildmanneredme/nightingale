@@ -88,6 +88,12 @@ module "ecs" {
   gemini_api_key_secret_arn = "arn:aws:secretsmanager:ap-southeast-2:682812950646:secret:nightingale/staging/gemini-api-key-wObADx"
 }
 
+module "cloudfront" {
+  source       = "../../modules/cloudfront"
+  env          = local.env
+  alb_dns_name = module.alb.alb_dns_name
+}
+
 module "waf" {
   source  = "../../modules/waf"
   env     = local.env

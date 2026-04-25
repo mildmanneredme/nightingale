@@ -22,8 +22,17 @@ export class ConsultationSocket {
     wsToken: string,
     callbacks: ConsultationSocketCallbacks = {}
   ) {
-    const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const url = `${proto}//${window.location.host}/api/v1/consultations/${consultationId}/stream?token=${encodeURIComponent(wsToken)}`;
+    // NEXT_PUBLIC_WS_URL must point to a WSS-capable host (e.g. CloudFront domain).
+    // Vercel rewrites are HTTP-only and cannot proxy WebSocket upgrade requests.
+    const wsBase = (() => {
+      const wsUrl = process.env.NEXT_PUBLIC_WS_URL;
+      if (wsUrl) {
+        return wsUrl.replace(/^https:\/\//, "wss://").replace(/^http:\/\//, "ws://").replace(/\/$/, "");
+      }
+      const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+      return `${proto}//${window.location.host}`;
+    })();
+    const url = `${wsBase}/api/v1/consultations/${consultationId}/stream?token=${encodeURIComponent(wsToken)}`;
 
     this.ws = new WebSocket(url);
 
