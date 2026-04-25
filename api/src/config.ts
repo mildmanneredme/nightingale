@@ -8,6 +8,14 @@ function optional(name: string, fallback: string): string {
   return process.env[name] ?? fallback;
 }
 
+function optionalInt(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (raw === undefined) return fallback;
+  const parsed = parseInt(raw, 10);
+  if (isNaN(parsed)) throw new Error(`Env var ${name} must be an integer, got: "${raw}"`);
+  return parsed;
+}
+
 export const config = {
   port: parseInt(optional("PORT", "8080"), 10),
   env: optional("APP_ENV", "development"),
@@ -19,7 +27,7 @@ export const config = {
     user: optional("DB_USER", "nightingale_admin"),
     password: required("DB_PASSWORD"),
     ssl: optional("APP_ENV", "development") !== "development",
-    poolMax: parseInt(optional("DB_POOL_MAX", "20"), 10),
+    poolMax: optionalInt("DB_POOL_MAX", 20),
   },
 
   cognito: {
