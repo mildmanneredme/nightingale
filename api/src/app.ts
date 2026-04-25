@@ -88,6 +88,7 @@ app.use(pinoHttp({
     ignore: (req) => req.url === "/health" || req.url === "/ready",
   },
   customLogLevel: (_req, res, err) => {
+    // err fires on stream/socket errors; intentionally logged at error even if statusCode < 500
     if (err || res.statusCode >= 500) return "error";
     if (res.statusCode >= 400) return "warn";
     return "info";
