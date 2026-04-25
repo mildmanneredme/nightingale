@@ -89,11 +89,22 @@ export interface TranscriptTurn {
   confidence?: number;
 }
 
-export function anonymiseTranscript(turns: TranscriptTurn[]): string {
-  const anonymised = turns.map((turn) => ({
-    speaker: turn.speaker,
-    text: anonymiseText(turn.text),
-  }));
+export async function anonymiseTranscript(turns: TranscriptTurn[]): Promise<string> {
+  const anonymised: Array<{ speaker: string; text: string }> = [];
+  let charsSinceYield = 0;
+
+  for (const turn of turns) {
+    anonymised.push({
+      speaker: turn.speaker,
+      text: anonymiseText(turn.text),
+    });
+    charsSinceYield += turn.text.length;
+    if (charsSinceYield >= 1000) {
+      await new Promise<void>((resolve) => setImmediate(resolve));
+      charsSinceYield = 0;
+    }
+  }
+
   return JSON.stringify(anonymised, null, 2);
 }
 

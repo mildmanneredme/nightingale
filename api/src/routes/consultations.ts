@@ -20,18 +20,20 @@ import {
 // F-029/F-030: If runEngine throws (e.g. PII abort, DB failure before retry loop),
 // update consultation.status to 'ai_failed' and log at error level.
 function triggerEngine(consultationId: string): void {
-  runEngine(consultationId).catch(async (err) => {
-    logger.error({ err, consultationId }, "consultations: clinical AI engine failed — setting ai_failed");
-    try {
-      await pool.query(
-        `UPDATE consultations
-         SET status = 'ai_failed', updated_at = NOW()
-         WHERE id = $1 AND status = 'transcript_ready'`,
-        [consultationId]
-      );
-    } catch (dbErr) {
-      logger.error({ dbErr, consultationId }, "consultations: failed to set ai_failed status");
-    }
+  setImmediate(() => {
+    runEngine(consultationId).catch(async (err) => {
+      logger.error({ err, consultationId }, "consultations: clinical AI engine failed — setting ai_failed");
+      try {
+        await pool.query(
+          `UPDATE consultations
+           SET status = 'ai_failed', updated_at = NOW()
+           WHERE id = $1 AND status = 'transcript_ready'`,
+          [consultationId]
+        );
+      } catch (dbErr) {
+        logger.error({ dbErr, consultationId }, "consultations: failed to set ai_failed status");
+      }
+    });
   });
 }
 

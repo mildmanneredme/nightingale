@@ -381,7 +381,7 @@ export async function runEngine(
   // 2. Anonymise PII from transcript
   // -------------------------------------------------------------------------
   const transcript: TranscriptTurn[] = consult.transcript ?? [];
-  const anonymisedTranscript = anonymiseTranscript(transcript);
+  const anonymisedTranscript = await anonymiseTranscript(transcript);
 
   const patientProfile: PatientProfile = {
     dateOfBirth: consult.date_of_birth,

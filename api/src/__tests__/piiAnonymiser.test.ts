@@ -57,24 +57,24 @@ describe("anonymiseText", () => {
 });
 
 describe("anonymiseTranscript", () => {
-  it("anonymises PII across multiple turns", () => {
+  it("anonymises PII across multiple turns", async () => {
     const turns = [
       { speaker: "ai" as const, text: "What is your date of birth?" },
       { speaker: "patient" as const, text: "I was born on 15/03/1985 and my Medicare is 2123456701." },
       { speaker: "ai" as const, text: "Thank you. Any allergies?" },
     ];
-    const result = anonymiseTranscript(turns);
+    const result = await anonymiseTranscript(turns);
     expect(result).not.toMatch(/15\/03\/1985/);
     expect(result).not.toMatch(/2123456701/);
     expect(result).toContain("[DOB]");
     expect(result).toContain("[MEDICARE]");
   });
 
-  it("preserves clinical content", () => {
+  it("preserves clinical content", async () => {
     const turns = [
       { speaker: "patient" as const, text: "I have a rash on my left arm for 2 days." },
     ];
-    const result = anonymiseTranscript(turns);
+    const result = await anonymiseTranscript(turns);
     expect(result).toContain("rash on my left arm");
   });
 });
