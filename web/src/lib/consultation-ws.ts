@@ -1,3 +1,5 @@
+import { WsClientMessage, WsServerMessage } from "@/types/ws-messages";
+
 export interface TranscriptEvent {
   speaker: "ai" | "patient";
   text: string;
@@ -44,9 +46,9 @@ export class ConsultationSocket {
     this.ws.onopen = () => callbacks.onOpen?.();
 
     this.ws.onmessage = (event) => {
-      let msg: Record<string, unknown>;
+      let msg: WsServerMessage;
       try {
-        msg = JSON.parse(event.data as string);
+        msg = JSON.parse(event.data as string) as WsServerMessage;
       } catch {
         return;
       }
@@ -54,23 +56,32 @@ export class ConsultationSocket {
       switch (msg.type) {
         case "transcript":
           callbacks.onTranscript?.({
-            speaker: msg.speaker as "ai" | "patient",
-            text: msg.text as string,
-            timestamp_ms: msg.timestamp_ms as number,
+            speaker: msg.speaker,
+            text: msg.text,
+            timestamp_ms: msg.timestamp_ms,
           });
           break;
         case "audio":
-          callbacks.onAudio?.(msg.data as string);
+          callbacks.onAudio?.(msg.data);
           break;
         case "interrupted":
           callbacks.onInterrupted?.();
           break;
         case "emergency":
-          callbacks.onEmergency?.(msg.message as string);
+          callbacks.onEmergency?.(msg.message);
           break;
         case "ended":
-          callbacks.onEnded?.(msg.consultationId as string);
+          callbacks.onEnded?.(msg.consultationId);
           break;
+        case "red_flag":
+          break;
+        case "error":
+          callbacks.onError?.();
+          break;
+        default: {
+          const _exhaustive: never = msg;
+          throw new Error(`Unhandled server message type: ${JSON.stringify(_exhaustive)}`);
+        }
       }
     };
 
@@ -79,13 +90,15 @@ export class ConsultationSocket {
 
   sendAudio(base64Data: string): void {
     if (this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({ type: "audio", data: base64Data }));
+      const msg: WsClientMessage = { type: "audio", data: base64Data };
+      this.ws.send(JSON.stringify(msg));
     }
   }
 
   endSession(): void {
     if (this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({ type: "end" }));
+      const msg: WsClientMessage = { type: "end" };
+      this.ws.send(JSON.stringify(msg));
     }
   }
 

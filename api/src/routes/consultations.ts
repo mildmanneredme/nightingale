@@ -4,6 +4,7 @@ import WebSocket from "ws";
 import PDFDocument from "pdfkit";
 import { logger } from "../logger";
 import { GeminiLiveSession } from "../services/geminiLive";
+import { WsServerMessage } from "../types/ws-messages";
 import { sendTextMessage, TextTurn } from "../services/textConsultation";
 import { runEngine } from "../services/clinicalAiEngine";
 import { getResponseTimeEstimate } from "./availability";
@@ -56,7 +57,8 @@ export function attachConsultationStream(
 ): void {
   const session = new GeminiLiveSession(consultationId, ws);
   session.start().catch((err) => {
-    ws.send(JSON.stringify({ type: "error", message: "Failed to start session" }));
+    const errorMsg: WsServerMessage = { type: "error", message: "Failed to start session" };
+    ws.send(JSON.stringify(errorMsg));
     ws.close();
   });
 }

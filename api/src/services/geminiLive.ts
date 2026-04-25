@@ -9,26 +9,13 @@ import { config } from "../config";
 import { detectRedFlag } from "./redFlagDetector";
 import { pool } from "../db";
 import { logger } from "../logger";
-
-// ---------------------------------------------------------------------------
-// Types matching the WebSocket wire protocol (documented in the plan)
-// ---------------------------------------------------------------------------
+import { WsClientMessage, WsServerMessage } from "../types/ws-messages";
 
 interface TranscriptTurn {
   speaker: "ai" | "patient";
   text: string;
   timestamp_ms: number;
 }
-
-// Messages the server sends to the browser
-type ServerMsg =
-  | { type: "audio"; data: string }
-  | { type: "interrupted" }
-  | { type: "transcript"; speaker: "ai" | "patient"; text: string; timestamp_ms: number }
-  | { type: "red_flag"; phrase: string }
-  | { type: "emergency"; message: string }
-  | { type: "ended"; consultationId: string }
-  | { type: "error"; message: string };
 
 const SYSTEM_PROMPT = `You are a clinical intake assistant for Nightingale, an Australian telehealth service.
 Your role is to conduct a structured clinical history-taking interview with the patient.
@@ -98,7 +85,7 @@ export class GeminiLiveSession {
     // Handle browser WebSocket messages
     this.browserWs.on("message", (raw) => {
       try {
-        const msg = JSON.parse(raw.toString());
+        const msg = JSON.parse(raw.toString()) as WsClientMessage;
         this.handleBrowserMessage(msg);
       } catch {
         this.sendToBrowser({ type: "error", message: "Invalid message format" });
@@ -114,15 +101,24 @@ export class GeminiLiveSession {
   // Browser → Gemini relay
   // ---------------------------------------------------------------------------
 
-  private handleBrowserMessage(msg: { type: string; data?: string }): void {
+  private handleBrowserMessage(msg: WsClientMessage): void {
     if (this.ended || !this.geminiSession) return;
 
-    if (msg.type === "audio" && msg.data) {
-      this.geminiSession.sendRealtimeInput({
-        audio: { data: msg.data, mimeType: "audio/pcm;rate=16000" },
-      });
-    } else if (msg.type === "end") {
-      this.doEnd();
+    switch (msg.type) {
+      case "audio":
+        if (msg.data) {
+          this.geminiSession.sendRealtimeInput({
+            audio: { data: msg.data, mimeType: "audio/pcm;rate=16000" },
+          });
+        }
+        break;
+      case "end":
+        this.doEnd();
+        break;
+      default: {
+        const _exhaustive: never = msg;
+        throw new Error(`Unhandled client message type: ${JSON.stringify(_exhaustive)}`);
+      }
     }
   }
 
@@ -257,7 +253,7 @@ export class GeminiLiveSession {
   // Helpers
   // ---------------------------------------------------------------------------
 
-  private sendToBrowser(msg: ServerMsg): void {
+  private sendToBrowser(msg: WsServerMessage): void {
     if (this.browserWs.readyState === WebSocket.OPEN) {
       this.browserWs.send(JSON.stringify(msg));
     }
