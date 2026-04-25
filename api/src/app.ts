@@ -81,7 +81,35 @@ const userReadLimiter = rateLimit({
 // Must be registered BEFORE the global express.json() middleware.
 app.use("/api/v1/webhooks/sendgrid", express.raw({ type: "*/*" }));
 app.use(express.json());
-app.use(pinoHttp({ logger }));
+// P-08: HTTP request/response logging — structured, level-routed, /health excluded
+app.use(pinoHttp({
+  logger,
+  autoLogging: {
+    ignore: (req) => req.url === "/health" || req.url === "/ready",
+  },
+  customLogLevel: (_req, res, err) => {
+    if (err || res.statusCode >= 500) return "error";
+    if (res.statusCode >= 400) return "warn";
+    return "info";
+  },
+  customSuccessMessage: (req, res) =>
+    `${req.method} ${req.url} ${res.statusCode}`,
+  customErrorMessage: (req, res, err) =>
+    `${req.method} ${req.url} ${res.statusCode} — ${err?.message ?? "error"}`,
+  serializers: {
+    req(req) {
+      return {
+        method: req.method,
+        url: req.url,
+        correlationId: (req.raw as { correlationId?: string }).correlationId,
+        userId: (req.raw as { user?: { sub: string } }).user?.sub,
+      };
+    },
+    res(res) {
+      return { statusCode: res.statusCode };
+    },
+  },
+}));
 
 app.use(healthRouter);
 // OPS-001: Client-error reporting — no auth, rate-limited internally
