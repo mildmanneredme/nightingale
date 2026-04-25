@@ -11,6 +11,11 @@ import { errorHandler } from "../middleware/errorHandler";
 import consultationRouter from "../routes/consultations";
 import renewalsRouter from "../routes/renewals";
 
+// Note: the test app intentionally omits the global IP-based limiter (300 req/min).
+// That limiter is wired in api/src/app.ts and is independently verified by the
+// existing integration environment. These unit tests focus exclusively on the
+// per-user limiter behaviour without interference from the IP limiter.
+
 // ---------------------------------------------------------------------------
 // Mock heavy dependencies — these tests exercise the rate-limit layer only.
 // ---------------------------------------------------------------------------
@@ -223,5 +228,47 @@ describe("C-09 F-044: method separation — write limit does not affect GETs", (
       .set("x-test-sub", "user-e");
     expect(getRes.status).not.toBe(429);
     expect(getRes.status).toBe(200);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// F-043: POST /photos endpoint is also subject to the 5 POST/min write limit
+// ---------------------------------------------------------------------------
+
+describe("C-09 F-043: write limiter applies to POST /consultations/:id/photos", () => {
+  let app: express.Application;
+
+  beforeEach(() => {
+    // Fresh app = fresh in-memory store; avoids pollution from other describe blocks.
+    app = buildRateLimitApp();
+  });
+
+  it("allows exactly 5 POSTs to the photos path from the same user", async () => {
+    for (let i = 0; i < 5; i++) {
+      const res = await request(app)
+        .post("/api/v1/consultations/test-id/photos")
+        .set("x-test-sub", "user-f")
+        .send({});
+      // Route may return 404 (no photo handler mounted) but must NOT be 429.
+      expect(res.status).not.toBe(429);
+    }
+  });
+
+  it("returns 429 with Retry-After on the 6th POST to the photos path", async () => {
+    for (let i = 0; i < 5; i++) {
+      await request(app)
+        .post("/api/v1/consultations/test-id/photos")
+        .set("x-test-sub", "user-g")
+        .send({});
+    }
+    const res = await request(app)
+      .post("/api/v1/consultations/test-id/photos")
+      .set("x-test-sub", "user-g")
+      .send({});
+
+    expect(res.status).toBe(429);
+    // F-045: Retry-After header must be present
+    expect(res.headers["retry-after"]).toBeDefined();
+    expect(res.body.error).toMatch(/too many requests/i);
   });
 });
