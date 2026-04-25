@@ -1,8 +1,9 @@
 # BUG-001 — Auth & Navigation Hardening
 
 **Type:** Bug fix bundle  
+**Status:** Shipped 2026-04-25 — Cognito `mapCognitoError()` in auth.ts covers all error codes; root 404 resolved via PRD-022 marketing homepage; forgot password linked (BUG-003); `getPool()` guard throws clear dev error.  
 **Priority:** High — blocks first-time users from finding the app and surfaces raw technical errors  
-**Sprint:** Next available  
+**Sprint:** Sprint 8  
 **Scope:** Frontend only
 
 ---

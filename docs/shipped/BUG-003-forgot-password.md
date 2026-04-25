@@ -1,8 +1,9 @@
 # BUG-003 — Forgot Password Flow
 
 **Type:** Missing feature / bug  
+**Status:** Shipped 2026-04-25 — `/forgot-password` two-step page with `forgotPassword` + `confirmForgotPassword` wired to Cognito; "Forgot password?" link on login page.  
 **Priority:** High — users with no password recovery path are locked out permanently  
-**Sprint:** Next available  
+**Sprint:** Sprint 8  
 **Scope:** Frontend only (Cognito handles the reset email natively)
 
 ---

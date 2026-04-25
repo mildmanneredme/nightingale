@@ -1,8 +1,9 @@
 # BUG-005 — Cognito Login Returns 400, No Error Surfaced to User
 
 **Type:** Bug — authentication / configuration  
+**Status:** Shipped 2026-04-25 — `getPool()` guard throws clear dev error when env vars missing; `mapCognitoError()` covers all Cognito error codes; login page renders errors inline.  
 **Priority:** P0 — users cannot log in; login failure is silent (no error message shown)  
-**Sprint:** Next available  
+**Sprint:** Sprint 8  
 **Scope:** Frontend (`web/src/lib/auth.ts`, `web/src/app/(auth)/login/page.tsx`)
 
 ---

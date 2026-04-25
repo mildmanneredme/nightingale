@@ -1,8 +1,9 @@
 # BUG-002 — Legal Pages: Privacy Policy & Collection Notice
 
 **Type:** Bug fix + content creation  
+**Status:** Shipped 2026-04-25 — resolved via PRD-022 public marketing site. Privacy at `/privacy`, Terms at `/terms`, Disclaimer at `/disclaimer`.  
 **Priority:** High — linked from the registration flow; broken links block signup trust signal  
-**Sprint:** Next available  
+**Sprint:** Sprint 8  
 **Scope:** Frontend + legal content
 
 ---

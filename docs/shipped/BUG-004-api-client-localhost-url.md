@@ -1,8 +1,9 @@
 # BUG-004 — API Client Constructs Absolute localhost URLs, Bypassing Vercel Proxy
 
 **Type:** Bug — environment / configuration  
+**Status:** Shipped 2026-04-25 — `api.ts` rewritten to use relative paths; `NEXT_PUBLIC_API_URL` removed from browser code; Next.js rewrite proxy handles routing in all environments.  
 **Priority:** P0 — all API calls fail on any deployed environment; consultations cannot be started or loaded  
-**Sprint:** Next available  
+**Sprint:** Sprint 8  
 **Scope:** Frontend only (`web/src/lib/api.ts`)
 
 ---

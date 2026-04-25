@@ -1,8 +1,9 @@
 # PRD-016 — UI Redesign: Implement Stitch Mockups
 
 **Type:** Feature  
+**Status:** Shipped 2026-04-25 — DS-001/DS-002 (Manrope + Public Sans + Material Symbols fonts, Tailwind aliases); SC-001–SC-004 (TopAppBar, BottomNavBar, DoctorSideNav, StatusBadge, ConsultationStepper, Toast); full page rewrites for login, register, dashboard, consultation flows, doctor portal, admin portal.  
 **Priority:** High — current UI does not match approved designs; staging looks unpolished  
-**Sprint:** Next available  
+**Sprint:** Sprint 8  
 **Scope:** Frontend only — `web/` directory  
 **Source designs:** `stitch_nightingale_telehealth_interface/*/code.html`
 

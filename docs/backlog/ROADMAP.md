@@ -1,9 +1,9 @@
 # Project Nightingale — Master Roadmap
 
-> **Status:** In Progress — Sprint 7 (Security Hardening & UX Fixes)
+> **Status:** In Progress — Sprint 8 (Auth Fixes, UI Redesign & Clinical Knowledge Expansion)
 > **Phase:** 1 MVP (Months 1–6)
 > **Target:** 100 beta patients, 200 consultations completed
-> **Last updated:** 2026-04-24 (Security & UX audit complete — 9 new PRDs added)
+> **Last updated:** 2026-04-25 (Sprint 8 complete — 7 backlog items shipped; auth P0s, UI redesign, clinical knowledge expansion all done)
 
 ---
 
@@ -40,8 +40,9 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 
 | [PRD-019](PRD-019-clinical-knowledge-base-proprietary.md) | Clinical Knowledge Base: Proprietary Extensions (eTG, AMH, MIMS) | Phase 2 | Post-Beta | After PRD-021 stable | Not started |
 | [PRD-020](../shipped/PRD-020-patient-web-frontend.md) | Patient Web Frontend | Build | Sprint 2 | Week 5–7 | **Shipped 2026-04-23** ✅ |
-| [PRD-021](PRD-021-clinical-knowledge-expansion.md) | Clinical Knowledge Base Expansion — 35 Additional GP Presentations | Phase 2 | Sprint 8 | After PRD-011 stable | Not started |
+| [PRD-021](../shipped/PRD-021-clinical-knowledge-expansion.md) | Clinical Knowledge Base Expansion — ~143 Additional GP Presentations | Phase 2 | Sprint 8 | After PRD-011 stable | **Shipped 2026-04-25** ✅ (ingest + MD sign-off pending) |
 | [PRD-022](../shipped/PRD-022-public-marketing-site.md) | Public Marketing Site & Legal Pages | Build | Sprint 8 | Week 17–18 | **Shipped 2026-04-25** ✅ |
+| [PRD-016-UI](../shipped/PRD-016-ui-redesign.md) | UI Redesign: Implement Stitch Mockups | Build | Sprint 8 | Week 17–18 | **Shipped 2026-04-25** ✅ |
 | — | — | — | — | — | — |
 | **SEC-001** | [Critical Authorization Fixes](../shipped/SEC-001-critical-authorization-fixes.md) | Security Hardening | Sprint 7 | Week 14–15 | **Shipped 2026-04-24** ✅ |
 | **SEC-002** | [Email & Webhook Security](../shipped/SEC-002-email-webhook-security.md) | Security Hardening | Sprint 7 | Week 14–15 | **Shipped 2026-04-24** ✅ |
@@ -52,9 +53,12 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | **UX-002** | [Patient History & Inbox Improvements](../shipped/UX-002-patient-history-inbox.md) | UX Fixes | Sprint 7 | Week 15–16 | **Shipped 2026-04-24** ✅ |
 | **UX-003** | [Admin Portal: Layout, Navigation & Auth](../shipped/UX-003-admin-portal.md) | UX Fixes | Sprint 7 | Week 15–16 | **Shipped 2026-04-24** ✅ |
 | **UX-004** | [Patient Profile Completeness](../shipped/UX-004-patient-profile-completeness.md) | UX Fixes | Sprint 7 | Week 16 | **Shipped 2026-04-24** ✅ |
-| **OPS-001** | [Comprehensive Error Logging & Observability](OPS-001-error-logging-observability.md) | Operational | Sprint 8 | Week 17–18 | Not started — P1 |
-| **BUG-004** | [API Client Constructs Absolute localhost URLs](BUG-004-api-client-localhost-url.md) | Bug Fix | Sprint 8 | Week 17 | Not started — P0 |
-| **BUG-005** | [Cognito Login 400 / Silent Failure](BUG-005-cognito-login-400.md) | Bug Fix | Sprint 8 | Week 17 | Not started — P0 |
+| **OPS-001** | [Comprehensive Error Logging & Observability](../shipped/OPS-001-error-logging-observability.md) | Operational | Sprint 8 | Week 17–18 | **Shipped 2026-04-25** ✅ |
+| **BUG-001** | [Auth & Navigation Hardening](../shipped/BUG-001-auth-navigation-hardening.md) | Bug Fix | Sprint 8 | Week 17 | **Shipped 2026-04-25** ✅ |
+| **BUG-002** | [Legal Pages: Privacy Policy & Collection Notice](../shipped/BUG-002-legal-pages.md) | Bug Fix | Sprint 8 | Week 17 | **Shipped 2026-04-25** ✅ (via PRD-022) |
+| **BUG-003** | [Forgot Password Flow](../shipped/BUG-003-forgot-password.md) | Bug Fix | Sprint 8 | Week 17 | **Shipped 2026-04-25** ✅ |
+| **BUG-004** | [API Client Constructs Absolute localhost URLs](../shipped/BUG-004-api-client-localhost-url.md) | Bug Fix | Sprint 8 | Week 17 | **Shipped 2026-04-25** ✅ |
+| **BUG-005** | [Cognito Login 400 / Silent Failure](../shipped/BUG-005-cognito-login-400.md) | Bug Fix | Sprint 8 | Week 17 | **Shipped 2026-04-25** ✅ |
 | **BUG-006** | [Staging Deployment Failures: Consultation Broken End-to-End](../shipped/BUG-006-staging-deployment-failures.md) | Bug Fix | Sprint 8 | Week 17 | **Shipped 2026-04-25** ✅ |
 
 ---
@@ -89,6 +93,15 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | [UX-003](../shipped/UX-003-admin-portal.md) | Admin Portal: Layout, Navigation & Auth | 2026-04-24 | `getUserRole()` decodes Cognito JWT groups; login routes admin→/admin/beta, doctor→/doctor/queue, patient→/dashboard; `(admin)/layout.tsx` auth+role guard + dark sidebar nav + logout; beta dashboard uses `getAdminStats()` via Bearer token, 60s auto-refresh, last-updated timestamp, loading skeleton, retry on error; `/admin/consultations` queue page with 4h alert + inline reassign dropdown; 7 unit tests green; TypeScript clean |
 | [UX-004](../shipped/UX-004-patient-profile-completeness.md) | Patient Profile Completeness | 2026-04-24 | Guardian section (name, email, relationship) visible only for paediatric accounts (`isPaediatric === true`); pre-populated from DB; saves via existing PUT /patients/me; shows "Guardian details updated" confirmation; email displayed as read-only with support note; API GET /me + PUT /me extended to return/accept guardian fields; 4 unit tests green; TypeScript clean |
 | [PRD-022](../shipped/PRD-022-public-marketing-site.md) | Public Marketing Site & Legal Pages | 2026-04-25 | 10 marketing pages in `(marketing)` route group; `MarketingNav` (hamburger mobile drawer) + `MarketingFooter` (4-col, 000 emergency strip); Home, How It Works, Pricing, Safety, FAQ, For Doctors, About, Privacy, Terms, Disclaimer; AHPRA language compliant; design system aligned (border-radius tokens, typography tokens, shadow-card, BottomNavBar tint, TopAppBar logo); TypeScript clean; resolves BUG-002 (legal pages) |
+| [PRD-016-UI](../shipped/PRD-016-ui-redesign.md) | UI Redesign: Implement Stitch Mockups | 2026-04-25 | DS-001/DS-002: Manrope + Public Sans + Material Symbols fonts loaded in layout, Tailwind font aliases wired; SC-001–SC-004: TopAppBar, BottomNavBar, DoctorSideNav, StatusBadge + ConsultationStepper, Toast, ToastProvider; full page rewrites for login, register, dashboard, new consultation, voice/text consultation, photo upload, result, history, profile, doctor queue and review pages; responsive at 375px and 1280px |
+| [PRD-021](../shipped/PRD-021-clinical-knowledge-expansion.md) | Clinical Knowledge Base Expansion | 2026-04-25 | ~143 RACGP condition files across all major GP presentation categories (cardiovascular, respiratory, GI, MSK, neuro, dermatology, women's/men's health, paediatric, geriatric, mental health, infectious disease, oncology, travel medicine); 3 PRD-011 gap stubs (PBS overview, MBS telehealth items, Red Book preventive screening); ingest verification + Medical Director PR approval pending before production ingest |
+| [OPS-001](../shipped/OPS-001-error-logging-observability.md) | Comprehensive Error Logging & Observability | 2026-04-25 | Correlation IDs on all requests; structured error logging; client-side error reporting endpoint (`POST /api/v1/client-error`); `<ErrorState>` component; error propagation through API client |
+| [BUG-001](../shipped/BUG-001-auth-navigation-hardening.md) | Auth & Navigation Hardening | 2026-04-25 | `mapCognitoError()` in auth.ts covers all Cognito error codes; root 404 resolved via PRD-022 marketing homepage; `getPool()` guard throws dev-friendly error when env vars missing; register + verify error paths cleaned up |
+| [BUG-002](../shipped/BUG-002-legal-pages.md) | Legal Pages | 2026-04-25 | Resolved via PRD-022 — Privacy at `/privacy`, Terms at `/terms`, Disclaimer at `/disclaimer` |
+| [BUG-003](../shipped/BUG-003-forgot-password.md) | Forgot Password Flow | 2026-04-25 | Two-step `/forgot-password` page; `forgotPassword` + `confirmForgotPassword` added to auth.ts; "Forgot password?" link on login page; all Cognito error codes mapped to friendly copy |
+| [BUG-004](../shipped/BUG-004-api-client-localhost-url.md) | API Client localhost URL | 2026-04-25 | `api.ts` rewritten to use relative paths throughout; `NEXT_PUBLIC_API_URL` removed from browser code; Next.js rewrite proxy handles API routing in all environments; `api.test.ts` updated |
+| [BUG-005](../shipped/BUG-005-cognito-login-400.md) | Cognito Login 400 / Silent Failure | 2026-04-25 | `getPool()` guard for missing env vars; `mapCognitoError()` centralised in auth.ts; login page renders inline error messages for all Cognito failure modes |
+| [BUG-006](../shipped/BUG-006-staging-deployment-failures.md) | Staging Deployment Failures | 2026-04-25 | End-to-end consultation flow restored on staging |
 
 ---
 

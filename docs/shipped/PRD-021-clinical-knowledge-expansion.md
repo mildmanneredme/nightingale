@@ -1,6 +1,6 @@
 # PRD-021 — Clinical Knowledge Base Expansion: Comprehensive GP Presentations
 
-> **Status:** In Progress
+> **Status:** Shipped 2026-04-25 — ~143 RACGP condition files + 3 PRD-011 gap stubs created. Ingest verification and Medical Director PR approval still required before production ingest.
 > **Phase:** Phase 2 — Sprint 8
 > **Type:** Content — Clinical Knowledge Infrastructure
 > **Owner:** CTO + Medical Director
