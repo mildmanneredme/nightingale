@@ -4,9 +4,23 @@
 // At MVP, falls back to keyword (ILIKE text search) since pgvector extension
 // requires superuser to enable and is not available in test environment.
 
+import { LRUCache } from "lru-cache";
 import { Pool } from "pg";
 import { pool as defaultPool } from "../db";
 import { logger } from "../logger";
+
+// ---------------------------------------------------------------------------
+// LRU cache for RAG retrieval results (F-068, F-069)
+// Keyed on sorted, comma-joined keyword set; max 200 entries; 1 hour TTL.
+// ---------------------------------------------------------------------------
+const ragCache = new LRUCache<string, KnowledgeChunk[]>({
+  max: 200,
+  ttl: 60 * 60 * 1000, // 1 hour
+});
+
+function cacheKey(keywords: string[]): string {
+  return [...keywords].sort().join(",");
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -104,6 +118,44 @@ export async function retrieve(
   const { topK = 5, condition, consultationId } = options;
   const keywords = extractKeywords(presentingComplaint);
 
+  // F-068/F-069/F-070: LRU cache keyed on sorted keyword set
+  const key = cacheKey(keywords);
+  const cached = ragCache.get(key);
+
+  if (cached !== undefined) {
+    logger.debug({ cacheKey: key, hit: true }, "rag.retrieve: cache hit");
+    // Write audit log for cache hits with cache_hit: true for observability
+    try {
+      const chunkIds = cached.map((c) => c.id);
+      await dbPool.query(
+        `INSERT INTO audit_log
+           (event_type, actor_id, actor_role, consultation_id, metadata)
+         VALUES
+           ('rag.retrieval_performed', $1, 'system', $2, $3)`,
+        [
+          "00000000-0000-0000-0000-000000000000",
+          consultationId ?? null,
+          JSON.stringify({
+            query_keywords: keywords,
+            chunk_ids: chunkIds,
+            consultation_id: consultationId ?? null,
+            presenting_complaint: presentingComplaint,
+            cache_hit: true,
+          }),
+        ]
+      );
+    } catch (err) {
+      logger.error({ err }, "rag.retrieve: failed to write audit log (cache hit)");
+    }
+    return {
+      chunks: cached,
+      queryKeywords: keywords,
+      ...(consultationId !== undefined && { consultationId }),
+    };
+  }
+
+  logger.debug({ cacheKey: key, hit: false }, "rag.retrieve: cache miss");
+
   let chunks: KnowledgeChunk[] = [];
 
   if (keywords.length > 0) {
@@ -143,6 +195,9 @@ export async function retrieve(
     const { rows } = await dbPool.query<KnowledgeChunk>(sql, params);
     chunks = rows;
   }
+
+  // Store result in cache (including empty-keyword case — empty array is valid)
+  ragCache.set(key, chunks);
 
   // Write audit log
   try {
