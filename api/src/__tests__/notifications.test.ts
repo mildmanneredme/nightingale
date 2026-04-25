@@ -319,6 +319,7 @@ describe("email send failure audit log", () => {
     expect(failEntry).toBeDefined();
     expect(failEntry.metadata.event).toBe("EMAIL_SEND_FAILED");
     expect(failEntry.metadata.reason).toContain("503");
+    expect(failEntry.metadata.consultationId).toBe(failConsultationId);
 
     // Restore mock
     sgMail.send.mockResolvedValue([

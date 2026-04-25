@@ -450,40 +450,36 @@ Please generate the clinical outputs as specified.`;
   let engineOutput: EngineOutput | null = null;
   let lastError: Error | null = null;
 
-  const RETRY_BASE_DELAY_MS = 1000; // 1s, 2s, 4s for attempts 0, 1, 2
+  try {
+    engineOutput = await withRetry(
+      async () => {
+        const response = await callClaude(systemPrompt, [
+          { role: "user", content: userMessage },
+        ]);
 
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      const response = await callClaude(systemPrompt, [
-        { role: "user", content: userMessage },
-      ]);
+        const output = parseEngineOutput(response.content);
 
-      engineOutput = parseEngineOutput(response.content);
-
-      logger.info(
-        {
-          consultationId,
-          attempt,
-          inputTokens: response.inputTokens,
-          outputTokens: response.outputTokens,
-          cacheReadTokens: response.cacheReadTokens,
-        },
-        "clinicalAiEngine: engine output generated"
-      );
-      break;
-    } catch (err) {
-      lastError = err instanceof Error ? err : new Error(String(err));
-      logger.warn(
-        { consultationId, attempt, err: lastError.message },
-        "clinicalAiEngine: attempt failed, retrying"
-      );
-      if (attempt < MAX_RETRIES) {
-        // Exponential backoff: 1s after attempt 0, 2s after attempt 1
-        await new Promise((r) =>
-          setTimeout(r, RETRY_BASE_DELAY_MS * Math.pow(2, attempt))
+        logger.info(
+          {
+            consultationId,
+            inputTokens: response.inputTokens,
+            outputTokens: response.outputTokens,
+            cacheReadTokens: response.cacheReadTokens,
+          },
+          "clinicalAiEngine: engine output generated"
         );
-      }
-    }
+
+        return output;
+      },
+      MAX_RETRIES,   // 2 retries after first attempt = 3 total attempts
+      1000           // 1s initial delay, doubling between attempts
+    );
+  } catch (err) {
+    lastError = err instanceof Error ? err : new Error(String(err));
+    logger.warn(
+      { consultationId, err: lastError.message },
+      "clinicalAiEngine: all attempts failed"
+    );
   }
 
   if (!engineOutput) {
@@ -600,7 +596,7 @@ async function flagManualTriage(
        SET status = 'ai_failed',
            priority_flags = array_append(priority_flags, 'ENGINE_FAILED'),
            updated_at = NOW()
-       WHERE id = $1`,
+       WHERE id = $1 AND status = 'transcript_ready'`,
       [consultationId]
     );
 

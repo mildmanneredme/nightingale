@@ -16,3 +16,9 @@ ALTER TABLE consultations ADD CONSTRAINT consultations_status_check
     'rejected',
     'ai_failed'
   ));
+
+-- DOWN
+ALTER TABLE consultations DROP CONSTRAINT IF EXISTS consultations_status_check;
+ALTER TABLE consultations ADD CONSTRAINT consultations_status_check
+  CHECK (status IN ('pending','active','transcript_ready','queued_for_review',
+                    'emergency_escalated','cannot_assess','approved','amended','rejected'));
