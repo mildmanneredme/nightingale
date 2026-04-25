@@ -20,7 +20,8 @@ export class ConsultationSocket {
   constructor(
     consultationId: string,
     wsToken: string,
-    callbacks: ConsultationSocketCallbacks = {}
+    callbacks: ConsultationSocketCallbacks = {},
+    jwtToken?: string
   ) {
     // NEXT_PUBLIC_WS_URL must point to a WSS-capable host (e.g. CloudFront domain).
     // Vercel rewrites are HTTP-only and cannot proxy WebSocket upgrade requests.
@@ -32,7 +33,11 @@ export class ConsultationSocket {
       const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
       return `${proto}//${window.location.host}`;
     })();
-    const url = `${wsBase}/api/v1/consultations/${consultationId}/stream?token=${encodeURIComponent(wsToken)}`;
+    // Browser WebSocket cannot send custom headers, so the Cognito JWT is passed
+    // via ?auth= for server-side validation. The ws_token remains the primary
+    // single-use credential; ?auth= adds defence-in-depth session binding.
+    const authParam = jwtToken ? `&auth=${encodeURIComponent(jwtToken)}` : "";
+    const url = `${wsBase}/api/v1/consultations/${consultationId}/stream?token=${encodeURIComponent(wsToken)}${authParam}`;
 
     this.ws = new WebSocket(url);
 

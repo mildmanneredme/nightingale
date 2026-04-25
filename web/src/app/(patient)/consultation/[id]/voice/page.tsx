@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ConsultationSocket, TranscriptEvent } from "@/lib/consultation-ws";
-import { getStreamToken } from "@/lib/api";
+import { getStreamToken, getToken } from "@/lib/api";
 import ConsultationStepper from "@/components/ConsultationStepper";
 
 interface Turn {
@@ -139,7 +139,7 @@ export default function VoiceConsultationPage() {
             setEnded(true);
             router.push(`/consultation/${id}/photos`);
           },
-        });
+        }, getToken() ?? undefined);
         socketRef.current = socket;
       } catch {
         if (!cancelled) setConnectError("Could not start session. Please go back and try again.");

@@ -30,11 +30,16 @@ export async function wsUpgradeHandler(
   }
 
   // Step 2: Extract and verify Cognito JWT (F-007, F-008, F-009)
+  // Browser WebSocket API cannot send custom headers, so the JWT is accepted
+  // from the ?auth= query param when the Authorization header is absent.
+  const qs = new URL(url, "http://localhost").searchParams;
   const authHeader = req.headers.authorization;
-  const rawJwt = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined;
+  const rawJwt = authHeader?.startsWith("Bearer ")
+    ? authHeader.slice(7)
+    : (qs.get("auth") ?? undefined);
 
   if (!rawJwt) {
-    logger.warn({ correlationId }, "WS upgrade rejected: missing Authorization header");
+    logger.warn({ correlationId }, "WS upgrade rejected: missing JWT");
     socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
     socket.destroy();
     return;
@@ -51,11 +56,8 @@ export async function wsUpgradeHandler(
     return;
   }
 
-  // Step 3: Extract consultationId from URL
+  // Step 3: Extract consultationId and ws_token from URL
   const consultationId = match[1];
-
-  // Extract ws_token from query string
-  const qs = new URL(url, "http://localhost").searchParams;
   const token = qs.get("token");
 
   if (!token) {

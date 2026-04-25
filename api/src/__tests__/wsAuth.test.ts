@@ -1,11 +1,12 @@
 // C-02: WebSocket upgrade JWT authentication tests
 //
-// Covers the five acceptance criteria:
-//   1. WS upgrade with no Authorization header → 401, DB token unused
+// Covers the six acceptance criteria:
+//   1. WS upgrade with no Authorization header and no ?auth= → 401, DB token unused
 //   2. WS upgrade with expired/invalid JWT    → 401, DB token unused
 //   3. WS upgrade with valid JWT but wrong sub → 403, DB token unused
 //   4. Valid JWT + valid token                → upgrade succeeds
 //   5. Valid JWT + token already used         → 401, no UPDATE executed
+//   6. JWT via ?auth= query param (browser WS) → upgrade succeeds
 
 import http from "http";
 import net from "net";
@@ -225,5 +226,28 @@ describe("C-02: WS upgrade JWT authentication", () => {
     // SELECT was called once, but no UPDATE should follow
     expect(mockPoolQuery).toHaveBeenCalledTimes(1);
     expect(mockPoolQuery.mock.calls.every((c: unknown[]) => !String(c[0]).match(/UPDATE/i))).toBe(true);
+  });
+
+  // -------------------------------------------------------------------------
+  // AC-6: JWT via ?auth= query param (browser WebSocket path) → 101
+  // Browser WebSocket API cannot send custom headers; the client encodes the
+  // JWT in ?auth= instead. The upgrade handler must accept it as a fallback.
+  // -------------------------------------------------------------------------
+  it("allows upgrade when valid JWT is supplied via ?auth= query param instead of Authorization header", async () => {
+    const AUTH_TOKEN = "valid.jwt.via.query.param";
+    const pathWithAuth = `${VALID_PATH}&auth=${encodeURIComponent(AUTH_TOKEN)}`;
+    mockVerifyJwt.mockResolvedValueOnce({ sub: PATIENT_COGNITO_SUB });
+    mockPoolQuery.mockResolvedValueOnce({
+      rows: [{ id: "tok-id-004", used_at: null, cognito_sub: PATIENT_COGNITO_SUB }],
+    });
+    mockPoolQuery.mockResolvedValueOnce({ rows: [] });
+    mockAttach.mockImplementation(() => {});
+
+    const statusLine = await sendRawUpgrade(port, pathWithAuth);
+
+    expect(statusLine).toBe("HTTP/1.1 101 Switching Protocols");
+    expect(mockVerifyJwt).toHaveBeenCalledWith(AUTH_TOKEN);
+    expect(mockPoolQuery).toHaveBeenCalledTimes(2);
+    expect(mockAttach).toHaveBeenCalledWith(CONSULT_ID, expect.anything());
   });
 });
