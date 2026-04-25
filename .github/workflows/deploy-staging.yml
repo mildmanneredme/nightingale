@@ -39,11 +39,21 @@ jobs:
             --query "taskDefinition.taskDefinitionArn" \
             --output text)
 
+          # Pull network config from the running service — subnets/SGs stay in sync automatically
+          NET_CONFIG=$(aws ecs describe-services \
+            --cluster nightingale-staging \
+            --services nightingale-staging-api \
+            --region ap-southeast-2 \
+            --query "services[0].networkConfiguration.awsvpcConfiguration" \
+            --output json)
+          SUBNETS=$(echo $NET_CONFIG | jq -r '[.subnets[]] | join(",")' | sed 's/,/","/g' | sed 's/^/"/' | sed 's/$/"/')
+          SGS=$(echo $NET_CONFIG | jq -r '[.securityGroups[]] | join(",")' | sed 's/,/","/g' | sed 's/^/"/' | sed 's/$/"/')
+
           TASK_ARN=$(aws ecs run-task \
             --cluster nightingale-staging \
             --task-definition $TASK_DEF \
             --launch-type FARGATE \
-            --network-configuration "awsvpcConfiguration={subnets=[subnet-0c2161ed98ce1c910,subnet-0d6d185fc3d2148f1],securityGroups=[$(aws ecs describe-services --cluster nightingale-staging --services nightingale-staging-api --region ap-southeast-2 --query 'services[0].networkConfiguration.awsvpcConfiguration.securityGroups[0]' --output text)],assignPublicIp=DISABLED}" \
+            --network-configuration "awsvpcConfiguration={subnets=[$SUBNETS],securityGroups=[$SGS],assignPublicIp=DISABLED}" \
             --overrides '{"containerOverrides":[{"name":"api","command":["node","dist/scripts/migrate.js"]}]}' \
             --region ap-southeast-2 \
             --query "tasks[0].taskArn" \
