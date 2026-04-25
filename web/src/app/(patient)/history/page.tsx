@@ -2,9 +2,12 @@
 import { useState } from "react";
 import {
   getMe, addAllergy, deleteAllergy, addMedication, deleteMedication, addCondition, deleteCondition,
-  Patient,
+  Patient, ApiError,
 } from "@/lib/api";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/useToast";
+import { getErrorMessage } from "@/lib/errors";
 import TopAppBar from "@/components/TopAppBar";
 import BottomNavBar from "@/components/BottomNavBar";
 
@@ -81,6 +84,8 @@ function MedSection({
 
 export default function HistoryPage() {
   const queryClient = useQueryClient();
+  const { token } = useAuth();
+  const { toast } = useToast();
   const [allergyInput, setAllergyInput] = useState("");
   const [medInput, setMedInput] = useState("");
   const [conditionInput, setConditionInput] = useState("");
@@ -89,37 +94,49 @@ export default function HistoryPage() {
   const { data: patient, isLoading: loading } = useQuery({
     queryKey: ["patient-me"],
     queryFn: getMe,
+    enabled: !!token,
   });
+
+  function onMutationError(err: unknown) {
+    const { title, detail } = err instanceof ApiError ? getErrorMessage(err.status) : getErrorMessage(0);
+    toast.error(title, { detail, correlationId: err instanceof ApiError ? err.correlationId : undefined });
+  }
 
   // F-054: useMutation with onSuccess invalidation for all write operations
   const addAllergyMutation = useMutation({
     mutationFn: (value: string) => addAllergy(value, "mild"),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["patient-me"] }),
+    onError: onMutationError,
   });
 
   const addMedicationMutation = useMutation({
     mutationFn: (value: string) => addMedication(value),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["patient-me"] }),
+    onError: onMutationError,
   });
 
   const addConditionMutation = useMutation({
     mutationFn: (value: string) => addCondition(value),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["patient-me"] }),
+    onError: onMutationError,
   });
 
   const deleteAllergyMutation = useMutation({
     mutationFn: (id: string) => deleteAllergy(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["patient-me"] }),
+    onError: onMutationError,
   });
 
   const deleteMedicationMutation = useMutation({
     mutationFn: (id: string) => deleteMedication(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["patient-me"] }),
+    onError: onMutationError,
   });
 
   const deleteConditionMutation = useMutation({
     mutationFn: (id: string) => deleteCondition(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["patient-me"] }),
+    onError: onMutationError,
   });
 
   function handleAddAllergy(e: React.FormEvent) {

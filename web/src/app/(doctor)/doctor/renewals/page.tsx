@@ -1,11 +1,16 @@
 "use client";
 import { useState } from "react";
-import { getRenewalQueue, approveRenewal, declineRenewal, RenewalQueueItem } from "@/lib/api";
+import { getRenewalQueue, approveRenewal, declineRenewal, RenewalQueueItem, ApiError } from "@/lib/api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/useToast";
+import { getErrorMessage } from "@/lib/errors";
 
 const PAGE_LIMIT = 20;
 
 export default function DoctorRenewalsPage() {
+  const { token } = useAuth();
+  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [extraItems, setExtraItems] = useState<RenewalQueueItem[]>([]);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -20,6 +25,7 @@ export default function DoctorRenewalsPage() {
   const { data: initialData, isLoading: loading } = useQuery({
     queryKey: ["doctor-renewals"],
     queryFn: () => getRenewalQueue(PAGE_LIMIT, 0),
+    enabled: !!token,
   });
 
   const initialItems = initialData?.data ?? [];
@@ -58,6 +64,10 @@ export default function DoctorRenewalsPage() {
       setExtraItems((prev) => prev.filter((i) => i.id !== variables.id));
       setActionId(null);
       setMode(null);
+    },
+    onError: (err: unknown) => {
+      const { title, detail } = err instanceof ApiError ? getErrorMessage(err.status) : getErrorMessage(0);
+      toast.error(title, { detail, correlationId: err instanceof ApiError ? err.correlationId : undefined });
     },
   });
 

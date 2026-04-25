@@ -2,6 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { getInbox, markNotificationRead, InboxItem, getToken } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const PAGE_LIMIT = 20;
@@ -40,6 +41,7 @@ async function downloadPdf(consultationId: string) {
 }
 
 export default function InboxPage() {
+  const { token } = useAuth();
   const queryClient = useQueryClient();
   const [extraItems, setExtraItems] = useState<InboxItem[]>([]);
   const [extraUnread, setExtraUnread] = useState(0);
@@ -52,6 +54,7 @@ export default function InboxPage() {
   const { data: initialData, isLoading: loading } = useQuery({
     queryKey: ["inbox"],
     queryFn: () => getInbox(PAGE_LIMIT, 0),
+    enabled: !!token,
   });
 
   const initialItems = initialData?.items ?? [];

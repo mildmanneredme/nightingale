@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { getRenewals, submitRenewal, RenewalRequest, ApiError } from "@/lib/api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/useToast";
 import { getErrorMessage } from "@/lib/errors";
 
@@ -20,6 +21,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function RenewalsPage() {
+  const { token } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [extraRenewals, setExtraRenewals] = useState<RenewalRequest[]>([]);
@@ -40,6 +42,7 @@ export default function RenewalsPage() {
   const { data: initialData, isLoading: loading } = useQuery({
     queryKey: ["renewals"],
     queryFn: () => getRenewals(PAGE_LIMIT, 0),
+    enabled: !!token,
   });
 
   const initialRenewals = initialData?.data ?? [];
