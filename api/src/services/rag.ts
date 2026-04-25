@@ -18,8 +18,8 @@ const ragCache = new LRUCache<string, KnowledgeChunk[]>({
   ttl: 60 * 60 * 1000, // 1 hour
 });
 
-function cacheKey(keywords: string[]): string {
-  return [...keywords].sort().join(",");
+function cacheKey(keywords: string[], condition?: string, topK?: number): string {
+  return [[...keywords].sort().join(","), condition ?? "", String(topK ?? 5)].join("|");
 }
 
 // ---------------------------------------------------------------------------
@@ -119,7 +119,7 @@ export async function retrieve(
   const keywords = extractKeywords(presentingComplaint);
 
   // F-068/F-069/F-070: LRU cache keyed on sorted keyword set
-  const key = cacheKey(keywords);
+  const key = cacheKey(keywords, condition, topK);
   const cached = ragCache.get(key);
 
   if (cached !== undefined) {
