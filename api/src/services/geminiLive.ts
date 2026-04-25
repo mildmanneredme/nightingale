@@ -23,6 +23,7 @@ interface TranscriptTurn {
 // Messages the server sends to the browser
 type ServerMsg =
   | { type: "audio"; data: string }
+  | { type: "interrupted" }
   | { type: "transcript"; speaker: "ai" | "patient"; text: string; timestamp_ms: number }
   | { type: "red_flag"; phrase: string }
   | { type: "emergency"; message: string }
@@ -120,7 +121,7 @@ export class GeminiLiveSession {
 
     if (msg.type === "audio" && msg.data) {
       this.geminiSession.sendRealtimeInput({
-        media: { data: msg.data, mimeType: "audio/pcm;rate=16000" },
+        audio: { data: msg.data, mimeType: "audio/pcm;rate=16000" },
       });
     } else if (msg.type === "end") {
       this.doEnd();
@@ -134,6 +135,12 @@ export class GeminiLiveSession {
   private handleGeminiMessage(msg: LiveServerMessage): void {
     const content = msg.serverContent;
     if (!content) return;
+
+    // Barge-in: user started speaking over the AI — signal browser to clear audio queue
+    if (content.interrupted) {
+      this.sendToBrowser({ type: "interrupted" });
+      return;
+    }
 
     // Relay audio chunks to browser
     if (content.modelTurn?.parts) {

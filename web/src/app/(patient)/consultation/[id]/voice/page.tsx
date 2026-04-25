@@ -120,6 +120,10 @@ export default function VoiceConsultationPage() {
               text: turn.text,
             }]),
           onAudio: playAudioChunk,
+          onInterrupted: () => {
+            // User started speaking — reset playback schedule so AI audio stops queuing
+            nextPlayTimeRef.current = 0;
+          },
           onEmergency: () => setIsEmergency(true),
           onError: () => {
             if (!cancelled) setConnectError("Could not connect to session. Please go back and try again.");

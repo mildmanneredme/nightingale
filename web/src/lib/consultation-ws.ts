@@ -8,6 +8,7 @@ export interface ConsultationSocketCallbacks {
   onOpen?: () => void;
   onTranscript?: (turn: TranscriptEvent) => void;
   onAudio?: (base64Data: string) => void;
+  onInterrupted?: () => void;
   onEmergency?: (message: string) => void;
   onEnded?: (consultationId: string) => void;
   onError?: () => void;
@@ -46,6 +47,9 @@ export class ConsultationSocket {
           break;
         case "audio":
           callbacks.onAudio?.(msg.data as string);
+          break;
+        case "interrupted":
+          callbacks.onInterrupted?.();
           break;
         case "emergency":
           callbacks.onEmergency?.(msg.message as string);
