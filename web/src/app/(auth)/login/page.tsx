@@ -3,6 +3,7 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signIn, getUserRole } from "@/lib/auth";
+import { registerPatient, ApiError } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 
 function PasswordResetBanner() {
@@ -33,6 +34,14 @@ export default function LoginPage() {
       const token = await signIn(email, password);
       setToken(token);
       const role = getUserRole(token);
+      if (role === "patient") {
+        // Ensure a patient record exists — idempotent, 409 means it's already there
+        try {
+          await registerPatient(email, "v1.0");
+        } catch (err) {
+          if (!(err instanceof ApiError && err.status === 409)) throw err;
+        }
+      }
       if (role === "admin") router.replace("/admin/beta");
       else if (role === "doctor") router.replace("/doctor/queue");
       else router.replace("/dashboard");
