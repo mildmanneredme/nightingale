@@ -16,9 +16,6 @@ const router = Router();
 
 const WEB_BASE_URL = process.env.WEB_BASE_URL ?? "https://app.nightingale.com.au";
 
-// F-047: Maximum follow-up sends per consultation (configurable via env, default 3)
-const FOLLOWUP_MAX_SENDS = parseInt(process.env.FOLLOWUP_MAX_SENDS ?? "3", 10);
-
 // ---------------------------------------------------------------------------
 // POST /api/v1/followup/send  (admin/scheduler — no patient auth)
 // Sends follow-up emails for consultations whose followup_send_at has passed.
@@ -26,6 +23,9 @@ const FOLLOWUP_MAX_SENDS = parseInt(process.env.FOLLOWUP_MAX_SENDS ?? "3", 10);
 // ---------------------------------------------------------------------------
 router.post("/send", validateBody(SendFollowUpSchema), async (_req, res, next) => {
   try {
+    // F-047: Derive maxSends per-request so env overrides are always authoritative.
+    const maxSends = parseInt(process.env.FOLLOWUP_MAX_SENDS ?? "3", 10);
+
     // Lock rows to prevent duplicate sends under concurrent scheduler invocations.
     // F-050: followup_sent_at IS NULL guard removed — audit_log count is the sole guard.
     const { rows: due } = await pool.query(
@@ -43,7 +43,6 @@ router.post("/send", validateBody(SendFollowUpSchema), async (_req, res, next) =
 
     let sent = 0;
     let blocked = 0;
-    const maxSends = parseInt(process.env.FOLLOWUP_MAX_SENDS ?? String(FOLLOWUP_MAX_SENDS), 10);
 
     for (const row of due) {
       try {
@@ -92,7 +91,7 @@ router.post("/send", validateBody(SendFollowUpSchema), async (_req, res, next) =
         await pool.query(
           `INSERT INTO audit_log (event_type, actor_id, actor_role, consultation_id, metadata)
            VALUES ('FOLLOWUP_EMAIL_SENT', $1, 'patient', $2, $3)`,
-          [row.id, row.id, JSON.stringify({ token_hash: createHash("sha256").update(row.followup_token).digest("hex") })]
+          [row.id, row.id, JSON.stringify({ consultationId: row.id, token_hash: createHash("sha256").update(row.followup_token).digest("hex") })]
         );
         sent++;
       } catch (err) {
@@ -100,9 +99,9 @@ router.post("/send", validateBody(SendFollowUpSchema), async (_req, res, next) =
       }
     }
 
-    // F-048: If all due consultations were blocked by the send limit, return 409
-    if (due.length > 0 && sent === 0 && blocked === due.length) {
-      res.status(409).json({ error: "Maximum follow-up sends reached" });
+    // F-048: 409 whenever any consultation was blocked by the send limit
+    if (blocked > 0) {
+      res.status(409).json({ error: "Maximum follow-up sends reached", sent, blocked });
       return;
     }
 
