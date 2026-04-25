@@ -1,5 +1,6 @@
 import { Router, RequestHandler } from "express";
 import multer from "multer";
+import { fromBuffer as fileTypeFromBuffer } from "file-type";
 import { requireRole } from "../middleware/auth";
 import {
   uploadPhoto,
@@ -31,6 +32,14 @@ const upload = multer({
 
 const MAX_PHOTOS_PER_CONSULTATION = 5;
 
+// S-10 / F-105: magic-byte allow-list — never trust the client-declared MIME.
+// Detected by `file-type` from the actual file header bytes.
+const MAGIC_BYTE_ALLOWED_MIME_TYPES = new Set<string>([
+  "image/jpeg",
+  "image/png",
+  "image/heic",
+]);
+
 function cognitoSub(req: Parameters<RequestHandler>[0]): string {
   return req.user.sub;
 }
@@ -61,6 +70,15 @@ router.post(
 
       if (!validatePhotoSize(file.size)) {
         res.status(400).json({ error: "Photo must be between 1 byte and 10 MB" });
+        return;
+      }
+
+      // S-10 / F-104..F-106: magic-byte inspection. The header-based MIME above
+      // is client-controlled; before any sharp call we verify the actual file
+      // signature. Rejects e.g. a `.pdf` renamed to `.jpg`.
+      const detected = await fileTypeFromBuffer(file.buffer);
+      if (!detected || !MAGIC_BYTE_ALLOWED_MIME_TYPES.has(detected.mime)) {
+        res.status(415).json({ error: "Unsupported media type" });
         return;
       }
 
