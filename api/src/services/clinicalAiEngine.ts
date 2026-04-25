@@ -87,7 +87,7 @@ const CANNOT_ASSESS_PATTERNS = [
 // System prompt (static — cached by Anthropic prompt caching)
 // ---------------------------------------------------------------------------
 
-function buildSystemPrompt(ragContext: string): string {
+export function buildSystemPrompt(ragContext: string = ""): string {
   return `${getPrompt("system-preamble")}
 
 ${getPrompt("ahpra-constraints")}

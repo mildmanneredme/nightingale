@@ -12,7 +12,7 @@ export const EXPECTED_PROMPTS = [
 
 export type PromptName = (typeof EXPECTED_PROMPTS)[number];
 
-const PROMPTS_DIR = join(__dirname, ".");
+const PROMPTS_DIR = __dirname;
 
 export function validateAndLoadPrompts(dir: string): Map<string, string> {
   const map = new Map<string, string>();
@@ -39,7 +39,7 @@ export function validateAndLoadPrompts(dir: string): Map<string, string> {
 
 const promptMap = validateAndLoadPrompts(PROMPTS_DIR);
 
-export function getPrompt(name: string): string {
+export function getPrompt(name: PromptName): string {
   const content = promptMap.get(name);
   if (content === undefined) {
     logger.warn({ promptName: name }, "promptLoader: unexpected prompt name requested");

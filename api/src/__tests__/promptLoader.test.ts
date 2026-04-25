@@ -3,6 +3,7 @@ import { join } from "path";
 import { mkdtempSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { createHash } from "crypto";
+import { buildSystemPrompt } from "../services/clinicalAiEngine";
 
 // ---------------------------------------------------------------------------
 // promptLoader tests (F-085, F-086, F-087)
@@ -42,33 +43,27 @@ describe("getPrompt", () => {
   });
 
   it("throws for an unknown prompt name", () => {
-    expect(() => getPrompt("does-not-exist")).toThrow("Prompt not found: does-not-exist");
+    expect(() => getPrompt("does-not-exist" as never)).toThrow("Prompt not found: does-not-exist");
+  });
+
+  it("system-preamble contains expected content", () => {
+    const content = getPrompt("system-preamble");
+    expect(content).toContain("Nightingale");
   });
 });
 
 describe("engine trigger hash logging (F-086)", () => {
-  it("promptHash is 8 lowercase hex characters", () => {
-    const { getPrompt } = require("../prompts/loader");
-    const loggerModule = require("../logger");
-    const systemPrompt = [
-      getPrompt("system-preamble"),
-      getPrompt("ahpra-constraints"),
-      getPrompt("cannot-assess-criteria"),
-      getPrompt("output-schema"),
-    ].join("\n\n");
-
+  it("promptHash derived from buildSystemPrompt is 8 lowercase hex characters", () => {
+    const systemPrompt = buildSystemPrompt();
     const promptHash = createHash("sha256").update(systemPrompt).digest("hex").slice(0, 8);
-
-    const logSpy = jest.spyOn(loggerModule.logger, "info");
-    loggerModule.logger.info({ promptHash, promptName: "system" }, "engine trigger");
-
     expect(promptHash).toMatch(/^[0-9a-f]{8}$/);
-    expect(logSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ promptHash: expect.stringMatching(/^[0-9a-f]{8}$/) }),
-      "engine trigger"
-    );
+  });
 
-    logSpy.mockRestore();
+  it("buildSystemPrompt output contains all required prompt sections", () => {
+    const systemPrompt = buildSystemPrompt();
+    expect(systemPrompt).toContain("Nightingale");
+    expect(systemPrompt).toContain("AHPRA");
+    expect(systemPrompt).toContain("cannot_assess");
   });
 });
 
