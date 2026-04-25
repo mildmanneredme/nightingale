@@ -4,7 +4,7 @@ import {
   getMe, addAllergy, deleteAllergy, addMedication, deleteMedication, addCondition, deleteCondition,
   Patient,
 } from "@/lib/api";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import TopAppBar from "@/components/TopAppBar";
 import BottomNavBar from "@/components/BottomNavBar";
 
@@ -17,6 +17,7 @@ function MedSection({
   onAdd,
   onDelete,
   placeholder,
+  isPending,
 }: {
   title: string;
   icon: string;
@@ -26,6 +27,7 @@ function MedSection({
   onAdd: (e: React.FormEvent) => void;
   onDelete: (id: string) => void;
   placeholder: string;
+  isPending?: boolean;
 }) {
   return (
     <section className="bg-white rounded-xl border border-slate-100 shadow-card overflow-hidden">
@@ -65,7 +67,7 @@ function MedSection({
           />
           <button
             type="submit"
-            disabled={!inputValue.trim()}
+            disabled={!inputValue.trim() || isPending}
             className="bg-secondary text-white rounded-xl px-5 font-manrope font-bold hover:opacity-90 disabled:opacity-50 flex items-center gap-1 transition-opacity"
           >
             <span className="material-symbols-outlined text-[18px]">add</span>
@@ -89,29 +91,59 @@ export default function HistoryPage() {
     queryFn: getMe,
   });
 
-  // F-054: invalidate after mutations
-  async function handleAddAllergy(e: React.FormEvent) {
+  // F-054: useMutation with onSuccess invalidation for all write operations
+  const addAllergyMutation = useMutation({
+    mutationFn: (value: string) => addAllergy(value, "mild"),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["patient-me"] }),
+  });
+
+  const addMedicationMutation = useMutation({
+    mutationFn: (value: string) => addMedication(value),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["patient-me"] }),
+  });
+
+  const addConditionMutation = useMutation({
+    mutationFn: (value: string) => addCondition(value),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["patient-me"] }),
+  });
+
+  const deleteAllergyMutation = useMutation({
+    mutationFn: (id: string) => deleteAllergy(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["patient-me"] }),
+  });
+
+  const deleteMedicationMutation = useMutation({
+    mutationFn: (id: string) => deleteMedication(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["patient-me"] }),
+  });
+
+  const deleteConditionMutation = useMutation({
+    mutationFn: (id: string) => deleteCondition(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["patient-me"] }),
+  });
+
+  function handleAddAllergy(e: React.FormEvent) {
     e.preventDefault();
     if (!allergyInput.trim()) return;
-    await addAllergy(allergyInput.trim(), "mild");
-    setAllergyInput("");
-    await queryClient.invalidateQueries({ queryKey: ["patient-me"] });
+    addAllergyMutation.mutate(allergyInput.trim(), {
+      onSuccess: () => setAllergyInput(""),
+    });
   }
 
-  async function handleAddMedication(e: React.FormEvent) {
+  function handleAddMedication(e: React.FormEvent) {
     e.preventDefault();
     if (!medInput.trim()) return;
-    await addMedication(medInput.trim());
-    setMedInput("");
-    await queryClient.invalidateQueries({ queryKey: ["patient-me"] });
+    addMedicationMutation.mutate(medInput.trim(), {
+      onSuccess: () => setMedInput(""),
+    });
   }
 
-  async function handleAddCondition(e: React.FormEvent) {
+  function handleAddCondition(e: React.FormEvent) {
     e.preventDefault();
     if (!conditionInput.trim()) return;
-    await addCondition(conditionInput.trim());
-    setConditionInput("");
-    await queryClient.invalidateQueries({ queryKey: ["patient-me"] });
+    addConditionMutation.mutate(conditionInput.trim(), {
+      onSuccess: () => setConditionInput(""),
+    });
   }
 
   return (
@@ -139,8 +171,9 @@ export default function HistoryPage() {
               inputValue={allergyInput}
               onInputChange={setAllergyInput}
               onAdd={handleAddAllergy}
-              onDelete={async (id) => { await deleteAllergy(id); await queryClient.invalidateQueries({ queryKey: ["patient-me"] }); }}
+              onDelete={(id) => deleteAllergyMutation.mutate(id)}
               placeholder="e.g. Penicillin, Peanuts…"
+              isPending={addAllergyMutation.isPending}
             />
             <MedSection
               title="Current Medications"
@@ -149,8 +182,9 @@ export default function HistoryPage() {
               inputValue={medInput}
               onInputChange={setMedInput}
               onAdd={handleAddMedication}
-              onDelete={async (id) => { await deleteMedication(id); await queryClient.invalidateQueries({ queryKey: ["patient-me"] }); }}
+              onDelete={(id) => deleteMedicationMutation.mutate(id)}
               placeholder="e.g. Metformin 500mg…"
+              isPending={addMedicationMutation.isPending}
             />
             <MedSection
               title="Medical Conditions"
@@ -159,8 +193,9 @@ export default function HistoryPage() {
               inputValue={conditionInput}
               onInputChange={setConditionInput}
               onAdd={handleAddCondition}
-              onDelete={async (id) => { await deleteCondition(id); await queryClient.invalidateQueries({ queryKey: ["patient-me"] }); }}
+              onDelete={(id) => deleteConditionMutation.mutate(id)}
               placeholder="e.g. Type 2 Diabetes…"
+              isPending={addConditionMutation.isPending}
             />
           </div>
         )}
