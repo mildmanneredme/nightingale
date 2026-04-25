@@ -1,36 +1,19 @@
 "use client";
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { getDoctorConsultation, approveConsultation, DoctorConsultation } from "@/lib/api";
 import DoctorSideNav from "@/components/DoctorSideNav";
+import { useDoctorConsultation } from "@/hooks/useDoctorConsultation";
 
 export default function DoctorConsultationPage() {
-  const { id } = useParams<{ id: string }>();
-  const router = useRouter();
-  const [consultation, setConsultation] = useState<DoctorConsultation | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [approving, setApproving] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-
-  useEffect(() => {
-    if (!id) return;
-    getDoctorConsultation(id).then(setConsultation).finally(() => setLoading(false));
-  }, [id]);
-
-  async function handleApprove() {
-    if (!id) return;
-    setApproving(true);
-    try {
-      await approveConsultation(id);
-      router.push("/doctor/queue");
-    } finally {
-      setApproving(false);
-      setShowConfirm(false);
-    }
-  }
-
-  const soap = consultation?.soapNote as Record<string, string> | null;
+  const {
+    id,
+    consultation,
+    loading,
+    approving,
+    showConfirm,
+    setShowConfirm,
+    handleApprove,
+    soap,
+  } = useDoctorConsultation();
 
   return (
     <div className="bg-background min-h-screen flex">

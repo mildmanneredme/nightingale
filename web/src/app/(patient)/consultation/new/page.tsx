@@ -1,39 +1,12 @@
 "use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { createConsultation, ApiError } from "@/lib/api";
-import { useToast } from "@/hooks/useToast";
-import { getErrorMessage } from "@/lib/errors";
 import TopAppBar from "@/components/TopAppBar";
 import BottomNavBar from "@/components/BottomNavBar";
 import ConsultationStepper from "@/components/ConsultationStepper";
-
-const MAX_CHARS = 200;
+import { useNewConsultation } from "@/hooks/useNewConsultation";
 
 export default function NewConsultationPage() {
-  const router = useRouter();
-  const { toast } = useToast();
-  const [complaint, setComplaint] = useState("");
-  const [type, setType] = useState<"voice" | "text">("voice");
-  const [loading, setLoading] = useState(false);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const consultation = await createConsultation(type, complaint || undefined);
-      if (type === "voice") {
-        router.push(`/consultation/${consultation.id}/audio-check`);
-      } else {
-        router.push(`/consultation/${consultation.id}/text`);
-      }
-    } catch (err: unknown) {
-      const { title, detail } = err instanceof ApiError ? getErrorMessage(err.status) : getErrorMessage(0);
-      toast.error(title, { detail, correlationId: err instanceof ApiError ? err.correlationId : undefined });
-    } finally {
-      setLoading(false);
-    }
-  }
+  const { complaint, setComplaint, type, setType, loading, handleSubmit, maxChars } =
+    useNewConsultation();
 
   return (
     <>
@@ -63,13 +36,13 @@ export default function NewConsultationPage() {
               <textarea
                 id="reason"
                 value={complaint}
-                onChange={(e) => setComplaint(e.target.value.slice(0, MAX_CHARS))}
+                onChange={(e) => setComplaint(e.target.value)}
                 rows={5}
                 className="w-full bg-surface-bright border-2 border-outline-variant focus:border-primary focus:ring-0 rounded-xl p-4 font-body-md text-on-surface transition-all resize-none outline-none"
                 placeholder="Please describe your symptoms, duration, and any concerns…"
               />
               <div className="absolute bottom-3 right-4 font-label-sm text-outline text-xs">
-                {complaint.length} / {MAX_CHARS}
+                {complaint.length} / {maxChars}
               </div>
             </div>
             <div className="mt-3 flex items-center gap-2 text-on-secondary-container bg-secondary-container/30 px-4 py-3 rounded-xl">
