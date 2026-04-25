@@ -1,5 +1,6 @@
 import { Pool, QueryResult, QueryResultRow } from "pg";
 import { config } from "./config";
+import { DB_QUERY_FAILED, DB_QUERY_SLOW } from "./errors/codes";
 import { logger } from "./logger";
 
 const SLOW_QUERY_MS = parseInt(process.env.SLOW_QUERY_THRESHOLD_MS ?? "500", 10);
@@ -21,7 +22,7 @@ export async function query<T extends QueryResultRow = QueryResultRow>(
     if (durationMs > SLOW_QUERY_MS) {
       logger.warn(
         {
-          errorCode: "DB.QUERY.SLOW",
+          errorCode: DB_QUERY_SLOW,
           feature: ctx?.feature,
           correlationId: ctx?.correlationId,
           durationMs,
@@ -34,7 +35,7 @@ export async function query<T extends QueryResultRow = QueryResultRow>(
   } catch (err) {
     logger.error(
       {
-        errorCode: "DB.QUERY.FAILED",
+        errorCode: DB_QUERY_FAILED,
         feature: ctx?.feature,
         correlationId: ctx?.correlationId,
         query: text.slice(0, 200),

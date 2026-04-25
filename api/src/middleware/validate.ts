@@ -1,5 +1,7 @@
 import { RequestHandler } from "express";
 import { ZodSchema } from "zod";
+import { VALIDATION_BODY_INVALID } from "../errors/codes";
+import { logger } from "../logger";
 
 /**
  * Express middleware that validates req.body against a Zod schema.
@@ -16,6 +18,14 @@ export function validateBody(schema: ZodSchema): RequestHandler {
         field: issue.path.length ? issue.path.join(".") : "body",
         message: issue.message,
       }));
+      logger.warn(
+        {
+          errorCode: VALIDATION_BODY_INVALID,
+          path: req.path,
+          details,
+        },
+        "Request body validation failed"
+      );
       res.status(400).json({ error: "Validation failed", details });
       return;
     }

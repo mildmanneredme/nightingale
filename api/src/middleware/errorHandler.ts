@@ -1,8 +1,9 @@
 import { ErrorRequestHandler } from "express";
+import { INTERNAL_UNHANDLED } from "../errors/codes";
 import { logger } from "../logger";
 
 export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
-  const errorCode: string = (err as any).code ?? "INTERNAL.UNHANDLED";
+  const errorCode: string = (err as any).code ?? INTERNAL_UNHANDLED;
   // Only trust .httpStatus (our own errors) — never blindly propagate .status
   // from upstream SDKs (e.g. Gemini 404 for invalid model leaking to clients).
   const httpStatus: number = (err as any).httpStatus ?? 500;
