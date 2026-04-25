@@ -11,6 +11,7 @@ import he from "he";
 import { Pool } from "pg";
 import { config } from "../config";
 import { logger } from "../logger";
+import { renderTemplate } from "../email-templates/loader";
 
 if (config.sendgrid.apiKey) {
   sgMail.setApiKey(config.sendgrid.apiKey);
@@ -20,6 +21,33 @@ export interface NotificationRecord {
   id: string;
   sendgridMessageId: string | null;
 }
+
+// ---------------------------------------------------------------------------
+// Shared footer snippets (injected as template variables)
+// ---------------------------------------------------------------------------
+
+const EMAIL_FOOTER_HTML = `
+  <hr style="margin:32px 0;border:none;border-top:1px solid #e5e7eb;" />
+  <p style="font-size:12px;color:#6b7280;">
+    This advice is not a substitute for in-person medical care.<br />
+    If your condition worsens or you are unsure, seek urgent medical care or call <strong>000</strong>.<br />
+    For general health advice: <a href="https://www.healthdirect.gov.au">HealthDirect 1800 022 222</a>
+  </p>
+  <p style="font-size:11px;color:#9ca3af;">
+    Nightingale Health Pty Ltd &middot;
+    <a href="https://nightingale.com.au/privacy">Privacy Policy</a> &middot;
+    <a href="https://nightingale.com.au/unsubscribe">Unsubscribe</a>
+  </p>`;
+
+const EMAIL_FOOTER_PLAIN = `
+---
+This advice is not a substitute for in-person medical care.
+If your condition worsens, seek urgent medical care or call 000.
+HealthDirect: 1800 022 222 | healthdirect.gov.au
+
+Nightingale Health Pty Ltd
+Privacy Policy: https://nightingale.com.au/privacy
+Unsubscribe: https://nightingale.com.au/unsubscribe`;
 
 // ---------------------------------------------------------------------------
 // sendResponseReadyEmail
@@ -79,21 +107,42 @@ export async function sendResponseReadyEmail(
     }
   }
 
-  const html = buildResponseReadyHtml({
+  const redFlagHtml =
+    redFlags.length > 0
+      ? `<div style="background:#fef3c7;border-left:4px solid #d97706;padding:12px 16px;margin:24px 0;">
+           <strong>Things to watch for:</strong>
+           <p style="margin:8px 0 0;">${redFlags.join("<br />")}</p>
+         </div>`
+      : "";
+
+  const responseHtml = row.response_text
+    .split("\n")
+    .map((line) => `<p style="margin:0 0 12px;">${line}</p>`)
+    .join("");
+
+  const html = renderTemplate("response-ready", {
     greeting,
     doctorName,
     date,
-    responseText: row.response_text,
-    redFlags,
+    responseHtml,
+    redFlagHtml,
+    footerHtml: EMAIL_FOOTER_HTML,
   });
 
-  const plainText = buildResponseReadyPlain({
-    greeting,
-    doctorName,
-    date,
-    responseText: row.response_text,
-    redFlags,
-  });
+  const redFlagSection =
+    redFlags.length > 0 ? `\nThings to watch for:\n${redFlags.join("\n")}\n` : "";
+
+  const plainText = `${greeting},
+
+${doctorName} has reviewed your consultation and prepared a response for you.
+
+--- Response from ${doctorName} (${date}) ---
+
+${row.response_text}
+
+---
+${redFlagSection}
+${EMAIL_FOOTER_PLAIN}`;
 
   let messageId: string | null = null;
   try {
@@ -169,8 +218,25 @@ export async function sendRejectionEmail(
 
   const greeting = row.patient_name ? `Hi ${row.patient_name.split(" ")[0]}` : "Hi there";
 
-  const html = buildRejectionHtml({ greeting, customMessage: row.rejection_message });
-  const plainText = buildRejectionPlain({ greeting, customMessage: row.rejection_message });
+  const customMessageHtml = row.rejection_message
+    ? `<p>${he.escape(row.rejection_message)}</p>`
+    : "";
+
+  const html = renderTemplate("rejection", {
+    greeting,
+    customMessageHtml,
+    footerHtml: EMAIL_FOOTER_HTML,
+  });
+
+  const customLine = row.rejection_message ? `\n${row.rejection_message}\n` : "";
+  const plainText = `${greeting},
+
+We're sorry — the doctor reviewing your consultation was unable to complete a remote assessment for this case.
+${customLine}
+We recommend booking an appointment with a GP in person.
+
+A full refund has been initiated. You should see the funds returned within 3–5 business days.
+${EMAIL_FOOTER_PLAIN}`;
 
   const messageId = await dispatchEmail({
     to: row.patient_email,
@@ -242,137 +308,6 @@ async function insertNotification(
 }
 
 // ---------------------------------------------------------------------------
-// HTML / plain-text templates
-// ---------------------------------------------------------------------------
-
-const EMAIL_FOOTER_HTML = `
-  <hr style="margin:32px 0;border:none;border-top:1px solid #e5e7eb;" />
-  <p style="font-size:12px;color:#6b7280;">
-    This advice is not a substitute for in-person medical care.<br />
-    If your condition worsens or you are unsure, seek urgent medical care or call <strong>000</strong>.<br />
-    For general health advice: <a href="https://www.healthdirect.gov.au">HealthDirect 1800 022 222</a>
-  </p>
-  <p style="font-size:11px;color:#9ca3af;">
-    Nightingale Health Pty Ltd &middot;
-    <a href="https://nightingale.com.au/privacy">Privacy Policy</a> &middot;
-    <a href="https://nightingale.com.au/unsubscribe">Unsubscribe</a>
-  </p>`;
-
-const EMAIL_FOOTER_PLAIN = `
----
-This advice is not a substitute for in-person medical care.
-If your condition worsens, seek urgent medical care or call 000.
-HealthDirect: 1800 022 222 | healthdirect.gov.au
-
-Nightingale Health Pty Ltd
-Privacy Policy: https://nightingale.com.au/privacy
-Unsubscribe: https://nightingale.com.au/unsubscribe`;
-
-function buildResponseReadyHtml(opts: {
-  greeting: string;
-  doctorName: string;
-  date: string;
-  responseText: string;
-  redFlags: string[];
-}): string {
-  const redFlagSection =
-    opts.redFlags.length > 0
-      ? `<div style="background:#fef3c7;border-left:4px solid #d97706;padding:12px 16px;margin:24px 0;">
-           <strong>Things to watch for:</strong>
-           <p style="margin:8px 0 0;">${opts.redFlags.join("<br />")}</p>
-         </div>`
-      : "";
-
-  const responseHtml = opts.responseText
-    .split("\n")
-    .map((line) => `<p style="margin:0 0 12px;">${line}</p>`)
-    .join("");
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head>
-<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#111827;max-width:600px;margin:0 auto;padding:24px;">
-  <img src="https://nightingale.com.au/logo.png" alt="Nightingale Health" height="32" style="margin-bottom:24px;" />
-  <p>${opts.greeting},</p>
-  <p>${opts.doctorName} has reviewed your consultation and prepared a response for you.</p>
-  <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:20px 24px;margin:24px 0;">
-    <p style="font-size:12px;color:#6b7280;margin:0 0 16px;">From ${opts.doctorName} &middot; ${opts.date}</p>
-    ${responseHtml}
-  </div>
-  ${redFlagSection}
-  ${EMAIL_FOOTER_HTML}
-</body>
-</html>`;
-}
-
-function buildResponseReadyPlain(opts: {
-  greeting: string;
-  doctorName: string;
-  date: string;
-  responseText: string;
-  redFlags: string[];
-}): string {
-  const redFlagSection =
-    opts.redFlags.length > 0
-      ? `\nThings to watch for:\n${opts.redFlags.join("\n")}\n`
-      : "";
-
-  return `${opts.greeting},
-
-${opts.doctorName} has reviewed your consultation and prepared a response for you.
-
---- Response from ${opts.doctorName} (${opts.date}) ---
-
-${opts.responseText}
-
----
-${redFlagSection}
-${EMAIL_FOOTER_PLAIN}`;
-}
-
-function buildRejectionHtml(opts: {
-  greeting: string;
-  customMessage: string | null;
-}): string {
-  const customPara = opts.customMessage
-    ? `<p>${he.escape(opts.customMessage)}</p>`
-    : "";
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head>
-<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#111827;max-width:600px;margin:0 auto;padding:24px;">
-  <img src="https://nightingale.com.au/logo.png" alt="Nightingale Health" height="32" style="margin-bottom:24px;" />
-  <p>${opts.greeting},</p>
-  <p>We're sorry — the doctor reviewing your consultation was unable to complete a remote assessment for this case.</p>
-  ${customPara}
-  <p>We recommend booking an appointment with a GP in person. They will be able to fully assess your condition and provide appropriate care.</p>
-  <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px 20px;margin:24px 0;">
-    <strong>A full refund has been initiated.</strong>
-    <p style="margin:8px 0 0;">You should see the funds returned to your original payment method within 3–5 business days.</p>
-  </div>
-  ${EMAIL_FOOTER_HTML}
-</body>
-</html>`;
-}
-
-function buildRejectionPlain(opts: {
-  greeting: string;
-  customMessage: string | null;
-}): string {
-  const customLine = opts.customMessage ? `\n${opts.customMessage}\n` : "";
-
-  return `${opts.greeting},
-
-We're sorry — the doctor reviewing your consultation was unable to complete a remote assessment for this case.
-${customLine}
-We recommend booking an appointment with a GP in person.
-
-A full refund has been initiated. You should see the funds returned within 3–5 business days.
-${EMAIL_FOOTER_PLAIN}`;
-}
-
-// ---------------------------------------------------------------------------
 // Script Renewal email functions (PRD-018)
 // ---------------------------------------------------------------------------
 
@@ -406,17 +341,22 @@ export async function sendRenewalApprovedEmail(
   const validUntilStr = row.valid_until
     ? row.valid_until.toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })
     : "28 days";
+  const medicationName = `${row.medication_name}${row.dosage ? ` ${row.dosage}` : ""}`;
 
-  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /></head>
-<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#111827;max-width:600px;margin:0 auto;padding:24px;">
-  <p>${greeting},</p>
-  <p>Dr ${row.doctor_last_name} has reviewed your renewal request for <strong>${row.medication_name}${row.dosage ? ` ${row.dosage}` : ""}</strong> and approved it.</p>
-  ${row.review_note ? `<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin:16px 0;"><p style="margin:0;">${he.escape(row.review_note)}</p></div>` : ""}
-  <p>Your prescription is valid until <strong>${validUntilStr}</strong>. Dr ${row.doctor_last_name} will issue your prescription via their prescribing system — you will receive further instructions separately.</p>
-  ${EMAIL_FOOTER_HTML}
-</body></html>`;
+  const reviewNoteHtml = row.review_note
+    ? `<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin:16px 0;"><p style="margin:0;">${he.escape(row.review_note)}</p></div>`
+    : "";
 
-  const text = `${greeting},\n\nDr ${row.doctor_last_name} has approved your renewal for ${row.medication_name}${row.dosage ? ` ${row.dosage}` : ""}. Valid until ${validUntilStr}.\n\n${row.review_note ?? ""}\n${EMAIL_FOOTER_PLAIN}`;
+  const html = renderTemplate("renewal-approved", {
+    greeting,
+    doctorLastName: row.doctor_last_name,
+    medicationName,
+    validUntil: validUntilStr,
+    reviewNoteHtml,
+    footerHtml: EMAIL_FOOTER_HTML,
+  });
+
+  const text = `${greeting},\n\nDr ${row.doctor_last_name} has approved your renewal for ${medicationName}. Valid until ${validUntilStr}.\n\n${row.review_note ?? ""}\n${EMAIL_FOOTER_PLAIN}`;
 
   const messageId = await dispatchEmail({
     to: row.patient_email,
@@ -466,18 +406,19 @@ export async function sendRenewalDeclinedEmail(
   const row = rows[0];
 
   const greeting = row.patient_name ? `Hi ${row.patient_name.split(" ")[0]}` : "Hi there";
-  const reasonText = row.review_note ?? "A new full consultation is required before this medication can be renewed.";
+  const reasonText = he.escape(
+    row.review_note ?? "A new full consultation is required before this medication can be renewed."
+  );
 
-  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /></head>
-<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#111827;max-width:600px;margin:0 auto;padding:24px;">
-  <p>${greeting},</p>
-  <p>Dr ${row.doctor_last_name} was unable to approve your renewal request for <strong>${row.medication_name}</strong>.</p>
-  <div style="background:#fef3c7;border-left:4px solid #d97706;padding:12px 16px;margin:16px 0;"><p style="margin:0;">${he.escape(reasonText)}</p></div>
-  <p>Please start a new consultation on Nightingale or speak to a GP in person.</p>
-  ${EMAIL_FOOTER_HTML}
-</body></html>`;
+  const html = renderTemplate("renewal-declined", {
+    greeting,
+    doctorLastName: row.doctor_last_name,
+    medicationName: row.medication_name,
+    reasonText,
+    footerHtml: EMAIL_FOOTER_HTML,
+  });
 
-  const text = `${greeting},\n\nDr ${row.doctor_last_name} was unable to approve your renewal for ${row.medication_name}.\n\n${reasonText}\n\nPlease start a new consultation.\n${EMAIL_FOOTER_PLAIN}`;
+  const text = `${greeting},\n\nDr ${row.doctor_last_name} was unable to approve your renewal for ${row.medication_name}.\n\n${row.review_note ?? "A new full consultation is required before this medication can be renewed."}\n\nPlease start a new consultation.\n${EMAIL_FOOTER_PLAIN}`;
 
   const messageId = await dispatchEmail({
     to: row.patient_email,
@@ -528,13 +469,12 @@ export async function sendRenewalReminderEmail(
     ? row.valid_until.toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })
     : "soon";
 
-  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /></head>
-<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#111827;max-width:600px;margin:0 auto;padding:24px;">
-  <p>${greeting},</p>
-  <p>Your prescription for <strong>${row.medication_name}</strong> is due to expire on <strong>${validUntilStr}</strong>.</p>
-  <p>If you need a renewal, log in to Nightingale and submit a renewal request — a doctor will review it promptly.</p>
-  ${EMAIL_FOOTER_HTML}
-</body></html>`;
+  const html = renderTemplate("renewal-reminder", {
+    greeting,
+    medicationName: row.medication_name,
+    validUntil: validUntilStr,
+    footerHtml: EMAIL_FOOTER_HTML,
+  });
 
   const text = `${greeting},\n\nYour prescription for ${row.medication_name} expires on ${validUntilStr}.\n\nLog in to Nightingale to request a renewal.\n${EMAIL_FOOTER_PLAIN}`;
 
@@ -585,27 +525,15 @@ export async function sendFollowUpEmail(
   const sameUrl   = `${opts.trackingBaseUrl}?response=same`;
   const worseUrl  = `${opts.trackingBaseUrl}?response=worse`;
 
-  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /></head>
-<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#111827;max-width:600px;margin:0 auto;padding:24px;">
-  <img src="https://nightingale.com.au/logo.png" alt="Nightingale Health" height="32" style="margin-bottom:24px;" />
-  <p>${greeting},</p>
-  <p>It's been a day or two since your Nightingale consultation on <strong>${opts.presentingComplaint}</strong> (reviewed ${reviewDate}). We just want to check in — how are you feeling?</p>
-  <table style="width:100%;border-collapse:separate;border-spacing:0 8px;margin:24px 0;">
-    <tr>
-      <td style="width:33%;padding:4px;">
-        <a href="${betterUrl}" style="display:block;text-align:center;background:#10b981;color:#fff;font-weight:600;padding:14px;border-radius:8px;text-decoration:none;">Feeling better</a>
-      </td>
-      <td style="width:33%;padding:4px;">
-        <a href="${sameUrl}" style="display:block;text-align:center;background:#6b7280;color:#fff;font-weight:600;padding:14px;border-radius:8px;text-decoration:none;">About the same</a>
-      </td>
-      <td style="width:33%;padding:4px;">
-        <a href="${worseUrl}" style="display:block;text-align:center;background:#ef4444;color:#fff;font-weight:600;padding:14px;border-radius:8px;text-decoration:none;">Feeling worse</a>
-      </td>
-    </tr>
-  </table>
-  <p style="font-size:13px;color:#6b7280;">If your condition has significantly worsened or you are experiencing new or severe symptoms, please seek urgent medical attention or call <strong>000</strong>.</p>
-  ${EMAIL_FOOTER_HTML}
-</body></html>`;
+  const html = renderTemplate("follow-up", {
+    greeting,
+    presentingComplaint: opts.presentingComplaint,
+    reviewDate,
+    betterUrl,
+    sameUrl,
+    worseUrl,
+    footerHtml: EMAIL_FOOTER_HTML,
+  });
 
   const text = `${greeting},
 
@@ -644,19 +572,10 @@ export async function sendFollowUpConcernAcknowledgementEmail(
 
   const greeting = row.patient_name ? `Hi ${row.patient_name.split(" ")[0]}` : "Hi there";
 
-  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /></head>
-<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#111827;max-width:600px;margin:0 auto;padding:24px;">
-  <img src="https://nightingale.com.au/logo.png" alt="Nightingale Health" height="32" style="margin-bottom:24px;" />
-  <p>${greeting},</p>
-  <p>Thank you for letting us know. We have flagged your consultation for a doctor to review and you will hear back from us shortly.</p>
-  <p>In the meantime:</p>
-  <ul>
-    <li>If you have new or worsening symptoms, please seek urgent in-person care or call your GP.</li>
-    <li>For a medical emergency, call <strong>000</strong>.</li>
-    <li>For general advice: <strong>HealthDirect 1800 022 222</strong>.</li>
-  </ul>
-  ${EMAIL_FOOTER_HTML}
-</body></html>`;
+  const html = renderTemplate("follow-up-concern", {
+    greeting,
+    footerHtml: EMAIL_FOOTER_HTML,
+  });
 
   const text = `${greeting},
 

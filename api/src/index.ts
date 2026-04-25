@@ -4,8 +4,12 @@ import { logger } from "./logger";
 import { pool } from "./db";
 import { wsUpgradeHandler, wss } from "./ws/upgradeHandler";
 import { runMigrations, setMigrationResult } from "./db/migrations";
+import { loadTemplates } from "./email-templates/loader";
 
 async function main() {
+  // F-078 / F-079: load and cache email templates; exits with code 1 if any are missing
+  loadTemplates();
+
   // F-025: run migrations before accepting traffic; F-026: exit 1 on failure
   try {
     const result = await runMigrations(pool);

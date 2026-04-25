@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#111827;max-width:600px;margin:0 auto;padding:24px;">
+  <img src="https://nightingale.com.au/logo.png" alt="Nightingale Health" height="32" style="margin-bottom:24px;" />
+  <p>{{ greeting }},</p>
+  <p>{{ doctorName }} has reviewed your consultation and prepared a response for you.</p>
+  <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:20px 24px;margin:24px 0;">
+    <p style="font-size:12px;color:#6b7280;margin:0 0 16px;">From {{ doctorName }} &middot; {{ date }}</p>
+    {{ responseHtml }}
+  </div>
+  {{ redFlagHtml }}
+  {{ footerHtml }}
+</body>
+</html>
