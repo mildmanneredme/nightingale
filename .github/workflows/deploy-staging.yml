@@ -27,9 +27,46 @@ jobs:
       - name: Build and push image
         run: |
           IMAGE_URI=${{ secrets.ECR_REGISTRY }}/nightingale/api
-          docker build -t $IMAGE_URI:staging-latest -t $IMAGE_URI:staging-${{ github.sha }} ./api
+          docker build -f api/Dockerfile -t $IMAGE_URI:staging-latest -t $IMAGE_URI:staging-${{ github.sha }} .
           docker push $IMAGE_URI:staging-latest
           docker push $IMAGE_URI:staging-${{ github.sha }}
+
+      - name: Run database migrations
+        run: |
+          TASK_DEF=$(aws ecs describe-task-definition \
+            --task-definition nightingale-staging-api \
+            --region ap-southeast-2 \
+            --query "taskDefinition.taskDefinitionArn" \
+            --output text)
+
+          TASK_ARN=$(aws ecs run-task \
+            --cluster nightingale-staging \
+            --task-definition $TASK_DEF \
+            --launch-type FARGATE \
+            --network-configuration "awsvpcConfiguration={subnets=[subnet-0c2161ed98ce1c910,subnet-0d6d185fc3d2148f1],securityGroups=[$(aws ecs describe-services --cluster nightingale-staging --services nightingale-staging-api --region ap-southeast-2 --query 'services[0].networkConfiguration.awsvpcConfiguration.securityGroups[0]' --output text)],assignPublicIp=DISABLED}" \
+            --overrides '{"containerOverrides":[{"name":"api","command":["node","dist/scripts/migrate.js"]}]}' \
+            --region ap-southeast-2 \
+            --query "tasks[0].taskArn" \
+            --output text)
+
+          echo "Migration task: $TASK_ARN"
+          aws ecs wait tasks-stopped \
+            --cluster nightingale-staging \
+            --tasks $TASK_ARN \
+            --region ap-southeast-2
+
+          EXIT_CODE=$(aws ecs describe-tasks \
+            --cluster nightingale-staging \
+            --tasks $TASK_ARN \
+            --region ap-southeast-2 \
+            --query "tasks[0].containers[0].exitCode" \
+            --output text)
+
+          if [ "$EXIT_CODE" != "0" ]; then
+            echo "Migration task failed with exit code $EXIT_CODE"
+            exit 1
+          fi
+          echo "Migrations completed successfully"
 
       - name: Update ECS service
         run: |
