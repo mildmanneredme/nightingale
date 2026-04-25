@@ -3,6 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { getDoctorQueue, DoctorQueueItem } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
 import DoctorSideNav from "@/components/DoctorSideNav";
 
 const FLAG_STYLES: Record<string, { bg: string; text: string }> = {
@@ -35,6 +36,7 @@ function isFlagged(item: DoctorQueueItem): boolean {
 }
 
 export default function DoctorQueuePage() {
+  const { token } = useAuth();
   const [extraQueue, setExtraQueue] = useState<DoctorQueueItem[]>([]);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState<boolean | null>(null);
@@ -47,6 +49,7 @@ export default function DoctorQueuePage() {
     queryFn: () => getDoctorQueue(PAGE_LIMIT, 0),
     staleTime: 0,
     refetchInterval: 30_000,
+    enabled: !!token,
   });
 
   const initialQueue = initialData?.data ?? [];

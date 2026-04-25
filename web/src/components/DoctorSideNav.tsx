@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { signOut as authSignOut } from "@/lib/auth";
 
 type NavItem = "hub" | "queue" | "schedule" | "analytics" | "settings";
 
@@ -23,6 +24,7 @@ export default function DoctorSideNav({ active, doctorName = "Dr. Nightingale" }
   const { setToken } = useAuth();
 
   function handleSignOut() {
+    authSignOut();
     setToken(null);
     router.replace("/login");
   }

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getMe, updateMe, Patient, ApiError } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import { signOut as authSignOut } from "@/lib/auth";
 import { useToast } from "@/hooks/useToast";
 import { getErrorMessage } from "@/lib/errors";
 import TopAppBar from "@/components/TopAppBar";
@@ -91,6 +92,7 @@ export default function ProfilePage() {
   }
 
   function handleSignOut() {
+    authSignOut();
     setToken(null);
     router.replace("/login");
   }
