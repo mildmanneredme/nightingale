@@ -23,7 +23,6 @@ import {
   scheduleFollowUpQuery,
   hashToken,
 } from "../repositories/followup.repository";
-import { pool } from "../db";
 
 const router = Router();
 
@@ -74,8 +73,7 @@ router.post("/send", validateBody(SendFollowUpSchema), async (_req, res, next) =
             presentingComplaint: row.presenting_complaint,
             reviewedAt: row.reviewed_at,
             trackingBaseUrl,
-          },
-          pool
+          }
         );
 
         const token_hash = hashToken(row.followup_token);
@@ -150,7 +148,7 @@ router.get("/respond/:token", async (req, res, next) => {
       );
 
       // Send acknowledgement to patient (fire-and-forget)
-      sendFollowUpConcernAcknowledgementEmail(consultation.patient_id, pool).catch((err) =>
+      sendFollowUpConcernAcknowledgementEmail(consultation.patient_id).catch((err) =>
         logger.error({ err, consultationId: consultation.id }, "Failed to send followup concern acknowledgement")
       );
 

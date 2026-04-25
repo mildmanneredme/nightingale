@@ -19,7 +19,6 @@ import {
   amendConsultation,
   rejectConsultation,
 } from "../repositories/doctor.repository";
-import { pool } from "../db";
 
 const router = Router();
 
@@ -131,7 +130,7 @@ router.post("/consultations/:id/approve", validateBody(ApproveConsultationSchema
     });
 
     // Fire-and-forget: patient notification is non-blocking
-    sendResponseReadyEmail(req.params.id, pool).catch((err) =>
+    sendResponseReadyEmail(req.params.id).catch((err) =>
       logger.error({ err, consultationId: req.params.id }, "Failed to send response_ready email")
     );
     scheduleFollowUp(req.params.id).catch((err) =>
@@ -178,7 +177,7 @@ router.post("/consultations/:id/amend", validateBody(AmendConsultationSchema), a
     });
 
     // Fire-and-forget: patient notification is non-blocking
-    sendResponseReadyEmail(req.params.id, pool).catch((err) =>
+    sendResponseReadyEmail(req.params.id).catch((err) =>
       logger.error({ err, consultationId: req.params.id }, "Failed to send response_ready email after amend")
     );
     scheduleFollowUp(req.params.id).catch((err) =>
@@ -220,7 +219,7 @@ router.post("/consultations/:id/reject", validateBody(RejectConsultationSchema),
     });
 
     // Fire-and-forget: patient notification is non-blocking
-    sendRejectionEmail(req.params.id, pool).catch((err) =>
+    sendRejectionEmail(req.params.id).catch((err) =>
       logger.error({ err, consultationId: req.params.id }, "Failed to send rejection email")
     );
 

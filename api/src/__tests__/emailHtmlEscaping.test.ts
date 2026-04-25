@@ -79,8 +79,7 @@ describe("SEC-002: sendRejectionEmail HTML-escapes rejection_message", () => {
     ]);
 
     const { sendRejectionEmail } = await import("../services/emailService");
-    const { pool: mockPool } = await import("../db");
-    await sendRejectionEmail("consult-uuid-001", mockPool as any);
+    await sendRejectionEmail("consult-uuid-001");
 
     expect(mockSend).toHaveBeenCalled();
     const callArg = mockSend.mock.calls[0][0];
@@ -100,8 +99,7 @@ describe("SEC-002: sendRejectionEmail HTML-escapes rejection_message", () => {
     ]);
 
     const { sendRejectionEmail } = await import("../services/emailService");
-    const { pool: mockPool } = await import("../db");
-    await sendRejectionEmail("consult-uuid-001", mockPool as any);
+    await sendRejectionEmail("consult-uuid-001");
 
     const callArg = mockSend.mock.calls[0][0];
     // The injected href must be escaped — not rendered as a clickable link
@@ -131,8 +129,7 @@ describe("SEC-002: sendRenewalApprovedEmail HTML-escapes reviewNote", () => {
     ]);
 
     const { sendRenewalApprovedEmail } = await import("../services/emailService");
-    const { pool: mockPool } = await import("../db");
-    await sendRenewalApprovedEmail("renewal-uuid-001", mockPool as any);
+    await sendRenewalApprovedEmail("renewal-uuid-001");
 
     const callArg = mockSend.mock.calls[0][0];
     expect(callArg.html).not.toContain('<a href="https://evil.example">');
@@ -159,8 +156,7 @@ describe("SEC-002: sendRenewalDeclinedEmail HTML-escapes reviewNote", () => {
     ]);
 
     const { sendRenewalDeclinedEmail } = await import("../services/emailService");
-    const { pool: mockPool } = await import("../db");
-    await sendRenewalDeclinedEmail("renewal-uuid-001", mockPool as any);
+    await sendRenewalDeclinedEmail("renewal-uuid-001");
 
     const callArg = mockSend.mock.calls[0][0];
     expect(callArg.html).not.toContain("<script>");

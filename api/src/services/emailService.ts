@@ -8,8 +8,8 @@
 
 import sgMail from "@sendgrid/mail";
 import he from "he";
-import { Pool } from "pg";
 import { config } from "../config";
+import { pool } from "../db";
 import { logger } from "../logger";
 import { renderTemplate } from "../email-templates/loader";
 
@@ -55,10 +55,9 @@ Unsubscribe: https://nightingale.com.au/unsubscribe`;
 // Uses ai_draft (approved) or doctor_draft (amended) as the patient-facing text.
 // ---------------------------------------------------------------------------
 export async function sendResponseReadyEmail(
-  consultationId: string,
-  dbPool: Pool
+  consultationId: string
 ): Promise<NotificationRecord> {
-  const { rows } = await dbPool.query<{
+  const { rows } = await pool.query<{
     patient_email: string;
     patient_name: string | null;
     is_anonymous: boolean;
@@ -157,7 +156,7 @@ ${EMAIL_FOOTER_PLAIN}`;
     const reason = emailErr instanceof Error ? emailErr.message : String(emailErr);
     logger.error({ emailErr, consultationId }, "sendResponseReadyEmail: SendGrid dispatch failed");
     try {
-      await dbPool.query(
+      await pool.query(
         `INSERT INTO audit_log (event_type, actor_id, actor_role, consultation_id, metadata)
          VALUES ('notification.email_send_failed', $1, 'system', $2, $3)`,
         [
@@ -172,14 +171,14 @@ ${EMAIL_FOOTER_PLAIN}`;
     throw emailErr;
   }
 
-  const notifId = await insertNotification(dbPool, {
+  const notifId = await insertNotification({
     consultationId,
     patientId: row.patient_id,
     type: "response_ready",
     messageId,
   });
 
-  await dbPool.query(
+  await pool.query(
     `INSERT INTO audit_log (event_type, actor_id, actor_role, consultation_id, metadata)
      VALUES ('notification.sent', $1, 'patient', $2, $3)`,
     [row.patient_id, consultationId, JSON.stringify({ notification_type: "response_ready", message_id: messageId })]
@@ -193,10 +192,9 @@ ${EMAIL_FOOTER_PLAIN}`;
 // Triggered after a doctor rejects a consultation.
 // ---------------------------------------------------------------------------
 export async function sendRejectionEmail(
-  consultationId: string,
-  dbPool: Pool
+  consultationId: string
 ): Promise<NotificationRecord> {
-  const { rows } = await dbPool.query<{
+  const { rows } = await pool.query<{
     patient_email: string;
     patient_name: string | null;
     rejection_message: string | null;
@@ -245,14 +243,14 @@ ${EMAIL_FOOTER_PLAIN}`;
     text: plainText,
   });
 
-  const notifId = await insertNotification(dbPool, {
+  const notifId = await insertNotification({
     consultationId,
     patientId: row.patient_id,
     type: "rejected",
     messageId,
   });
 
-  await dbPool.query(
+  await pool.query(
     `INSERT INTO audit_log (event_type, actor_id, actor_role, consultation_id, metadata)
      VALUES ('notification.sent', $1, 'patient', $2, $3)`,
     [row.patient_id, consultationId, JSON.stringify({ notification_type: "rejected", message_id: messageId })]
@@ -289,16 +287,13 @@ async function dispatchEmail(msg: {
   return messageId;
 }
 
-async function insertNotification(
-  dbPool: Pool,
-  opts: {
-    consultationId: string | null;
-    patientId: string;
-    type: string;
-    messageId: string | null;
-  }
-): Promise<string> {
-  const { rows } = await dbPool.query<{ id: string }>(
+async function insertNotification(opts: {
+  consultationId: string | null;
+  patientId: string;
+  type: string;
+  messageId: string | null;
+}): Promise<string> {
+  const { rows } = await pool.query<{ id: string }>(
     `INSERT INTO notifications (consultation_id, patient_id, notification_type, sendgrid_message_id)
      VALUES ($1, $2, $3, $4)
      RETURNING id`,
@@ -312,10 +307,9 @@ async function insertNotification(
 // ---------------------------------------------------------------------------
 
 export async function sendRenewalApprovedEmail(
-  renewalId: string,
-  dbPool: Pool
+  renewalId: string
 ): Promise<NotificationRecord> {
-  const { rows } = await dbPool.query<{
+  const { rows } = await pool.query<{
     patient_email: string;
     patient_name: string | null;
     medication_name: string;
@@ -365,14 +359,14 @@ export async function sendRenewalApprovedEmail(
     text,
   });
 
-  const notifId = await insertNotification(dbPool, {
+  const notifId = await insertNotification({
     consultationId: null as any,
     patientId: row.patient_id,
     type: "response_ready",
     messageId,
   });
 
-  await dbPool.query(
+  await pool.query(
     `INSERT INTO audit_log (event_type, actor_id, actor_role, metadata)
      VALUES ('notification.sent', $1, 'patient', $2)`,
     [row.patient_id, JSON.stringify({ notification_type: "renewal_approved", renewal_id: renewalId, message_id: messageId })]
@@ -382,10 +376,9 @@ export async function sendRenewalApprovedEmail(
 }
 
 export async function sendRenewalDeclinedEmail(
-  renewalId: string,
-  dbPool: Pool
+  renewalId: string
 ): Promise<NotificationRecord> {
-  const { rows } = await dbPool.query<{
+  const { rows } = await pool.query<{
     patient_email: string;
     patient_name: string | null;
     medication_name: string;
@@ -427,14 +420,14 @@ export async function sendRenewalDeclinedEmail(
     text,
   });
 
-  const notifId = await insertNotification(dbPool, {
+  const notifId = await insertNotification({
     consultationId: null as any,
     patientId: row.patient_id,
     type: "rejected",
     messageId,
   });
 
-  await dbPool.query(
+  await pool.query(
     `INSERT INTO audit_log (event_type, actor_id, actor_role, metadata)
      VALUES ('notification.sent', $1, 'patient', $2)`,
     [row.patient_id, JSON.stringify({ notification_type: "renewal_declined", renewal_id: renewalId, message_id: messageId })]
@@ -444,10 +437,9 @@ export async function sendRenewalDeclinedEmail(
 }
 
 export async function sendRenewalReminderEmail(
-  renewalId: string,
-  dbPool: Pool
+  renewalId: string
 ): Promise<NotificationRecord> {
-  const { rows } = await dbPool.query<{
+  const { rows } = await pool.query<{
     patient_email: string;
     patient_name: string | null;
     medication_name: string;
@@ -485,14 +477,14 @@ export async function sendRenewalReminderEmail(
     text,
   });
 
-  const notifId = await insertNotification(dbPool, {
+  const notifId = await insertNotification({
     consultationId: null as any,
     patientId: row.patient_id,
     type: "response_ready",
     messageId,
   });
 
-  await dbPool.query(
+  await pool.query(
     `INSERT INTO audit_log (event_type, actor_id, actor_role, metadata)
      VALUES ('notification.sent', $1, 'patient', $2)`,
     [row.patient_id, JSON.stringify({ notification_type: "renewal_reminder", renewal_id: renewalId, message_id: messageId })]
@@ -513,8 +505,7 @@ export async function sendFollowUpEmail(
     presentingComplaint: string;
     reviewedAt: Date | null;
     trackingBaseUrl: string;
-  },
-  dbPool: Pool
+  }
 ): Promise<void> {
   const greeting = opts.patientName ? `Hi ${opts.patientName.split(" ")[0]}` : "Hi there";
   const reviewDate = opts.reviewedAt
@@ -557,10 +548,9 @@ ${EMAIL_FOOTER_PLAIN}`;
 }
 
 export async function sendFollowUpConcernAcknowledgementEmail(
-  patientId: string,
-  dbPool: Pool
+  patientId: string
 ): Promise<void> {
-  const { rows } = await dbPool.query<{
+  const { rows } = await pool.query<{
     patient_email: string;
     patient_name: string | null;
   }>(

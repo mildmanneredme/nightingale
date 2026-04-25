@@ -42,7 +42,6 @@ import {
   markReminder7dSent,
   insertPatientReminderAuditLog,
 } from "../repositories/renewal.repository";
-import { pool } from "../db";
 
 const router = Router();
 
@@ -262,7 +261,7 @@ router.post("/:id/approve", requireRole("doctor"), validateBody(ApproveRenewalSc
     );
 
     // Fire-and-forget notification
-    sendRenewalApprovedEmail(req.params.id, pool).catch((err) =>
+    sendRenewalApprovedEmail(req.params.id).catch((err) =>
       logger.error({ err, renewalId: req.params.id }, "Failed to send renewal approval email")
     );
 
@@ -293,7 +292,7 @@ router.post("/:id/decline", requireRole("doctor"), validateBody(DeclineRenewalSc
 
     await insertRenewalDeclinedAuditLog(doctor.id, doctor.ahpra_number, row.id, row.medication_name);
 
-    sendRenewalDeclinedEmail(req.params.id, pool).catch((err) =>
+    sendRenewalDeclinedEmail(req.params.id).catch((err) =>
       logger.error({ err, renewalId: req.params.id }, "Failed to send renewal declined email")
     );
 
@@ -321,7 +320,7 @@ router.post("/expiry-check", requireRole("admin"), validateBody(z.object({})), a
     const expiring7d = await findRenewalsExpiring7d();
 
     for (const r of expiring7d) {
-      await sendRenewalReminderEmail(r.id, pool).catch((err) =>
+      await sendRenewalReminderEmail(r.id).catch((err) =>
         logger.error({ err, renewalId: r.id }, "Failed to send renewal reminder email")
       );
       await markReminder7dSent(r.id);

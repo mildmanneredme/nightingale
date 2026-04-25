@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { checkDb, pool } from "../db";
+import { checkDb, pool } from "../db"; // pool metrics only — no SQL queries; exempt from F-090
 import { config } from "../config";
 import { getMigrationResult } from "../db/migrations";
 
