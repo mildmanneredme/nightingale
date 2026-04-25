@@ -1,4 +1,5 @@
 import { Router, RequestHandler } from "express";
+import { z } from "zod";
 import WebSocket from "ws";
 import PDFDocument from "pdfkit";
 import { pool } from "../db";
@@ -408,7 +409,7 @@ router.get("/:id/pdf", async (req, res, next) => {
 // Issues a single-use, 2-minute WebSocket session token for voice stream auth.
 // Prevents the consultation UUID being used as a session credential.
 // ---------------------------------------------------------------------------
-router.post("/:id/stream-token", async (req, res, next) => {
+router.post("/:id/stream-token", validateBody(z.object({})), async (req, res, next) => {
   try {
     const { id: consultationId } = req.params;
     const { randomUUID } = await import("crypto");

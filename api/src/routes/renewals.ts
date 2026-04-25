@@ -10,6 +10,7 @@
 // eScript integration is confirmed with the healthcare lawyer.
 
 import { Router, RequestHandler } from "express";
+import { z } from "zod";
 import { pool } from "../db";
 import { requireRole } from "../middleware/auth";
 import { sendRenewalApprovedEmail, sendRenewalDeclinedEmail, sendRenewalReminderEmail } from "../services/emailService";
@@ -301,7 +302,7 @@ router.post("/:id/decline", requireRole("doctor"), validateBody(DeclineRenewalSc
 // Fires 48h doctor queue alerts and 7-day patient reminders.
 // In production, called by a scheduled ECS task or EventBridge rule.
 // ---------------------------------------------------------------------------
-router.post("/expiry-check", requireRole("admin"), async (_req, res, next) => {
+router.post("/expiry-check", requireRole("admin"), validateBody(z.object({})), async (_req, res, next) => {
   try {
     // 48h alert: approved renewals expiring within 48 hours where alert not yet sent
     const { rows: expiring48h } = await pool.query(

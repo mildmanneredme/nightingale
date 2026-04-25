@@ -16,6 +16,7 @@ export const RegisterPatientSchema = z.object({
  * All fields optional for partial update.
  */
 export const UpdatePatientSchema = z.object({
+  email: z.string().email("Invalid email address format").optional(),
   fullName: z.string().optional(),
   dateOfBirth: z.string().optional(),
   biologicalSex: z.enum(VALID_BIOLOGICAL_SEX).optional(),

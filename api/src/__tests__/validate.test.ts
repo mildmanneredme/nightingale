@@ -8,7 +8,7 @@ import { Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { validateBody } from "../middleware/validate";
 import { CreateConsultationSchema } from "../schemas/consultation.schema";
-import { RegisterPatientSchema, AddAllergySchema } from "../schemas/patient.schema";
+import { RegisterPatientSchema, AddAllergySchema, UpdatePatientSchema } from "../schemas/patient.schema";
 import { CreateRenewalSchema } from "../schemas/renewal.schema";
 import { RejectConsultationSchema } from "../schemas/doctor.schema";
 import { ReassignConsultationSchema } from "../schemas/followup.schema";
@@ -118,8 +118,19 @@ describe("CreateConsultationSchema", () => {
   it("accepts valid text consultation", () => {
     const result = CreateConsultationSchema.safeParse({
       consultationType: "text",
+      presentingComplaint: "headache",
     });
     expect(result.success).toBe(true);
+  });
+
+  it("rejects missing presentingComplaint", () => {
+    const result = CreateConsultationSchema.safeParse({
+      consultationType: "voice",
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0].path).toContain("presentingComplaint");
+    }
   });
 
   it("rejects unknown consultationType", () => {
@@ -146,6 +157,7 @@ describe("CreateConsultationSchema", () => {
   it("accepts optional child fields", () => {
     const result = CreateConsultationSchema.safeParse({
       consultationType: "voice",
+      presentingComplaint: "ear pain",
       isForChild: true,
       childName: "Jamie",
       childDob: "2018-01-01",
@@ -191,6 +203,30 @@ describe("RegisterPatientSchema", () => {
       email: "test@example.com",
     });
     expect(result.success).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// UpdatePatientSchema
+// ---------------------------------------------------------------------------
+
+describe("UpdatePatientSchema", () => {
+  it("accepts a valid email on patient update", () => {
+    const result = UpdatePatientSchema.safeParse({ email: "new@example.com" });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an invalid email on patient update", () => {
+    const result = UpdatePatientSchema.safeParse({ email: "notanemail" });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0].path).toContain("email");
+    }
+  });
+
+  it("accepts an empty object (all fields optional)", () => {
+    const result = UpdatePatientSchema.safeParse({});
+    expect(result.success).toBe(true);
   });
 });
 

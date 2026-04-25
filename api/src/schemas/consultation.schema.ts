@@ -6,7 +6,7 @@ import { z } from "zod";
  */
 export const CreateConsultationSchema = z.object({
   consultationType: z.enum(["voice", "text"]),
-  presentingComplaint: z.string().optional(),
+  presentingComplaint: z.string().min(1, "Presenting complaint is required"),
   isAnonymous: z.boolean().optional(),
   isForChild: z.boolean().optional(),
   childName: z.string().optional(),
