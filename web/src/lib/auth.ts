@@ -20,6 +20,8 @@ function getPool(): CognitoUserPool {
 // In-memory token — mirrors what api.ts stores
 let _storedToken: string | null = null;
 
+const SESSION_KEY = "ng_auth_token";
+
 export function getStoredToken(): string | null {
   return _storedToken;
 }
@@ -27,6 +29,39 @@ export function getStoredToken(): string | null {
 function storeToken(token: string | null) {
   _storedToken = token;
   setToken(token);
+  if (typeof window !== "undefined") {
+    if (token) {
+      sessionStorage.setItem(SESSION_KEY, token);
+    } else {
+      sessionStorage.removeItem(SESSION_KEY);
+    }
+  }
+}
+
+// F-072 / F-073: Read token from sessionStorage on mount; clear + reject if expired.
+export function hydrateToken(): string | null {
+  if (typeof window === "undefined") return null;
+  const raw = sessionStorage.getItem(SESSION_KEY);
+  if (!raw) return null;
+  try {
+    const parts = raw.split(".");
+    if (parts.length < 2) {
+      sessionStorage.removeItem(SESSION_KEY);
+      return null;
+    }
+    const payload = JSON.parse(
+      atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"))
+    );
+    const exp = payload.exp as number | undefined;
+    if (exp && Date.now() / 1000 > exp) {
+      sessionStorage.removeItem(SESSION_KEY);
+      return null; // expired
+    }
+    return raw;
+  } catch {
+    sessionStorage.removeItem(SESSION_KEY);
+    return null;
+  }
 }
 
 // ---------------------------------------------------------------------------

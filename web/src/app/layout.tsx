@@ -1,8 +1,8 @@
 "use client";
 import "./globals.css";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AuthContext } from "@/hooks/useAuth";
-import { getUserRole } from "@/lib/auth";
+import { getUserRole, hydrateToken } from "@/lib/auth";
 import { setToken as apiSetToken, ApiError } from "@/lib/api";
 import { ToastProvider } from "@/components/ToastProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -31,6 +31,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     setTokenState(t);
     apiSetToken(t);
   }
+
+  // F-072 / F-073: Restore valid token from sessionStorage on mount.
+  // hydrateToken() already clears expired tokens internally.
+  useEffect(() => {
+    const saved = hydrateToken();
+    if (saved) {
+      setToken(saved);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const role = getUserRole(token);
 
