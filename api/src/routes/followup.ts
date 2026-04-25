@@ -25,6 +25,10 @@ router.post("/send", validateBody(SendFollowUpSchema), async (_req, res, next) =
   try {
     // F-047: Derive maxSends per-request so env overrides are always authoritative.
     const maxSends = parseInt(process.env.FOLLOWUP_MAX_SENDS ?? "3", 10);
+    if (isNaN(maxSends) || maxSends < 1) {
+      logger.error({ raw: process.env.FOLLOWUP_MAX_SENDS }, "Invalid FOLLOWUP_MAX_SENDS — must be a positive integer");
+      return next(new Error("Invalid FOLLOWUP_MAX_SENDS configuration"));
+    }
 
     // Lock rows to prevent duplicate sends under concurrent scheduler invocations.
     // F-050: followup_sent_at IS NULL guard removed — audit_log count is the sole guard.

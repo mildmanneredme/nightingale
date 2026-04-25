@@ -79,8 +79,10 @@ describe("POST /api/v1/followup/send", () => {
   });
 
   it("blocks re-send once FOLLOWUP_MAX_SENDS is reached", async () => {
-    // The first send above already sent once and wrote FOLLOWUP_EMAIL_SENT.
-    // Default FOLLOWUP_MAX_SENDS is 3, so we need to send 2 more to hit the limit.
+    // The first test above sent once (audit_log count = 1).
+    // Default FOLLOWUP_MAX_SENDS is 3, so two more successful sends are needed
+    // before the guard kicks in.
+    delete process.env.FOLLOWUP_MAX_SENDS;
     const app = buildTestApp(PATIENT_SUB, "patient");
 
     // 2nd send — should succeed (count is now 1, limit is 3)
@@ -245,16 +247,37 @@ describe("C-10: follow-up send-count guard", () => {
   });
 
   it("F-047/F-048: FOLLOWUP_MAX_SENDS=1 causes 2nd send to return 409", async () => {
+    // Self-contained: clear audit_log for c10ConsultationId so send count resets
+    // to 0, then set FOLLOWUP_MAX_SENDS=1 and verify: 1st send succeeds, 2nd returns 409.
+    const pool = getTestPool();
+    await pool.query(
+      `DELETE FROM audit_log
+       WHERE consultation_id = $1 AND event_type = 'FOLLOWUP_EMAIL_SENT'`,
+      [c10ConsultationId]
+    );
+
     process.env.FOLLOWUP_MAX_SENDS = "1";
     const app = buildTestApp(PATIENT_SUB, "patient");
 
-    // The consultation has already been sent once (from previous test), so
-    // with limit=1 the next call should be blocked → 409
-    const res = await request(app).post("/api/v1/followup/send").expect(409);
-    expect(res.body.error).toBe("Maximum follow-up sends reached");
+    // 1st send — should succeed (count goes from 0 → 1, limit is 1)
+    const res1 = await request(app).post("/api/v1/followup/send").expect(200);
+    expect(res1.body.sent).toBeGreaterThanOrEqual(1);
+
+    // 2nd send — limit reached, should return 409
+    const res2 = await request(app).post("/api/v1/followup/send").expect(409);
+    expect(res2.body.error).toBe("Maximum follow-up sends reached");
 
     // Restore default
     delete process.env.FOLLOWUP_MAX_SENDS;
+  });
+
+  it("returns 500 when FOLLOWUP_MAX_SENDS is not a valid integer", async () => {
+    process.env.FOLLOWUP_MAX_SENDS = "not-a-number";
+    const app = buildTestApp(PATIENT_SUB, "patient");
+    const res = await request(app).post("/api/v1/followup/send").send({});
+    // restore
+    delete process.env.FOLLOWUP_MAX_SENDS;
+    expect(res.status).toBe(500);
   });
 
   it("F-050: send count is derived from audit_log, not a separate column", async () => {
