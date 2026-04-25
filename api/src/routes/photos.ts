@@ -135,7 +135,6 @@ router.post(
            height_px AS "heightPx",
            quality_passed AS "qualityPassed",
            quality_issues AS "qualityIssues",
-           quality_overridden AS "qualityOverridden",
            created_at AS "createdAt"`,
         [
           consultationId,
