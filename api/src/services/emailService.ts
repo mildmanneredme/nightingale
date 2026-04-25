@@ -103,7 +103,7 @@ export async function sendResponseReadyEmail(
   if (soapNote && typeof soapNote === "object") {
     const plan = soapNote.plan as string | undefined;
     if (plan && /red flag|urgent|emergency|seek.*care/i.test(plan)) {
-      redFlags.push(plan);
+      redFlags.push(he.escape(plan));
     }
   }
 
@@ -117,7 +117,7 @@ export async function sendResponseReadyEmail(
 
   const responseHtml = row.response_text
     .split("\n")
-    .map((line) => `<p style="margin:0 0 12px;">${line}</p>`)
+    .map((line) => `<p style="margin:0 0 12px;">${he.escape(line)}</p>`)
     .join("");
 
   const html = renderTemplate("response-ready", {
@@ -527,7 +527,7 @@ export async function sendFollowUpEmail(
 
   const html = renderTemplate("follow-up", {
     greeting,
-    presentingComplaint: opts.presentingComplaint,
+    presentingComplaint: he.escape(opts.presentingComplaint),
     reviewDate,
     betterUrl,
     sameUrl,

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "tsc && tsc -p tsconfig.scripts.json",
+    "build": "tsc && tsc -p tsconfig.scripts.json && mkdir -p dist/email-templates && cp src/email-templates/*.html dist/email-templates/",
     "migrate": "ts-node src/db/runMigrations.ts",
     "start": "node dist/index.js",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
