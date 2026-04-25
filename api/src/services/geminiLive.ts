@@ -30,8 +30,6 @@ type ServerMsg =
   | { type: "ended"; consultationId: string }
   | { type: "error"; message: string };
 
-const SESSION_TIMEOUT_MS = 15 * 60 * 1000; // 15 min hard limit (PRD-008)
-
 const SYSTEM_PROMPT = `You are a clinical intake assistant for Nightingale, an Australian telehealth service.
 Your role is to conduct a structured clinical history-taking interview with the patient.
 Ask about their presenting complaint, symptom duration, severity, associated symptoms, relevant medical history, current medications, and allergies.
@@ -269,7 +267,7 @@ export class GeminiLiveSession {
     this.timeoutHandle = setTimeout(() => {
       logger.info({ consultationId: this.consultationId }, "Session timeout reached");
       this.doEnd();
-    }, SESSION_TIMEOUT_MS);
+    }, config.gemini.sessionTimeoutMs);
   }
 
   private updateConsultationStatus(status: string): void {

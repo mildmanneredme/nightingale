@@ -44,6 +44,7 @@ export const config = {
     // Use us-central1 for local dev until AU region availability is confirmed.
     region: optional("GEMINI_REGION", "us-central1"),
     model: optional("GEMINI_LIVE_MODEL", "gemini-3.1-flash-live-preview"),
+    sessionTimeoutMs: optionalInt("GEMINI_SESSION_TIMEOUT_MS", 900_000),
   },
 
   anthropic: {
