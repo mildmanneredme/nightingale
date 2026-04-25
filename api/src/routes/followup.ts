@@ -16,14 +16,18 @@ const router = Router();
 
 const WEB_BASE_URL = process.env.WEB_BASE_URL ?? "https://app.nightingale.com.au";
 
+// F-047: Maximum follow-up sends per consultation (configurable via env, default 3)
+const FOLLOWUP_MAX_SENDS = parseInt(process.env.FOLLOWUP_MAX_SENDS ?? "3", 10);
+
 // ---------------------------------------------------------------------------
 // POST /api/v1/followup/send  (admin/scheduler — no patient auth)
 // Sends follow-up emails for consultations whose followup_send_at has passed.
-// Idempotent: sets followup_sent_at so duplicates cannot be sent.
+// F-047/F-048/F-049/F-050: Guard via audit_log count; max FOLLOWUP_MAX_SENDS per consultation.
 // ---------------------------------------------------------------------------
 router.post("/send", validateBody(SendFollowUpSchema), async (_req, res, next) => {
   try {
-    // Lock rows to prevent duplicate sends under concurrent scheduler invocations
+    // Lock rows to prevent duplicate sends under concurrent scheduler invocations.
+    // F-050: followup_sent_at IS NULL guard removed — audit_log count is the sole guard.
     const { rows: due } = await pool.query(
       `SELECT c.id, c.followup_token, c.presenting_complaint,
               c.reviewed_at, c.status,
@@ -32,15 +36,35 @@ router.post("/send", validateBody(SendFollowUpSchema), async (_req, res, next) =
        JOIN patients p ON p.id = c.patient_id
        WHERE c.followup_send_at IS NOT NULL
          AND c.followup_send_at <= NOW()
-         AND c.followup_sent_at IS NULL
          AND c.status IN ('approved', 'amended')
        FOR UPDATE SKIP LOCKED
        LIMIT 50`
     );
 
     let sent = 0;
+    let blocked = 0;
+    const maxSends = parseInt(process.env.FOLLOWUP_MAX_SENDS ?? String(FOLLOWUP_MAX_SENDS), 10);
+
     for (const row of due) {
       try {
+        // F-050: Determine send count from audit_log (no separate column)
+        const { rows: countRows } = await pool.query(
+          `SELECT COUNT(*) AS cnt FROM audit_log
+           WHERE event_type = 'FOLLOWUP_EMAIL_SENT' AND consultation_id = $1`,
+          [row.id]
+        );
+        const sendCount = parseInt(countRows[0].cnt, 10);
+
+        // F-048: Skip if at or above the limit
+        if (sendCount >= maxSends) {
+          logger.warn(
+            { consultationId: row.id, sendCount, maxSends },
+            "Follow-up email send limit reached — skipping consultation"
+          );
+          blocked++;
+          continue;
+        }
+
         const trackingBaseUrl = `${WEB_BASE_URL}/followup/${row.followup_token}`;
         await sendFollowUpEmail(
           row.id,
@@ -58,9 +82,16 @@ router.post("/send", validateBody(SendFollowUpSchema), async (_req, res, next) =
           `UPDATE consultations SET followup_sent_at = NOW() WHERE id = $1`,
           [row.id]
         );
+        // Preserve existing audit event for backward compatibility
         await pool.query(
           `INSERT INTO audit_log (event_type, actor_id, actor_role, consultation_id, metadata)
            VALUES ('follow_up.sent', $1, 'patient', $2, $3)`,
+          [row.id, row.id, JSON.stringify({ token_hash: createHash("sha256").update(row.followup_token).digest("hex") })]
+        );
+        // F-049: Write FOLLOWUP_EMAIL_SENT event — used as the send-count source of truth
+        await pool.query(
+          `INSERT INTO audit_log (event_type, actor_id, actor_role, consultation_id, metadata)
+           VALUES ('FOLLOWUP_EMAIL_SENT', $1, 'patient', $2, $3)`,
           [row.id, row.id, JSON.stringify({ token_hash: createHash("sha256").update(row.followup_token).digest("hex") })]
         );
         sent++;
@@ -69,7 +100,13 @@ router.post("/send", validateBody(SendFollowUpSchema), async (_req, res, next) =
       }
     }
 
-    res.json({ sent, due: due.length });
+    // F-048: If all due consultations were blocked by the send limit, return 409
+    if (due.length > 0 && sent === 0 && blocked === due.length) {
+      res.status(409).json({ error: "Maximum follow-up sends reached" });
+      return;
+    }
+
+    res.json({ sent, due: due.length, blocked });
   } catch (err) {
     next(err);
   }

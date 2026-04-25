@@ -31,8 +31,8 @@ beforeAll(async () => {
   patientId = pRows[0].id;
 
   const { rows: dRows } = await pool.query(
-    `INSERT INTO doctors (cognito_sub, email, first_name, last_name, ahpra_number, specialty, is_active)
-     VALUES ($1, $2, 'Jane', 'Followup', 'MED0099999', 'General Practice', TRUE) RETURNING id`,
+    `INSERT INTO doctors (cognito_sub, email, full_name, ahpra_number)
+     VALUES ($1, $2, 'Jane Followup', 'MED0099999') RETURNING id`,
     [DOCTOR_SUB, "doctor-followup@example.com"]
   );
   const doctorId = dRows[0].id;
@@ -41,9 +41,9 @@ beforeAll(async () => {
   const { rows: cRows } = await pool.query(
     `INSERT INTO consultations
        (patient_id, assigned_doctor_id, reviewed_by, presenting_complaint, status,
-        ai_draft, reviewed_at, followup_send_at, followup_sent_at)
+        consultation_type, ai_draft, reviewed_at, followup_send_at, followup_sent_at)
      VALUES ($1, $2, $2, 'Headache', 'approved',
-             'Paracetamol as needed.', NOW() - INTERVAL '37 hours',
+             'text', 'Paracetamol as needed.', NOW() - INTERVAL '37 hours',
              NOW() - INTERVAL '1 hour', NULL)
      RETURNING id, followup_token`,
     [patientId, doctorId]
@@ -78,15 +78,23 @@ describe("POST /api/v1/followup/send", () => {
     expect(rows[0].followup_sent_at).not.toBeNull();
   });
 
-  it("is idempotent — does not re-send if followup_sent_at is set", async () => {
+  it("blocks re-send once FOLLOWUP_MAX_SENDS is reached", async () => {
+    // The first send above already sent once and wrote FOLLOWUP_EMAIL_SENT.
+    // Default FOLLOWUP_MAX_SENDS is 3, so we need to send 2 more to hit the limit.
     const app = buildTestApp(PATIENT_SUB, "patient");
-    const res = await request(app)
-      .post("/api/v1/followup/send")
-      .expect(200);
 
-    // Already sent — should not appear in due list again
-    expect(res.body.due).toBe(0);
-    expect(res.body.sent).toBe(0);
+    // 2nd send — should succeed (count is now 1, limit is 3)
+    const res2 = await request(app).post("/api/v1/followup/send").expect(200);
+    expect(res2.body.sent).toBeGreaterThanOrEqual(1);
+
+    // 3rd send — should succeed (count is now 2, limit is 3)
+    const res3 = await request(app).post("/api/v1/followup/send").expect(200);
+    expect(res3.body.sent).toBeGreaterThanOrEqual(1);
+
+    // 4th send — all blocked, should return 409
+    const res4 = await request(app).post("/api/v1/followup/send").expect(409);
+    expect(res4.body.error).toBe("Maximum follow-up sends reached");
+    expect(res4.body.blocked ?? res4.body).toBeDefined();
   });
 });
 
@@ -154,10 +162,10 @@ describe("follow-up 'worse' response", () => {
     const { rows } = await pool.query(
       `INSERT INTO consultations
          (patient_id, assigned_doctor_id, reviewed_by, presenting_complaint, status,
-          ai_draft, reviewed_at, followup_send_at, followup_sent_at)
+          consultation_type, ai_draft, reviewed_at, followup_send_at, followup_sent_at)
        VALUES ($1, $2, $2, 'Back pain', 'approved',
-               'Rest and ibuprofen.', NOW() - INTERVAL '37 hours',
-               NOW() - INTERVAL '1 hour', NOW())
+               'text', 'Rest and ibuprofen.', NOW() - INTERVAL '37 hours',
+               NULL, NOW())
        RETURNING id, followup_token`,
       [patientId, doctorId]
     );
@@ -192,6 +200,87 @@ describe("follow-up 'worse' response", () => {
 });
 
 // ---------------------------------------------------------------------------
+// C-10: Send-count guard (F-047 / F-048 / F-049 / F-050)
+// ---------------------------------------------------------------------------
+describe("C-10: follow-up send-count guard", () => {
+  let c10ConsultationId: string;
+
+  beforeAll(async () => {
+    const pool = getTestPool();
+    const { rows: dRows } = await pool.query(
+      `SELECT id FROM doctors WHERE cognito_sub = $1`,
+      [DOCTOR_SUB]
+    );
+    const doctorId = dRows[0].id;
+
+    // Insert a fresh consultation that is due for a follow-up
+    const { rows } = await pool.query(
+      `INSERT INTO consultations
+         (patient_id, assigned_doctor_id, reviewed_by, presenting_complaint, status,
+          consultation_type, ai_draft, reviewed_at, followup_send_at, followup_sent_at)
+       VALUES ($1, $2, $2, 'Rash', 'approved',
+               'text', 'Apply hydrocortisone.', NOW() - INTERVAL '37 hours',
+               NOW() - INTERVAL '1 hour', NULL)
+       RETURNING id`,
+      [patientId, doctorId]
+    );
+    c10ConsultationId = rows[0].id;
+  });
+
+  it("F-049: each successful send writes FOLLOWUP_EMAIL_SENT to audit_log", async () => {
+    const app = buildTestApp(PATIENT_SUB, "patient");
+    // Reset FOLLOWUP_MAX_SENDS to 3 (default) for this test
+    delete process.env.FOLLOWUP_MAX_SENDS;
+
+    const res = await request(app).post("/api/v1/followup/send").expect(200);
+    expect(res.body.sent).toBeGreaterThanOrEqual(1);
+
+    const pool = getTestPool();
+    const { rows } = await pool.query(
+      `SELECT event_type FROM audit_log
+       WHERE consultation_id = $1 AND event_type = 'FOLLOWUP_EMAIL_SENT'`,
+      [c10ConsultationId]
+    );
+    expect(rows.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("F-047/F-048: FOLLOWUP_MAX_SENDS=1 causes 2nd send to return 409", async () => {
+    process.env.FOLLOWUP_MAX_SENDS = "1";
+    const app = buildTestApp(PATIENT_SUB, "patient");
+
+    // The consultation has already been sent once (from previous test), so
+    // with limit=1 the next call should be blocked → 409
+    const res = await request(app).post("/api/v1/followup/send").expect(409);
+    expect(res.body.error).toBe("Maximum follow-up sends reached");
+
+    // Restore default
+    delete process.env.FOLLOWUP_MAX_SENDS;
+  });
+
+  it("F-050: send count is derived from audit_log, not a separate column", async () => {
+    const pool = getTestPool();
+    // Insert a fake extra FOLLOWUP_EMAIL_SENT entry to simulate 3 sends
+    // without actually running the endpoint 3 times
+    await pool.query(
+      `INSERT INTO audit_log (event_type, actor_id, actor_role, consultation_id, metadata)
+       VALUES ('FOLLOWUP_EMAIL_SENT', $1, 'patient', $1, '{}')`,
+      [c10ConsultationId]
+    );
+    await pool.query(
+      `INSERT INTO audit_log (event_type, actor_id, actor_role, consultation_id, metadata)
+       VALUES ('FOLLOWUP_EMAIL_SENT', $1, 'patient', $1, '{}')`,
+      [c10ConsultationId]
+    );
+
+    // Now the count is >= 3 (1 from the first test + 2 inserted above), should be blocked
+    const app = buildTestApp(PATIENT_SUB, "patient");
+    delete process.env.FOLLOWUP_MAX_SENDS;
+    const res = await request(app).post("/api/v1/followup/send").expect(409);
+    expect(res.body.error).toBe("Maximum follow-up sends reached");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // scheduleFollowUp utility
 // ---------------------------------------------------------------------------
 describe("scheduleFollowUp", () => {
@@ -206,8 +295,8 @@ describe("scheduleFollowUp", () => {
     const { rows } = await pool.query(
       `INSERT INTO consultations
          (patient_id, assigned_doctor_id, reviewed_by, presenting_complaint, status,
-          ai_draft, reviewed_at)
-       VALUES ($1, $2, $2, 'Sore throat', 'approved', 'Gargle salt water.', NOW())
+          consultation_type, ai_draft, reviewed_at)
+       VALUES ($1, $2, $2, 'Sore throat', 'approved', 'text', 'Gargle salt water.', NOW())
        RETURNING id`,
       [patientId, doctorId]
     );
