@@ -34,7 +34,7 @@ export const config = {
     // Target australia-southeast1 in production for APP 8 compliance.
     // Use us-central1 for local dev until AU region availability is confirmed.
     region: optional("GEMINI_REGION", "us-central1"),
-    model: optional("GEMINI_LIVE_MODEL", "gemini-3.1-flash-live-preview"),
+    model: optional("GEMINI_LIVE_MODEL", "gemini-2.0-flash-live-001"),
   },
 
   anthropic: {

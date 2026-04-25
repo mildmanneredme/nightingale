@@ -40,7 +40,7 @@ export async function sendTextMessage(
   }));
 
   const chat = ai.chats.create({
-    model: "gemini-3-flash",
+    model: "gemini-2.0-flash",
     config: { systemInstruction: SYSTEM_INSTRUCTION },
     history: chatHistory,
   });

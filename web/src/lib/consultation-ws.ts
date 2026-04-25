@@ -21,8 +21,6 @@ export class ConsultationSocket {
     wsToken: string,
     callbacks: ConsultationSocketCallbacks = {}
   ) {
-    // Derive WebSocket URL from the current host so Next.js rewrites proxy it
-    // to the backend — no hardcoded origin needed.
     const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
     const url = `${proto}//${window.location.host}/api/v1/consultations/${consultationId}/stream?token=${encodeURIComponent(wsToken)}`;
 
@@ -62,14 +60,20 @@ export class ConsultationSocket {
   }
 
   sendAudio(base64Data: string): void {
-    this.ws.send(JSON.stringify({ type: "audio", data: base64Data }));
+    if (this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ type: "audio", data: base64Data }));
+    }
   }
 
   endSession(): void {
-    this.ws.send(JSON.stringify({ type: "end" }));
+    if (this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ type: "end" }));
+    }
   }
 
   disconnect(): void {
-    this.ws.close();
+    if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
+      this.ws.close();
+    }
   }
 }

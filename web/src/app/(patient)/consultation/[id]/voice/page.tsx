@@ -75,30 +75,11 @@ export default function VoiceConsultationPage() {
 
     let cancelled = false;
 
-    async function connect() {
+    async function startAudioCapture(socket: ConsultationSocket) {
       try {
-        const { wsToken } = await getStreamToken(id);
-        if (cancelled) return;
-
-        const socket = new ConsultationSocket(id, wsToken, {
-          onTranscript: (turn: TranscriptEvent) =>
-            setTurns((prev) => [...prev, {
-              role: turn.speaker === "ai" ? "assistant" : "patient",
-              text: turn.text,
-            }]),
-          onAudio: playAudioChunk,
-          onEmergency: () => setIsEmergency(true),
-          onEnded: () => {
-            setEnded(true);
-            router.push(`/consultation/${id}/photos`);
-          },
-        });
-        socketRef.current = socket;
-
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
-          socket.disconnect();
           return;
         }
         mediaStreamRef.current = stream;
@@ -120,6 +101,36 @@ export default function VoiceConsultationPage() {
           socket.sendAudio(b64);
         };
       } catch {
+        if (!cancelled) setConnectError("Microphone access denied. Please allow mic access and try again.");
+      }
+    }
+
+    async function connect() {
+      try {
+        const { wsToken } = await getStreamToken(id);
+        if (cancelled) return;
+
+        const socket = new ConsultationSocket(id, wsToken, {
+          onOpen: () => {
+            if (!cancelled) startAudioCapture(socket);
+          },
+          onTranscript: (turn: TranscriptEvent) =>
+            setTurns((prev) => [...prev, {
+              role: turn.speaker === "ai" ? "assistant" : "patient",
+              text: turn.text,
+            }]),
+          onAudio: playAudioChunk,
+          onEmergency: () => setIsEmergency(true),
+          onError: () => {
+            if (!cancelled) setConnectError("Could not connect to session. Please go back and try again.");
+          },
+          onEnded: () => {
+            setEnded(true);
+            router.push(`/consultation/${id}/photos`);
+          },
+        });
+        socketRef.current = socket;
+      } catch {
         if (!cancelled) setConnectError("Could not start session. Please go back and try again.");
       }
     }
@@ -137,6 +148,7 @@ export default function VoiceConsultationPage() {
 
   function handleEnd() {
     socketRef.current?.endSession();
+    socketRef.current?.disconnect();
     mediaStreamRef.current?.getTracks().forEach((t) => t.stop());
   }
 
