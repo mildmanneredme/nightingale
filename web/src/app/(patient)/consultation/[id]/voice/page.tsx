@@ -22,6 +22,7 @@ export default function VoiceConsultationPage() {
   const [elapsed, setElapsed] = useState(0);
   const [muted, setMuted] = useState(false);
   const [connectError, setConnectError] = useState<string | null>(null);
+  const [connected, setConnected] = useState(false);
 
   const socketRef = useRef<ConsultationSocket | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -77,7 +78,9 @@ export default function VoiceConsultationPage() {
 
     async function startAudioCapture(socket: ConsultationSocket) {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        });
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
           return;
@@ -89,7 +92,8 @@ export default function VoiceConsultationPage() {
         const processor = ctx.createScriptProcessor(4096, 1, 1);
         processorRef.current = processor;
         src.connect(processor);
-        processor.connect(ctx.destination);
+        // Do NOT connect processor to ctx.destination — that routes mic audio to
+        // speakers, causing acoustic echo that Gemini hears as a second voice.
         processor.onaudioprocess = (e) => {
           if (muted) return;
           const float32 = e.inputBuffer.getChannelData(0);
@@ -112,7 +116,10 @@ export default function VoiceConsultationPage() {
 
         const socket = new ConsultationSocket(id, wsToken, {
           onOpen: () => {
-            if (!cancelled) startAudioCapture(socket);
+            if (!cancelled) {
+              setConnected(true);
+              startAudioCapture(socket);
+            }
           },
           onTranscript: (turn: TranscriptEvent) =>
             setTurns((prev) => [...prev, {
@@ -213,10 +220,10 @@ export default function VoiceConsultationPage() {
           ))}
         </div>
         <p className="font-manrope font-semibold text-white mb-1">
-          {turns.length === 0 ? "Connecting…" : "Connected to AI Clinical Assistant"}
+          {!connected ? "Connecting…" : "Connected to AI Clinical Assistant"}
         </p>
         <p className="font-clinical-data text-white/50 text-xs uppercase tracking-widest">
-          {muted ? "Microphone muted" : "Listening — speak naturally"}
+          {!connected ? "Please wait…" : muted ? "Microphone muted" : "Feel free to discuss your health concerns"}
         </p>
       </div>
 

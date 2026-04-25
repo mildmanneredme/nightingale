@@ -84,9 +84,11 @@ const config: Config = {
       borderRadius: {
         sm: "0.25rem",
         DEFAULT: "0.5rem",
-        md: "0.75rem",
-        lg: "1rem",
-        xl: "1.5rem",
+        md: "0.375rem",
+        lg: "0.5rem",
+        xl: "0.75rem",
+        "2xl": "1rem",
+        "3xl": "1.5rem",
         full: "9999px",
       },
       boxShadow: {

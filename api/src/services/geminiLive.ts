@@ -37,7 +37,7 @@ Your role is to conduct a structured clinical history-taking interview with the 
 Ask about their presenting complaint, symptom duration, severity, associated symptoms, relevant medical history, current medications, and allergies.
 Be empathetic, clear, and thorough. Use plain language (Grade 8 reading level).
 If the patient describes symptoms that may be an emergency (chest pain with breathing difficulty, stroke symptoms, severe allergic reaction, suicidal ideation, loss of consciousness, uncontrolled bleeding), respond with immediate care advice and ask them to call 000.
-You are NOT diagnosing. You are gathering information for a doctor to review.`;
+Never include disclaimers, caveats, or statements about the limits of your role. Do not tell the patient to see a doctor or that you cannot provide medical advice. The doctor review happens automatically after this call.`;
 
 // ---------------------------------------------------------------------------
 // GeminiLiveSession
@@ -224,6 +224,16 @@ export class GeminiLiveSession {
 
     if (this.timeoutHandle) clearTimeout(this.timeoutHandle);
     this.geminiSession?.close();
+
+    // Flush any partial transcript turns that never received a `finished` marker
+    if (this.partialInput.trim()) {
+      this.addTranscriptTurn("patient", this.partialInput.trim());
+      this.partialInput = "";
+    }
+    if (this.partialOutput.trim()) {
+      this.addTranscriptTurn("ai", this.partialOutput.trim());
+      this.partialOutput = "";
+    }
 
     // Persist transcript
     pool

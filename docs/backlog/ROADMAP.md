@@ -41,6 +41,7 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | [PRD-019](PRD-019-clinical-knowledge-base-proprietary.md) | Clinical Knowledge Base: Proprietary Extensions (eTG, AMH, MIMS) | Phase 2 | Post-Beta | After PRD-021 stable | Not started |
 | [PRD-020](../shipped/PRD-020-patient-web-frontend.md) | Patient Web Frontend | Build | Sprint 2 | Week 5–7 | **Shipped 2026-04-23** ✅ |
 | [PRD-021](PRD-021-clinical-knowledge-expansion.md) | Clinical Knowledge Base Expansion — 35 Additional GP Presentations | Phase 2 | Sprint 8 | After PRD-011 stable | Not started |
+| [PRD-022](PRD-022-public-marketing-site.md) | Public Marketing Site & Legal Pages | Build | Sprint 8 | Week 17–18 | **In Progress** 🔄 |
 | — | — | — | — | — | — |
 | **SEC-001** | [Critical Authorization Fixes](../shipped/SEC-001-critical-authorization-fixes.md) | Security Hardening | Sprint 7 | Week 14–15 | **Shipped 2026-04-24** ✅ |
 | **SEC-002** | [Email & Webhook Security](../shipped/SEC-002-email-webhook-security.md) | Security Hardening | Sprint 7 | Week 14–15 | **Shipped 2026-04-24** ✅ |
