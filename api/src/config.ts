@@ -19,6 +19,7 @@ export const config = {
     user: optional("DB_USER", "nightingale_admin"),
     password: required("DB_PASSWORD"),
     ssl: optional("APP_ENV", "development") !== "development",
+    poolMax: parseInt(optional("DB_POOL_MAX", "20"), 10),
   },
 
   cognito: {

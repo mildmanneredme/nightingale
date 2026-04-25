@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { checkDb } from "../db";
+import { checkDb, pool } from "../db";
 import { config } from "../config";
 import { getMigrationResult } from "../db/migrations";
 
@@ -14,6 +14,11 @@ router.get("/health", (_req, res) => {
     env: config.env,
     db: {
       migrations: migrations ?? { applied: 0, pending: 0 },
+      pool: {
+        total: pool.totalCount,
+        idle: pool.idleCount,
+        waiting: pool.waitingCount,
+      },
     },
   });
 });
