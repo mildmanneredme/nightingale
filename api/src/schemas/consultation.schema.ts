@@ -6,11 +6,11 @@ import { z } from "zod";
  */
 export const CreateConsultationSchema = z.object({
   consultationType: z.enum(["voice", "text"]),
-  presentingComplaint: z.string().min(1, "Presenting complaint is required"),
+  presentingComplaint: z.string().trim().min(1, "Presenting complaint is required"),
   isAnonymous: z.boolean().optional(),
   isForChild: z.boolean().optional(),
   childName: z.string().optional(),
-  childDob: z.string().optional(),
+  childDob: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD format").optional(),
   guardianName: z.string().optional(),
 });
 
@@ -28,5 +28,5 @@ export const EndConsultationSchema = z.object({
  * Sends a message in a text consultation.
  */
 export const ChatMessageSchema = z.object({
-  message: z.string().min(1, "message is required"),
+  message: z.string().trim().min(1, "message is required"),
 });

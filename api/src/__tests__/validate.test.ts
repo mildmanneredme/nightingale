@@ -100,6 +100,33 @@ describe("validateBody middleware", () => {
     expect(next).not.toHaveBeenCalled();
     expect(ctx.statusCode).toBe(400);
   });
+
+  it("returns field 'body' when entire request body is null", () => {
+    const nullBodySchema = z.object({ name: z.string() });
+    const req = mockReq(null);
+    const ctx = mockRes();
+    const next = jest.fn();
+
+    validateBody(nullBodySchema)(req, ctx.res, next as NextFunction);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(ctx.statusCode).toBe(400);
+    const body = ctx.json as { error: string; details: Array<{ field: string; message: string }> };
+    // All issues produced from a null body have an empty path — field should be "body"
+    expect(body.details.every((d) => d.field !== "")).toBe(true);
+  });
+
+  it("writes parsed result.data back to req.body (coercions/transforms applied)", () => {
+    const trimSchema = z.object({ name: z.string().trim() });
+    const req = mockReq({ name: "  Alice  " });
+    const { res } = mockRes();
+    const next = jest.fn();
+
+    validateBody(trimSchema)(req, res, next as NextFunction);
+
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(req.body.name).toBe("Alice");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -165,6 +192,40 @@ describe("CreateConsultationSchema", () => {
     });
     expect(result.success).toBe(true);
   });
+
+  it("rejects whitespace-only presentingComplaint", () => {
+    const result = CreateConsultationSchema.safeParse({
+      consultationType: "voice",
+      presentingComplaint: "   ",
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0].path).toContain("presentingComplaint");
+    }
+  });
+
+  it("trims presentingComplaint before storing", () => {
+    const result = CreateConsultationSchema.safeParse({
+      consultationType: "text",
+      presentingComplaint: "  headache  ",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.presentingComplaint).toBe("headache");
+    }
+  });
+
+  it("rejects invalid childDob format", () => {
+    const result = CreateConsultationSchema.safeParse({
+      consultationType: "voice",
+      presentingComplaint: "ear pain",
+      childDob: "01/01/2018",
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0].path).toContain("childDob");
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -228,6 +289,45 @@ describe("UpdatePatientSchema", () => {
     const result = UpdatePatientSchema.safeParse({});
     expect(result.success).toBe(true);
   });
+
+  it("accepts a valid 10-digit Medicare number", () => {
+    const result = UpdatePatientSchema.safeParse({ medicareNumber: "2123456701" });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a Medicare number with wrong digit count", () => {
+    const result = UpdatePatientSchema.safeParse({ medicareNumber: "12345" });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0].path).toContain("medicareNumber");
+    }
+  });
+
+  it("accepts a valid 16-digit IHI number", () => {
+    const result = UpdatePatientSchema.safeParse({ ihiNumber: "8003608166690503" });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an IHI number with non-digit characters", () => {
+    const result = UpdatePatientSchema.safeParse({ ihiNumber: "800360816669050X" });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0].path).toContain("ihiNumber");
+    }
+  });
+
+  it("accepts a valid YYYY-MM-DD date of birth", () => {
+    const result = UpdatePatientSchema.safeParse({ dateOfBirth: "1990-06-15" });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a date of birth in non-ISO format", () => {
+    const result = UpdatePatientSchema.safeParse({ dateOfBirth: "15/06/1990" });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0].path).toContain("dateOfBirth");
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -283,6 +383,22 @@ describe("CreateRenewalSchema", () => {
       remindersEnabled: false,
     });
     expect(result.success).toBe(true);
+  });
+
+  it("rejects whitespace-only medicationName", () => {
+    const result = CreateRenewalSchema.safeParse({ medicationName: "   " });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0].path).toContain("medicationName");
+    }
+  });
+
+  it("trims medicationName before storing", () => {
+    const result = CreateRenewalSchema.safeParse({ medicationName: "  Metformin  " });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.medicationName).toBe("Metformin");
+    }
   });
 });
 

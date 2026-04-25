@@ -11,7 +11,7 @@ const VALID_REASON_CODES = [
  * POST /api/v1/doctor/consultations/:id/amend
  */
 export const AmendConsultationSchema = z.object({
-  doctorDraft: z.string().min(1, "doctorDraft is required"),
+  doctorDraft: z.string().trim().min(1, "Doctor draft cannot be blank"),
   doctorNotes: z.string().optional(),
 });
 

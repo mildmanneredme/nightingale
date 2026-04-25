@@ -5,7 +5,7 @@ import { z } from "zod";
  * Patient submits a script renewal request.
  */
 export const CreateRenewalSchema = z.object({
-  medicationName: z.string().min(1, "medicationName is required"),
+  medicationName: z.string().trim().min(1, "Medication name is required"),
   sourceConsultationId: z.string().optional(),
   dosage: z.string().optional(),
   noAdverseEffects: z.boolean().optional(),

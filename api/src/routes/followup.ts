@@ -5,12 +5,12 @@
 // Tracking URLs are unique per consultation; no patient auth required to respond.
 
 import { Router } from "express";
-import { z } from "zod";
 import { createHash } from "crypto";
 import { pool } from "../db";
 import { sendFollowUpEmail, sendFollowUpConcernAcknowledgementEmail } from "../services/emailService";
 import { logger } from "../logger";
 import { validateBody } from "../middleware/validate";
+import { SendFollowUpSchema } from "../schemas/followup.schema";
 
 const router = Router();
 
@@ -21,7 +21,7 @@ const WEB_BASE_URL = process.env.WEB_BASE_URL ?? "https://app.nightingale.com.au
 // Sends follow-up emails for consultations whose followup_send_at has passed.
 // Idempotent: sets followup_sent_at so duplicates cannot be sent.
 // ---------------------------------------------------------------------------
-router.post("/send", validateBody(z.object({})), async (_req, res, next) => {
+router.post("/send", validateBody(SendFollowUpSchema), async (_req, res, next) => {
   try {
     // Lock rows to prevent duplicate sends under concurrent scheduler invocations
     const { rows: due } = await pool.query(
