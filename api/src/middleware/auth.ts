@@ -50,7 +50,7 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
   }
   const token = header.slice(7);
   try {
-    const payload = await getVerifier().verify(token);
+    const payload = await verifyJwt(token);
     // Attach claims to request for downstream use
     req.user = payload as unknown as Express.Request["user"];
     next();

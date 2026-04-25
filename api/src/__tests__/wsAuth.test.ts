@@ -1,16 +1,14 @@
 // C-02: WebSocket upgrade JWT authentication tests
 //
-// Covers the four acceptance criteria:
+// Covers the five acceptance criteria:
 //   1. WS upgrade with no Authorization header → 401, DB token unused
 //   2. WS upgrade with expired/invalid JWT    → 401, DB token unused
 //   3. WS upgrade with valid JWT but wrong sub → 403, DB token unused
 //   4. Valid JWT + valid token                → upgrade succeeds
+//   5. Valid JWT + token already used         → 401, no UPDATE executed
 
 import http from "http";
 import net from "net";
-import crypto from "crypto";
-import { WebSocketServer } from "ws";
-import { URL } from "url";
 
 // ---------------------------------------------------------------------------
 // Mocks — must be declared before any module import that uses them
@@ -39,117 +37,10 @@ const mockAttach = jest.requireMock("../routes/consultations")
   .attachConsultationStream as jest.Mock;
 
 // ---------------------------------------------------------------------------
-// Minimal upgrade handler (mirrors the logic in index.ts) so we can unit-test
-// it without starting the full Express server or importing index.ts (which has
-// a side-effect of calling app.listen).
+// Import the production upgrade handler directly — tests exercise shipped code
 // ---------------------------------------------------------------------------
 
-import { pool } from "../db";
-import { verifyJwt } from "../middleware/auth";
-import { attachConsultationStream } from "../routes/consultations";
-import { logger } from "../logger";
-
-async function handleUpgrade(
-  req: http.IncomingMessage,
-  socket: net.Socket,
-  head: Buffer,
-  wss: WebSocketServer
-): Promise<void> {
-  // Step 1: correlationId
-  const correlationId =
-    (req.headers["x-correlation-id"] as string | undefined) ?? crypto.randomUUID();
-
-  const url = req.url ?? "";
-  const match = url.match(/^\/api\/v1\/consultations\/([^/?]+)\/stream(\?.*)?$/);
-  if (!match) {
-    socket.destroy();
-    return;
-  }
-
-  // Step 2: Extract and verify JWT
-  const authHeader = req.headers.authorization;
-  const rawJwt = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined;
-
-  if (!rawJwt) {
-    logger.warn({ correlationId }, "WS upgrade rejected: missing Authorization header");
-    socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
-    socket.destroy();
-    return;
-  }
-
-  let jwtSub: string;
-  try {
-    const payload = await verifyJwt(rawJwt);
-    jwtSub = payload.sub;
-  } catch (err) {
-    logger.warn({ correlationId, err }, "WS upgrade rejected: invalid or expired JWT");
-    socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
-    socket.destroy();
-    return;
-  }
-
-  // Step 3: Extract consultationId and ws token
-  const consultationId = match[1];
-  const qs = new URL(url, "http://localhost").searchParams;
-  const token = qs.get("token");
-
-  if (!token) {
-    logger.warn({ correlationId, consultationId }, "WS upgrade rejected: missing token");
-    socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
-    socket.destroy();
-    return;
-  }
-
-  // Steps 4-6: DB lookup, sub check, mark used
-  try {
-    const { rows } = await pool.query<{ id: string; used_at: Date | null; cognito_sub: string }>(
-      `SELECT wt.id, wt.used_at, p.cognito_sub
-       FROM ws_tokens wt
-       JOIN patients p ON p.id = wt.patient_id
-       WHERE wt.token = $1
-         AND wt.consultation_id = $2
-         AND wt.expires_at > NOW()`,
-      [token, consultationId]
-    );
-
-    if (!rows[0]) {
-      logger.warn({ correlationId, consultationId }, "WS upgrade rejected: invalid or expired token");
-      socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
-      socket.destroy();
-      return;
-    }
-
-    if (rows[0].used_at) {
-      logger.warn({ correlationId, consultationId }, "WS upgrade rejected: token already used");
-      socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
-      socket.destroy();
-      return;
-    }
-
-    // Step 5: sub check
-    if (jwtSub !== rows[0].cognito_sub) {
-      logger.warn(
-        { correlationId, consultationId, jwtSub },
-        "WS upgrade rejected: JWT sub does not match consultation patient"
-      );
-      socket.write("HTTP/1.1 403 Forbidden\r\n\r\n");
-      socket.destroy();
-      return;
-    }
-
-    // Step 6: mark used
-    await pool.query(`UPDATE ws_tokens SET used_at = NOW() WHERE id = $1`, [rows[0].id]);
-  } catch (err) {
-    logger.error({ err, correlationId, consultationId }, "WS token validation failed");
-    socket.destroy();
-    return;
-  }
-
-  // Step 7: upgrade
-  wss.handleUpgrade(req, socket, head, (ws) => {
-    attachConsultationStream(consultationId, ws);
-  });
-}
+import { wsUpgradeHandler, wss } from "../ws/upgradeHandler";
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -217,14 +108,12 @@ function sendRawUpgrade(
 
 describe("C-02: WS upgrade JWT authentication", () => {
   let server: http.Server;
-  let wss: WebSocketServer;
   let port: number;
 
   beforeAll((done) => {
-    wss = new WebSocketServer({ noServer: true });
     server = http.createServer();
     server.on("upgrade", (req, socket, head) => {
-      handleUpgrade(req, socket as net.Socket, head, wss).catch(() => socket.destroy());
+      wsUpgradeHandler(req, socket, head).catch(() => socket.destroy());
     });
     server.listen(0, "127.0.0.1", () => {
       port = (server.address() as net.AddressInfo).port;
@@ -316,5 +205,25 @@ describe("C-02: WS upgrade JWT authentication", () => {
     const updateCall = mockPoolQuery.mock.calls[1][0] as string;
     expect(updateCall).toMatch(/UPDATE ws_tokens/i);
     expect(mockAttach).toHaveBeenCalledWith(CONSULT_ID, expect.anything());
+  });
+
+  // -------------------------------------------------------------------------
+  // AC-5: Valid JWT + token already used → 401, no UPDATE executed
+  // -------------------------------------------------------------------------
+  it("rejects with 401 when ws_token has already been used", async () => {
+    mockVerifyJwt.mockResolvedValueOnce({ sub: PATIENT_COGNITO_SUB });
+    // SELECT returns a row where used_at is non-null (already consumed)
+    mockPoolQuery.mockResolvedValueOnce({
+      rows: [{ id: "tok-id-003", used_at: new Date("2026-04-25T00:00:00Z"), cognito_sub: PATIENT_COGNITO_SUB }],
+    });
+
+    const statusLine = await sendRawUpgrade(port, VALID_PATH, {
+      Authorization: `Bearer valid.jwt.token`,
+    });
+
+    expect(statusLine).toBe("HTTP/1.1 401 Unauthorized");
+    // SELECT was called once, but no UPDATE should follow
+    expect(mockPoolQuery).toHaveBeenCalledTimes(1);
+    expect(mockPoolQuery.mock.calls.every((c: unknown[]) => !String(c[0]).match(/UPDATE/i))).toBe(true);
   });
 });
