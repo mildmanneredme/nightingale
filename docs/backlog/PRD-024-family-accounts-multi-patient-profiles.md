@@ -1,6 +1,6 @@
 # PRD-024 — Family Accounts & Multi-Patient Profiles
 
-> **Status:** Ready for sprint planning — open questions resolved 2026-04-26 (CTO)
+> **Status:** Ready for sprint planning — all design decisions and clarifications resolved 2026-04-26 (CTO)
 > **Phase:** Phase 2 — post-beta
 > **Type:** Build — Patient Experience + Identity Model + Compliance
 > **Priority:** P2 — high commercial value (family is a primary use case for telehealth) but introduces real Privacy Act / AHPRA complexity that should not gate MVP
@@ -181,6 +181,7 @@ at any time.
 | F-038 | A child dependant can be **detached** by the account holder at any time. Detachment soft-deletes the dependant record (per the existing 7-year retention policy) and emails the account holder a confirmation. |
 | F-039 | An account holder soft-deletion (`deletion_requested_at`) does **not** cascade to their child dependants — the account holder must either detach each dependant or hand them off to a co-manager (via promote + invite) first. The deletion request is rejected with a list of unresolved dependants. |
 | F-040 | A linked profile (other adult) can revoke the link from either side at any time. Revocation does not affect the underlying patient record on either side. |
+| F-041 | **Birth-year at sign-up (C-2).** The register form adds a "Year of birth" `<select>` field (range: 1900 to current_year − 18). The server validates `year ≤ current_year − 18` and returns a 422 with `"Account holders must be 18 or older."` if the value exceeds it. The year is stored in `account_holders.birth_year` (INT); it is never stored in Cognito user attributes. The register-page test suite must cover the boundary: current_year − 18 passes, current_year − 17 fails. |
 
 ---
 
@@ -194,6 +195,9 @@ at any time.
 - [ ] Existing single-patient accounts migrate cleanly with no user-visible break.
 - [ ] Cross-border invites are rejected at submit-time with the documented message.
 - [ ] Privacy lawyer + Medical Director sign off on consent copy and the default-permission matrix.
+- [ ] Register page has birth-year field; server rejects under-18 with documented 422 message.
+- [ ] "Give this child their own login" action is hidden/greyed for child profiles where birth year implies age < 12.
+- [ ] Cross-border invite block: non-AU TLDs rejected at submit time.
 
 ---
 
@@ -221,10 +225,12 @@ at any time.
 
 ## Remaining Clarifications (post-decisions)
 
-These follow-up questions surfaced after applying the seven decisions above. None block scoping but should be resolved before the implementation sprint starts.
+All clarifications resolved 2026-04-26 (CTO).
 
-1. **TLD whitelist for cross-border block (F-022).** AU/NZ/UK/US/CA is a starting point — confirm with legal whether US/CA should be included for "Australians overseas" cases.
-2. **Adult-attestation at sign-up.** Today the register form has no age affirmation. To meet the "always an adult" constraint for account holders, do we add a birth-year field at sign-up, or is the implicit attestation in the Privacy Policy sufficient?
-3. **Spouse default-permission UI copy.** Default = notifications + billing only. The consent-preview screen needs language that explains why "view my clinical record" is off by default without sounding accusatory.
-4. **Promote-child flow at what age?** Technically promotable at any age, but presenting that option for a 4-year-old feels wrong. Soft-recommendation in the UI to wait until ~12+ — confirm with Medical Director.
-5. **Doctor "subject consents to family disclosure" indicator (F-028).** Where exactly on the review screen — alongside red flags / clinical-context warnings, or in a dedicated "Disclosure" panel? Designer call.
+| # | Question | Resolution |
+|---|---|---|
+| C-1 | TLD whitelist for cross-border block (F-022) | **AU-only for Phase 2.** Drop NZ/UK/US/CA from the whitelist entirely — revisit with legal before Phase 3. Invite rejects non-`.au` and non-Australian generic TLDs with the documented message. |
+| C-2 | Adult-attestation at sign-up | **Add a birth-year field to the register page.** A single `<select>` for year of birth (current year − 18 as the minimum; no DOB stored in Cognito). Server must validate `year ≤ current_year − 18` before creating the account. See also F-041. |
+| C-3 | Spouse default-permission UI copy | **Agreed on framing.** Use: "Your partner won't see your consultations or records by default — this protects your privacy. You can grant access to any part of your record at any time." Non-accusatory; frames it as a feature, not a restriction. |
+| C-4 | Promote-child flow at what age? | **Soft-recommend ~12+ in the UI; Medical Director to ratify.** Industry pattern (MyChart, NHS App, MyGov Health): under ~12 the child is always a sub-profile; 12–17 optional own login for privacy-sensitive consults; 18+ auto-separates. Nightingale's D-1 (minor flag, no state machine) maps naturally onto this — the UI should show the "Give this child their own login" action only when the child's birth year implies they are ≥ 12, greyed-out with "Available once your child turns 12" for younger profiles. Medical Director to confirm the exact age threshold. |
+| C-5 | Placement of F-028 family-disclosure indicator on doctor review screen | **Alongside red flags / clinical-context warnings** — no separate Disclosure panel. Keeps the doctor's eye on a single information strip. If the subject has an active family link, append one line: "Family disclosure: [Linked Name] ([relationship]) may receive consultation outcome." |
