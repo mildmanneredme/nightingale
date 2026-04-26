@@ -62,6 +62,10 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | **BUG-006** | [Staging Deployment Failures: Consultation Broken End-to-End](../shipped/BUG-006-staging-deployment-failures.md) | Bug Fix | Sprint 8 | Week 17 | **Shipped 2026-04-25** ✅ |
 | — | — | — | — | — | — |
 | **QA-001** | [Playwright End-to-End Test Suite](QA-001-playwright-e2e-suite.md) | Quality Assurance | Periodic / on-request | Not in per-PR CI | Not started |
+| — | — | — | — | — | — |
+| **BUG-007** | [Remove Placeholder & Fake Content from Patient Surfaces](BUG-007-remove-placeholder-content.md) | Bug Fix | Onboarding | P0 — pre-beta credibility | Not started |
+| **PRD-023** | [Patient Onboarding & Clinical Baseline](PRD-023-patient-onboarding-clinical-baseline.md) | Build — Patient Experience | Onboarding | P1 — pre-beta clinical safety | Not started |
+| **UX-005** | [Auth Flow Polish](UX-005-auth-flow-polish.md) | UX Fixes | Onboarding | P2 — before scaling beyond pilot | Not started |
 
 ---
 
