@@ -190,9 +190,8 @@ export default function RegisterPage() {
                     />
                     <span className="font-body-md text-[14px] leading-snug text-on-surface">
                       I agree to the{" "}
-                      <Link href="/legal/privacy" className="text-secondary font-bold hover:underline">Privacy Policy</Link>
-                      {" "}and{" "}
-                      <Link href="/legal/collection-notice" className="text-secondary font-bold hover:underline">Collection Notice</Link>.
+                      <Link href="/privacy" className="text-secondary font-bold hover:underline">Privacy Policy</Link>
+                      {" "}(which includes our collection notice).
                       {" "}I understand my data is stored in Australian data centres.
                     </span>
                   </label>
@@ -256,8 +255,8 @@ export default function RegisterPage() {
               Proudly Australian Owned
             </span>
             <div className="flex gap-4">
-              <Link href="#" className="text-outline text-label-sm hover:text-on-surface">Support</Link>
-              <Link href="/legal/privacy" className="text-outline text-label-sm hover:text-on-surface">Legal</Link>
+              <Link href="/faq" className="text-outline text-label-sm hover:text-on-surface">Support</Link>
+              <Link href="/privacy" className="text-outline text-label-sm hover:text-on-surface">Legal</Link>
             </div>
           </footer>
         </div>

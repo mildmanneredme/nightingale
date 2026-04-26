@@ -184,8 +184,8 @@ export default function LoginPage() {
               Proudly Australian Owned
             </span>
             <div className="flex gap-4">
-              <Link href="#" className="text-outline text-label-sm hover:text-on-surface">Support</Link>
-              <Link href="/legal/privacy" className="text-outline text-label-sm hover:text-on-surface">Legal</Link>
+              <Link href="/faq" className="text-outline text-label-sm hover:text-on-surface">Support</Link>
+              <Link href="/privacy" className="text-outline text-label-sm hover:text-on-surface">Legal</Link>
             </div>
           </footer>
         </div>

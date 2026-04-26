@@ -54,19 +54,18 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Trust Band Stats */}
+      {/* Trust Band — qualitative only; no numerical claims until real metrics are wired */}
       <section className="bg-primary py-16">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
-              { stat: "15k+", label: "Active Patients" },
-              { stat: "4.9/5", label: "Average Rating" },
-              { stat: "100%", label: "AHPRA Registered" },
-              { stat: "< 5m", label: "Response Time" },
-            ].map(({ stat, label }) => (
-              <div key={label} className="text-center space-y-1">
-                <div className="font-display-xl text-secondary-fixed text-3xl">{stat}</div>
-                <div className="font-label-sm text-on-primary-container uppercase tracking-widest">{label}</div>
+              { icon: "verified_user", label: "AHPRA-registered Australian doctors" },
+              { icon: "shield_lock", label: "End-to-end encrypted, hosted in Australia" },
+              { icon: "medical_services", label: "Doctor-reviewed before any advice reaches you" },
+            ].map(({ icon, label }) => (
+              <div key={label} className="flex items-center gap-3 justify-center text-on-primary-container">
+                <span className="material-symbols-outlined text-secondary-fixed">{icon}</span>
+                <span className="font-label-sm uppercase tracking-widest text-sm">{label}</span>
               </div>
             ))}
           </div>

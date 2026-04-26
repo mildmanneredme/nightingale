@@ -81,9 +81,9 @@ export default function DashboardPage() {
         {/* Bento grid */}
         <div className="grid grid-cols-12 gap-gutter">
 
-          {/* CTA Card */}
+          {/* CTA Card — Profile completeness tile removed (PRD-023 will reintroduce with real data) */}
           <div
-            className="col-span-12 lg:col-span-8 rounded-xl p-8 relative overflow-hidden"
+            className="col-span-12 rounded-xl p-8 relative overflow-hidden"
             style={{ backgroundImage: "url('/dashboard-bg.png')", backgroundSize: "cover", backgroundPosition: "center" }}
           >
             <div className="relative z-10 flex flex-col h-full justify-between min-h-[240px]">
@@ -99,40 +99,6 @@ export default function DashboardPage() {
               >
                 <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>add_circle</span>
                 Start New Consultation
-              </Link>
-            </div>
-          </div>
-
-          {/* Profile completeness */}
-          <div className="col-span-12 lg:col-span-4 bg-white rounded-xl p-6 border border-slate-100 shadow-card flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-secondary font-bold text-xs uppercase tracking-wider">Health Profile</span>
-                <span className="text-primary font-bold text-sm">85% Complete</span>
-              </div>
-              <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden mb-6">
-                <div className="bg-secondary h-full rounded-full w-[85%] transition-all duration-1000" />
-              </div>
-              <p className="font-body-md text-on-surface-variant mb-4 text-sm">
-                Complete your medical history to help our doctors provide better care.
-              </p>
-            </div>
-            <div className="space-y-3">
-              <Link
-                href="/profile"
-                className="flex items-center gap-3 p-3 bg-secondary-container/30 rounded-lg border border-secondary-container/50 hover:bg-secondary-container/50 transition-colors"
-              >
-                <span className="material-symbols-outlined text-secondary">check_circle</span>
-                <span className="font-clinical-data text-on-secondary-container">Personal details</span>
-                <span className="material-symbols-outlined text-secondary ml-auto text-[16px]">arrow_forward</span>
-              </Link>
-              <Link
-                href="/history"
-                className="flex items-center gap-3 p-3 bg-surface-container rounded-lg border border-outline-variant/30 hover:bg-surface-container-high transition-colors"
-              >
-                <span className="material-symbols-outlined text-outline">pending</span>
-                <span className="font-clinical-data text-on-surface-variant">Update medical history</span>
-                <span className="material-symbols-outlined text-outline ml-auto text-[16px]">arrow_forward</span>
               </Link>
             </div>
           </div>
@@ -235,31 +201,10 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* Vitals Snapshot */}
-          <div className="col-span-12 md:col-span-6 bg-white rounded-xl p-6 border border-slate-100 shadow-card">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="p-3 bg-secondary/10 rounded-xl text-secondary">
-                <span className="material-symbols-outlined">monitor_heart</span>
-              </div>
-              <div>
-                <h4 className="font-clinical-data text-primary">Vitals Snapshot</h4>
-                <p className="text-xs text-slate-400">Last sync: 2 hours ago</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-slate-50 rounded-lg">
-                <p className="text-xs text-slate-500 mb-1">Heart Rate</p>
-                <p className="font-headline-md text-headline-md text-primary">72 <span className="text-sm font-normal text-slate-400">bpm</span></p>
-              </div>
-              <div className="p-4 bg-slate-50 rounded-lg">
-                <p className="text-xs text-slate-500 mb-1">Sleep</p>
-                <p className="font-headline-md text-headline-md text-primary">7.5 <span className="text-sm font-normal text-slate-400">hrs</span></p>
-              </div>
-            </div>
-          </div>
+          {/* Vitals Snapshot tile removed — wearable / vitals integration is Phase 2 */}
 
           {/* Telehealth Tip */}
-          <div className="col-span-12 md:col-span-6 bg-secondary-container/20 rounded-xl p-6 border border-secondary-container/30 relative overflow-hidden">
+          <div className="col-span-12 bg-secondary-container/20 rounded-xl p-6 border border-secondary-container/30 relative overflow-hidden">
             <div className="relative z-10">
               <h4 className="font-headline-md text-headline-md text-primary mb-2">Preparing for your call</h4>
               <p className="font-body-md text-on-secondary-container mb-4">
