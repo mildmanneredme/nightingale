@@ -118,6 +118,7 @@ export interface Patient {
   email: string;
   firstName?: string;
   lastName?: string;
+  preferredName?: string;
   fullName?: string;
   dateOfBirth?: string;
   biologicalSex?: string;
@@ -125,6 +126,8 @@ export interface Patient {
   address?: string;
   medicareNumber?: string;
   ihiNumber?: string;
+  gpName?: string;
+  gpClinic?: string;
   emergencyContactName?: string;
   emergencyContactPhone?: string;
   emergencyContactRel?: string;
@@ -132,9 +135,18 @@ export interface Patient {
   guardianName?: string;
   guardianEmail?: string;
   guardianRelationship?: string;
+  allergiesNoneDeclared?: boolean;
+  medicationsNoneDeclared?: boolean;
+  conditionsNoneDeclared?: boolean;
+  onboardingCompletedAt?: string | null;
   allergies: Allergy[];
   medications: Medication[];
   conditions: Condition[];
+  completeness?: {
+    percentage: number;
+    missingRequired: string[];
+    missingOptional: string[];
+  };
 }
 
 export interface Allergy {

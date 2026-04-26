@@ -18,18 +18,37 @@ export const RegisterPatientSchema = z.object({
 export const UpdatePatientSchema = z.object({
   email: z.string().email("Invalid email address format").optional(),
   fullName: z.string().optional(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  preferredName: z.string().optional(),
   dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date of birth must be YYYY-MM-DD format").optional(),
   biologicalSex: z.enum(VALID_BIOLOGICAL_SEX).optional(),
   phone: z.string().optional(),
   address: z.unknown().optional(),
-  medicareNumber: z.string().regex(/^\d{10}$/, "Medicare number must be 10 digits").optional(),
+  // Medicare numbers are 10 digits (card number) or 11 (with IRN suffix).
+  medicareNumber: z.string().regex(/^\d{10,11}$/, "Medicare number must be 10 or 11 digits").optional(),
   ihiNumber: z.string().regex(/^\d{16}$/, "IHI number must be 16 digits").optional(),
+  gpName: z.string().optional(),
+  gpClinic: z.string().optional(),
   emergencyContactName: z.string().optional(),
   emergencyContactPhone: z.string().optional(),
   emergencyContactRel: z.string().optional(),
   guardianName: z.string().optional(),
   guardianEmail: z.string().email().optional(),
   guardianRelationship: z.string().optional(),
+  allergiesNoneDeclared: z.boolean().optional(),
+  medicationsNoneDeclared: z.boolean().optional(),
+  conditionsNoneDeclared: z.boolean().optional(),
+});
+
+/**
+ * POST /api/v1/patients/me/onboarding-step
+ * Records the patient's progression through the onboarding wizard.
+ */
+export const OnboardingStepSchema = z.object({
+  step: z.number().int().min(1).max(3),
+  skipped: z.boolean(),
+  skippedFields: z.array(z.string()).optional(),
 });
 
 /**

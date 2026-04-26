@@ -6,6 +6,7 @@ import {
   AddAllergySchema,
   AddMedicationSchema,
   AddConditionSchema,
+  OnboardingStepSchema,
 } from "../schemas/patient.schema";
 import {
   insertPatient,
@@ -22,7 +23,72 @@ import {
   deleteMedication,
   insertCondition,
   deleteCondition,
+  recordOnboardingStep,
+  markOnboardingComplete,
+  PatientRow,
+  AllergyRow,
+  MedicationRow,
+  ConditionRow,
 } from "../repositories/patient.repository";
+
+// ---------------------------------------------------------------------------
+// PRD-023: profile completeness
+//
+// Required fields gate doctor approval (per Medical Director sign-off pending);
+// optional fields are nice-to-have. Clinical-baseline sections are "answered"
+// when there is at least one record OR the patient has explicitly declared
+// they have none of that category.
+// ---------------------------------------------------------------------------
+const REQUIRED_FIELDS: { key: keyof PatientRow; label: string }[] = [
+  { key: "firstName",     label: "First name" },
+  { key: "lastName",      label: "Last name" },
+  { key: "dateOfBirth",   label: "Date of birth" },
+  { key: "biologicalSex", label: "Biological sex" },
+  { key: "phone",         label: "Phone number" },
+  { key: "address",       label: "Address" },
+];
+
+const OPTIONAL_FIELDS: { key: keyof PatientRow; label: string }[] = [
+  { key: "preferredName",   label: "Preferred name" },
+  { key: "medicareNumber",  label: "Medicare number" },
+  { key: "gpName",          label: "Regular GP" },
+  { key: "gpClinic",        label: "GP clinic" },
+];
+
+function computeCompleteness(
+  patient: PatientRow,
+  allergies: AllergyRow[],
+  medications: MedicationRow[],
+  conditions: ConditionRow[]
+) {
+  const missingRequired: string[] = [];
+  const missingOptional: string[] = [];
+
+  for (const f of REQUIRED_FIELDS) {
+    if (!patient[f.key]) missingRequired.push(f.label);
+  }
+  for (const f of OPTIONAL_FIELDS) {
+    if (!patient[f.key]) missingOptional.push(f.label);
+  }
+
+  // Clinical-baseline sections each count as one "field" toward completeness.
+  if (allergies.length === 0 && !patient.allergiesNoneDeclared) {
+    missingRequired.push("Allergies (or confirm none)");
+  }
+  if (medications.length === 0 && !patient.medicationsNoneDeclared) {
+    missingRequired.push("Current medications (or confirm none)");
+  }
+  if (conditions.length === 0 && !patient.conditionsNoneDeclared) {
+    missingRequired.push("Known conditions (or confirm none)");
+  }
+
+  const totalSlots =
+    REQUIRED_FIELDS.length + OPTIONAL_FIELDS.length + 3; // +3 baseline sections
+  const filledSlots = totalSlots - (missingRequired.length + missingOptional.length);
+  const percentage = Math.round((filledSlots / totalSlots) * 100);
+
+  return { percentage, missingRequired, missingOptional };
+}
 
 const router = Router();
 
@@ -68,11 +134,14 @@ router.get("/me", async (req, res, next) => {
       findPatientConditions(patient.id),
     ]);
 
+    const completeness = computeCompleteness(patient, allergies, medications, conditions);
+
     res.json({
       ...patient,
       allergies,
       medications,
       conditions,
+      completeness,
     });
   } catch (err) {
     next(err);
@@ -85,37 +154,7 @@ router.get("/me", async (req, res, next) => {
 router.put("/me", validateBody(UpdatePatientSchema), async (req, res, next) => {
   try {
     const sub = cognitoSub(req);
-    const {
-      fullName,
-      dateOfBirth,
-      biologicalSex,
-      phone,
-      address,
-      medicareNumber,
-      ihiNumber,
-      emergencyContactName,
-      emergencyContactPhone,
-      emergencyContactRel,
-      guardianName,
-      guardianEmail,
-      guardianRelationship,
-    } = req.body;
-
-    const row = await updatePatient(sub, {
-      fullName,
-      dateOfBirth,
-      biologicalSex,
-      phone,
-      address,
-      medicareNumber,
-      ihiNumber,
-      emergencyContactName,
-      emergencyContactPhone,
-      emergencyContactRel,
-      guardianName,
-      guardianEmail,
-      guardianRelationship,
-    });
+    const row = await updatePatient(sub, req.body);
 
     if (!row) {
       res.status(404).json({ error: "Patient not found" });
@@ -127,6 +166,29 @@ router.put("/me", validateBody(UpdatePatientSchema), async (req, res, next) => {
     next(err);
   }
 });
+
+// ---------------------------------------------------------------------------
+// POST /me/onboarding-step  (PRD-023 F-020)
+// Records progression through the onboarding wizard. Final step (3) marks
+// onboarding complete in the same call so the wizard finish handler is atomic.
+// ---------------------------------------------------------------------------
+router.post(
+  "/me/onboarding-step",
+  validateBody(OnboardingStepSchema),
+  async (req, res, next) => {
+    try {
+      const sub = cognitoSub(req);
+      const { step, skipped, skippedFields } = req.body;
+
+      await recordOnboardingStep(sub, step, skipped, skippedFields ?? []);
+      if (step === 3) await markOnboardingComplete(sub);
+
+      res.status(204).send();
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 // ---------------------------------------------------------------------------
 // Allergies
