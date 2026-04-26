@@ -117,14 +117,14 @@ export default function SafetyPage() {
               <img
                 alt="Australian doctor"
                 className="rounded-2xl w-full h-[400px] object-cover grayscale hover:grayscale-0 transition-all duration-700"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuC4KrsfJSNyK0vkxLSck14mi48FDcEf-M50Wv5IJj7Eyk0ovxxr5h35hX575yRpSIYHRl9W6PFtDLTZ3cWy3zjcJW0T_86F2b0MXmOJbSxkOXIQ0NoQFJxGu6SrQ5uio3FTedY-tQTH41cMVc40y2kRfRNG1DKcWWyWoe2QAB7PzsJWLDkxhEBZ8S-vOLieugq0M2f7DwBLzlUXT3D44cQNSGSRHKItM7S9uaYUoYDA4Rn2BSyqK6acETkxaNyAEAOdCuIVGtKT4Cjx"
+                src="/safety-profile-photo.png"
               />
               <div className="absolute -bottom-6 -left-6 bg-white p-6 rounded-2xl shadow-lg border border-outline-variant max-w-[240px]">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="w-2 h-2 rounded-full bg-secondary" />
                   <span className="font-label-sm text-secondary">Verified Practitioner</span>
                 </div>
-                <p className="font-clinical-data text-primary">Dr. James Henderson</p>
+                <p className="font-clinical-data text-primary">Dr. Jane Smith</p>
                 <p className="text-clinical-data font-clinical-data text-outline">AHPRA #MED0001234567</p>
               </div>
             </div>
