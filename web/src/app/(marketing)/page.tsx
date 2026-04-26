@@ -14,11 +14,11 @@ export default function HomePage() {
         <div className="absolute inset-0 z-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            className="w-full h-full object-cover opacity-10"
-            src="/landing-bg.png"
+            className="w-full h-full object-cover"
+            src="/landing-top-background.png"
             alt=""
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-white via-white/50 to-white" />
+          <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-white/20 to-white" />
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-6 text-center space-y-stack-lg">
@@ -118,8 +118,8 @@ export default function HomePage() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 className="w-full aspect-square object-cover"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYFEszUofxLegwyDSOslWNZJpKGm5KK5RecEV58ojbxaBMywkBSul5PNi_IdlKWX1JCSyY5Xiu2HwO60a0G5O39RFzOHnznq9dO4tygK1qhmsxJQxhfGebA5eEhDMNwolPs5jQopoIMmrqa9HZqg_WK3wSD5ja6r8UQM0Fgo-t33wsfkvoQre3HUDe_IZb6Gk7HsDPdk-L9OKeEzoez_jWG3RT3-MF24awq9cmyKJhlLD9VVKYhgu4_U1CnTgMUDSk6pTpACIgy0Fi"
-                alt="Australian doctor in a modern clinic"
+                src="/landing-hero-feature.png"
+                alt=""
               />
             </div>
             <div className="space-y-stack-lg">
