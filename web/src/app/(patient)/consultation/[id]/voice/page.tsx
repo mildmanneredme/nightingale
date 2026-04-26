@@ -88,12 +88,18 @@ export default function VoiceConsultationPage() {
         mediaStreamRef.current = stream;
 
         const ctx = new AudioContext({ sampleRate: 16000 });
+        if (ctx.state === "suspended") await ctx.resume();
         const src = ctx.createMediaStreamSource(stream);
         const processor = ctx.createScriptProcessor(4096, 1, 1);
         processorRef.current = processor;
+        // ScriptProcessorNode requires its output to be connected for
+        // onaudioprocess to fire reliably. Route through a muted gain node
+        // so the audio graph stays alive without echoing the mic to speakers.
+        const muteGain = ctx.createGain();
+        muteGain.gain.value = 0;
         src.connect(processor);
-        // Do NOT connect processor to ctx.destination — that routes mic audio to
-        // speakers, causing acoustic echo that Gemini hears as a second voice.
+        processor.connect(muteGain);
+        muteGain.connect(ctx.destination);
         processor.onaudioprocess = (e) => {
           if (muted) return;
           const float32 = e.inputBuffer.getChannelData(0);
@@ -158,9 +164,12 @@ export default function VoiceConsultationPage() {
   }, [id, router]);
 
   function handleEnd() {
+    if (ended) return;
     socketRef.current?.endSession();
     socketRef.current?.disconnect();
     mediaStreamRef.current?.getTracks().forEach((t) => t.stop());
+    setEnded(true);
+    router.push(`/consultation/${id}/photos`);
   }
 
   const mins = String(Math.floor(elapsed / 60)).padStart(2, "0");

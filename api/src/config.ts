@@ -44,6 +44,10 @@ export const config = {
     // Use us-central1 for local dev until AU region availability is confirmed.
     region: optional("GEMINI_REGION", "us-central1"),
     model: optional("GEMINI_LIVE_MODEL", "gemini-3.1-flash-live-preview"),
+    // Text-chat fallback (PRD-009). gemini-2.0-flash was retired by Google
+    // 2026-04 — keep this overridable so future model retirements only need
+    // an env var change.
+    chatModel: optional("GEMINI_CHAT_MODEL", "gemini-2.5-flash"),
     sessionTimeoutMs: optionalInt("GEMINI_SESSION_TIMEOUT_MS", 900_000),
   },
 

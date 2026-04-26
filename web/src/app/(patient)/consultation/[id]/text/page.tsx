@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { sendChatMessage, endConsultation } from "@/lib/api";
+import { sendChatMessage, endConsultation, ApiError } from "@/lib/api";
 import Link from "next/link";
 import ConsultationStepper from "@/components/ConsultationStepper";
 
@@ -59,8 +59,18 @@ export default function TextConsultationPage() {
       } else {
         setTurns((prev) => [...prev, { role: "ai", text: aiResponse.text ?? "", options: aiResponse.options }]);
       }
-    } catch {
-      setTurns((prev) => [...prev, { role: "ai", text: "Sorry, there was a connection issue. Please try again.", options: null }]);
+    } catch (err) {
+      const detail =
+        err instanceof ApiError
+          ? `${err.status} ${err.message}${err.correlationId ? ` (ref: ${err.correlationId})` : ""}`
+          : err instanceof Error
+            ? err.message
+            : "Unknown error";
+      setTurns((prev) => [...prev, {
+        role: "ai",
+        text: `Sorry, there was a connection issue. Please try again.\n\nDetails: ${detail}`,
+        options: null,
+      }]);
     } finally {
       setThinking(false);
     }
@@ -106,7 +116,7 @@ export default function TextConsultationPage() {
             <p className="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-widest px-1">
               {turn.role === "patient" ? "You" : "AI Assistant"}
             </p>
-            <div className={`rounded-2xl px-4 py-3 font-body-md max-w-[85%] ${
+            <div className={`rounded-2xl px-4 py-3 font-body-md max-w-[85%] whitespace-pre-line ${
               turn.role === "patient"
                 ? "bg-secondary-container text-on-secondary-container"
                 : "bg-white border border-slate-100 shadow-card text-on-surface"

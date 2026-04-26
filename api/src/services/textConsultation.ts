@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import { config } from "../config";
 
 const SYSTEM_INSTRUCTION = `You are a clinical AI assistant conducting a structured patient interview for an Australian telehealth consultation.
 Rules:
@@ -31,8 +32,7 @@ export async function sendTextMessage(
   patientMessage: string,
   history: TextTurn[]
 ): Promise<AiTextResponse> {
-  const apiKey = process.env.GEMINI_API_KEY ?? "";
-  const ai = new GoogleGenAI({ apiKey });
+  const ai = new GoogleGenAI({ apiKey: config.gemini.apiKey });
 
   const chatHistory = history.map((t) => ({
     role: t.speaker === "ai" ? ("model" as const) : ("user" as const),
@@ -40,7 +40,7 @@ export async function sendTextMessage(
   }));
 
   const chat = ai.chats.create({
-    model: "gemini-2.0-flash",
+    model: config.gemini.chatModel,
     config: { systemInstruction: SYSTEM_INSTRUCTION },
     history: chatHistory,
   });
