@@ -150,14 +150,11 @@ describe("CreateConsultationSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  it("rejects missing presentingComplaint", () => {
+  it("accepts missing presentingComplaint (optional)", () => {
     const result = CreateConsultationSchema.safeParse({
       consultationType: "voice",
     });
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error.issues[0].path).toContain("presentingComplaint");
-    }
+    expect(result.success).toBe(true);
   });
 
   it("rejects unknown consultationType", () => {
@@ -193,14 +190,14 @@ describe("CreateConsultationSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  it("rejects whitespace-only presentingComplaint", () => {
+  it("trims whitespace-only presentingComplaint to empty string", () => {
     const result = CreateConsultationSchema.safeParse({
       consultationType: "voice",
       presentingComplaint: "   ",
     });
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error.issues[0].path).toContain("presentingComplaint");
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.presentingComplaint).toBe("");
     }
   });
 

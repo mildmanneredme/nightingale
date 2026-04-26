@@ -5,8 +5,7 @@ import ConsultationStepper from "@/components/ConsultationStepper";
 import { useNewConsultation } from "@/hooks/useNewConsultation";
 
 export default function NewConsultationPage() {
-  const { complaint, setComplaint, type, setType, loading, canSubmit, handleSubmit, maxChars } =
-    useNewConsultation();
+  const { type, setType, loading, handleSubmit } = useNewConsultation();
 
   return (
     <>
@@ -21,37 +20,11 @@ export default function NewConsultationPage() {
         <div className="mb-6">
           <h1 className="font-headline-lg text-headline-lg text-primary mb-1">New Consultation</h1>
           <p className="font-body-lg text-on-surface-variant">
-            Tell us what&apos;s happening so we can match you with the right specialist.
+            Choose how you&apos;d like to speak with our clinical assistant.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-
-          {/* Symptom description */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-card">
-            <label htmlFor="reason" className="block font-headline-md text-headline-md text-primary mb-4">
-              What brings you in today?
-            </label>
-            <div className="relative">
-              <textarea
-                id="reason"
-                value={complaint}
-                onChange={(e) => setComplaint(e.target.value)}
-                rows={5}
-                className="w-full bg-surface-bright border-2 border-outline-variant focus:border-primary focus:ring-0 rounded-xl p-4 font-body-md text-on-surface transition-all resize-none outline-none"
-                placeholder="Please describe your symptoms, duration, and any concerns…"
-              />
-              <div className="absolute bottom-3 right-4 font-label-sm text-outline text-xs">
-                {complaint.length} / {maxChars}
-              </div>
-            </div>
-            <div className="mt-3 flex items-center gap-2 text-on-secondary-container bg-secondary-container/30 px-4 py-3 rounded-xl">
-              <span className="material-symbols-outlined text-[18px] shrink-0">info</span>
-              <p className="font-label-sm text-[12px]">
-                Specific details help our doctors provide a faster assessment.
-              </p>
-            </div>
-          </div>
 
           {/* Mode selection — two prominent cards */}
           <div>
@@ -153,8 +126,8 @@ export default function NewConsultationPage() {
           {/* CTA */}
           <button
             type="submit"
-            disabled={!canSubmit}
-            className="w-full py-5 bg-primary text-white font-manrope font-bold text-lg rounded-2xl shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            disabled={loading}
+            className="w-full py-5 bg-primary text-white font-manrope font-bold text-lg rounded-2xl shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-3 disabled:opacity-50"
           >
             {loading ? "Starting…" : "Commence Consultation"}
             {!loading && <span className="material-symbols-outlined">arrow_forward</span>}
