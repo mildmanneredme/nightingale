@@ -65,7 +65,7 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | — | — | — | — | — | — |
 | **BUG-007** | [Remove Placeholder & Fake Content from Patient Surfaces](BUG-007-remove-placeholder-content.md) | Bug Fix | Onboarding | P0 — pre-beta credibility | Not started |
 | **PRD-023** | [Patient Onboarding & Clinical Baseline](PRD-023-patient-onboarding-clinical-baseline.md) | Build — Patient Experience | Onboarding | P1 — pre-beta clinical safety | Not started |
-| **PRD-024** | [Family Accounts & Multi-Patient Profiles](PRD-024-family-accounts-multi-patient-profiles.md) | Build — Identity + Compliance | Phase 2 (post-beta) | P2 — high commercial value, blocked on legal sign-off | Scoping draft |
+| **PRD-024** | [Family Accounts & Multi-Patient Profiles](PRD-024-family-accounts-multi-patient-profiles.md) | Build — Identity + Compliance | Phase 2 (post-beta) | P2 — design decisions resolved 2026-04-26 | Ready for sprint planning |
 | **UX-005** | [Auth Flow Polish](UX-005-auth-flow-polish.md) | UX Fixes | Onboarding | P2 — before scaling beyond pilot | Not started |
 
 ---
