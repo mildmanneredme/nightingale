@@ -6,6 +6,7 @@ const mockPush = vi.fn();
 vi.mock("@/lib/api", () => ({
   createConsultation: vi.fn(),
   setToken: vi.fn(),
+  ApiError: class ApiError extends Error {},
 }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
@@ -22,15 +23,18 @@ import NewConsultationPage from "@/app/(patient)/consultation/new/page";
 
 beforeEach(() => vi.clearAllMocks());
 
+// The presenting-complaint textarea was removed — symptom collection now happens
+// during the consultation itself (refactor commit 4140783). Tests focus on the
+// remaining behaviours: mode selection + submit.
+
 describe("NewConsultationPage", () => {
-  it("renders presenting complaint textarea and consultation type cards", () => {
+  it("renders both consultation mode cards with voice selected by default", () => {
     render(<NewConsultationPage />);
-    expect(screen.getByLabelText(/what brings you in today/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /voice call/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /text chat/i })).toBeInTheDocument();
   });
 
-  it("calls createConsultation on submit and redirects to audio-check", async () => {
+  it("calls createConsultation with the chosen mode and routes accordingly", async () => {
     (createConsultation as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       id: "new-c",
       status: "pending",
@@ -38,13 +42,26 @@ describe("NewConsultationPage", () => {
       createdAt: "",
     });
     render(<NewConsultationPage />);
-    await userEvent.type(screen.getByLabelText(/what brings you in today/i), "sore throat");
     await userEvent.click(screen.getByRole("button", { name: /commence consultation/i }));
-    await waitFor(() =>
-      expect(createConsultation).toHaveBeenCalledWith("voice", "sore throat")
-    );
+    await waitFor(() => expect(createConsultation).toHaveBeenCalledWith("voice"));
     await waitFor(() =>
       expect(mockPush).toHaveBeenCalledWith("/consultation/new-c/audio-check")
+    );
+  });
+
+  it("routes to /text when text mode is selected", async () => {
+    (createConsultation as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      id: "new-c",
+      status: "pending",
+      consultationType: "text",
+      createdAt: "",
+    });
+    render(<NewConsultationPage />);
+    await userEvent.click(screen.getByRole("button", { name: /text chat/i }));
+    await userEvent.click(screen.getByRole("button", { name: /commence consultation/i }));
+    await waitFor(() => expect(createConsultation).toHaveBeenCalledWith("text"));
+    await waitFor(() =>
+      expect(mockPush).toHaveBeenCalledWith("/consultation/new-c/text")
     );
   });
 });
