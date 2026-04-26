@@ -7,7 +7,15 @@ vi.mock("@/lib/auth", () => ({
   signUp: vi.fn(),
   confirmSignUp: vi.fn(),
   signIn: vi.fn(),
+  resendConfirmationCode: vi.fn(),
 }));
+
+// UX-005 raised the live-validation password floor to 12 chars + upper + lower
+// + number + symbol (matches the Cognito user-pool policy in
+// infra/terraform/modules/cognito/main.tf). The submit button is disabled
+// until all five rules pass — pre-UX-005 tests used "Password1!" (10 chars)
+// which now fails the length check.
+const VALID_PASSWORD = "Password1234!";
 
 vi.mock("@/lib/api", () => ({
   registerPatient: vi.fn(),
@@ -34,26 +42,33 @@ describe("RegisterPage", () => {
     expect(screen.getByRole("checkbox")).toBeInTheDocument();
   });
 
-  it("shows an error if privacy checkbox not ticked on submit", async () => {
+  it("disables submit until privacy is ticked, then enables once all conditions pass", async () => {
     render(<RegisterPage />);
     await userEvent.type(screen.getByLabelText(/email/i), "test@example.com");
-    await userEvent.type(screen.getByLabelText(/password/i), "Password1!");
-    fireEvent.click(screen.getByRole("button", { name: /create account/i }));
-    await waitFor(() =>
-      expect(screen.getByRole("alert")).toBeInTheDocument()
-    );
+    await userEvent.type(screen.getByLabelText(/password/i), VALID_PASSWORD);
+
+    // UX-005: button stays disabled while privacy is unchecked.
+    const submit = screen.getByRole("button", { name: /create account/i }) as HTMLButtonElement;
+    expect(submit.disabled).toBe(true);
+
+    // Clicking a disabled button is a no-op — signUp must not have fired.
+    fireEvent.click(submit);
     expect(signUp).not.toHaveBeenCalled();
+
+    // Tick privacy → button enables.
+    await userEvent.click(screen.getByRole("checkbox"));
+    expect(submit.disabled).toBe(false);
   });
 
   it("calls signUp with email and password on valid submit", async () => {
     (signUp as ReturnType<typeof vi.fn>).mockResolvedValueOnce(undefined);
     render(<RegisterPage />);
     await userEvent.type(screen.getByLabelText(/email/i), "test@example.com");
-    await userEvent.type(screen.getByLabelText(/password/i), "Password1!");
+    await userEvent.type(screen.getByLabelText(/password/i), VALID_PASSWORD);
     await userEvent.click(screen.getByRole("checkbox"));
     await userEvent.click(screen.getByRole("button", { name: /create account/i }));
     await waitFor(() =>
-      expect(signUp).toHaveBeenCalledWith("test@example.com", "Password1!")
+      expect(signUp).toHaveBeenCalledWith("test@example.com", VALID_PASSWORD)
     );
   });
 
@@ -61,7 +76,7 @@ describe("RegisterPage", () => {
     (signUp as ReturnType<typeof vi.fn>).mockResolvedValueOnce(undefined);
     render(<RegisterPage />);
     await userEvent.type(screen.getByLabelText(/email/i), "test@example.com");
-    await userEvent.type(screen.getByLabelText(/password/i), "Password1!");
+    await userEvent.type(screen.getByLabelText(/password/i), VALID_PASSWORD);
     await userEvent.click(screen.getByRole("checkbox"));
     await userEvent.click(screen.getByRole("button", { name: /create account/i }));
     await waitFor(() =>
@@ -77,7 +92,7 @@ describe("RegisterPage", () => {
 
     render(<RegisterPage />);
     await userEvent.type(screen.getByLabelText(/email/i), "test@example.com");
-    await userEvent.type(screen.getByLabelText(/password/i), "Password1!");
+    await userEvent.type(screen.getByLabelText(/password/i), VALID_PASSWORD);
     await userEvent.click(screen.getByRole("checkbox"));
     await userEvent.click(screen.getByRole("button", { name: /create account/i }));
     await waitFor(() => screen.getByLabelText(/verification code/i));
@@ -86,7 +101,7 @@ describe("RegisterPage", () => {
     await userEvent.click(screen.getByRole("button", { name: /verify/i }));
 
     await waitFor(() => expect(confirmSignUp).toHaveBeenCalledWith("test@example.com", "123456"));
-    await waitFor(() => expect(signIn).toHaveBeenCalledWith("test@example.com", "Password1!"));
+    await waitFor(() => expect(signIn).toHaveBeenCalledWith("test@example.com", VALID_PASSWORD));
     await waitFor(() => expect(registerPatient).toHaveBeenCalledWith("test@example.com", "v1.0"));
   });
 
@@ -94,7 +109,7 @@ describe("RegisterPage", () => {
     (signUp as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error("UsernameExistsException"));
     render(<RegisterPage />);
     await userEvent.type(screen.getByLabelText(/email/i), "test@example.com");
-    await userEvent.type(screen.getByLabelText(/password/i), "Password1!");
+    await userEvent.type(screen.getByLabelText(/password/i), VALID_PASSWORD);
     await userEvent.click(screen.getByRole("checkbox"));
     await userEvent.click(screen.getByRole("button", { name: /create account/i }));
     await waitFor(() =>

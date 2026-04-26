@@ -41,7 +41,7 @@ export default function HomePage() {
               href="/register"
               className="bg-secondary text-white px-8 py-4 rounded-full font-label-sm text-lg flex items-center gap-2 hover:shadow-xl hover:shadow-secondary/20 transition-all scale-95 active:scale-90"
             >
-              Get Started ($50)
+              Get Started
               <span className="material-symbols-outlined">arrow_forward</span>
             </Link>
             <Link
@@ -178,7 +178,7 @@ export default function HomePage() {
             href="/register"
             className="inline-block bg-secondary text-white px-12 py-5 rounded-full font-label-sm text-xl hover:bg-secondary/90 transition-all shadow-lg shadow-secondary/20"
           >
-            Get Started ($50)
+            Get Started
           </Link>
         </div>
       </section>

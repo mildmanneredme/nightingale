@@ -1,12 +1,29 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { signUp, confirmSignUp, signIn } from "@/lib/auth";
+import {
+  signUp,
+  confirmSignUp,
+  signIn,
+  resendConfirmationCode,
+} from "@/lib/auth";
 import { registerPatient } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 
 const PRIVACY_VERSION = "v1.0";
+
+// UX-005 F-006: live password requirements (mirror Cognito user-pool policy
+// in infra/terraform/modules/cognito/main.tf — keep these two in sync).
+const PASSWORD_RULES: { id: string; label: string; test: (s: string) => boolean }[] = [
+  { id: "len",  label: "At least 12 characters",       test: (s) => s.length >= 12 },
+  { id: "up",   label: "An uppercase letter (A–Z)",    test: (s) => /[A-Z]/.test(s) },
+  { id: "low",  label: "A lowercase letter (a–z)",     test: (s) => /[a-z]/.test(s) },
+  { id: "num",  label: "A number (0–9)",                test: (s) => /\d/.test(s) },
+  { id: "sym",  label: "A symbol (e.g. !@#$%)",         test: (s) => /[^A-Za-z0-9]/.test(s) },
+];
+
+const RESEND_COOLDOWN_S = 60;
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -19,11 +36,26 @@ export default function RegisterPage() {
   const [step, setStep] = useState<"register" | "verify">("register");
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Resend cooldown — counts down once per second after a successful resend
+  // or after Cognito's initial code email at sign-up.
+  const [cooldown, setCooldown] = useState(0);
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const id = setInterval(() => setCooldown((c) => Math.max(0, c - 1)), 1000);
+    return () => clearInterval(id);
+  }, [cooldown]);
+
+  const passwordChecks = PASSWORD_RULES.map((r) => ({ ...r, ok: r.test(password) }));
+  const passwordValid = passwordChecks.every((c) => c.ok);
+  const canSubmitRegister = !loading && privacyAccepted && passwordValid && email.length > 0;
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setInfo(null);
     if (!privacyAccepted) {
       setError("You must accept the privacy policy to continue.");
       return;
@@ -32,6 +64,7 @@ export default function RegisterPage() {
     try {
       await signUp(email, password);
       setStep("verify");
+      setCooldown(RESEND_COOLDOWN_S);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Registration failed.");
     } finally {
@@ -42,6 +75,7 @@ export default function RegisterPage() {
   async function handleVerify(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setInfo(null);
     setLoading(true);
     try {
       await confirmSignUp(email, code);
@@ -56,6 +90,36 @@ export default function RegisterPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  // UX-005 F-001/F-003: resend with cooldown + inline confirmation
+  async function handleResend() {
+    if (cooldown > 0 || loading) return;
+    setError(null);
+    setInfo(null);
+    try {
+      await resendConfirmationCode(email);
+      setCooldown(RESEND_COOLDOWN_S);
+      setInfo("A new code has been sent. Check your inbox (and spam folder).");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Could not resend code.");
+    }
+  }
+
+  // UX-005 F-004/F-005: replace the misleading Back button. Returning to step
+  // 1 with the same email + password risks a UsernameExistsException loop.
+  // Clearing the form here lets the user sign up with a different email
+  // cleanly. The half-created Cognito account becomes orphaned until its
+  // unverified-account TTL expires (Cognito default: 7 days) — acceptable
+  // and documented in PRD UX-005.
+  function handleUseDifferentEmail() {
+    setStep("register");
+    setEmail("");
+    setPassword("");
+    setCode("");
+    setError(null);
+    setInfo("Start with a different email below. The unverified account from your previous attempt will expire automatically.");
+    setCooldown(0);
   }
 
   return (
@@ -73,7 +137,7 @@ export default function RegisterPage() {
             Your health journey, unified and secure.
           </h1>
           <p className="font-body-md text-body-lg text-primary-fixed-dim leading-relaxed mb-stack-lg">
-            Join thousands of Australians managing their healthcare with digital bedside manner. Secure, clinical, and always focused on you.
+            AHPRA-registered Australian doctors review every consultation. Hosted in Australia, end-to-end encrypted.
           </p>
           <div className="space-y-stack-md">
             <div className="flex items-center gap-4 text-white">
@@ -122,6 +186,12 @@ export default function RegisterPage() {
               {error}
             </div>
           )}
+          {info && (
+            <div role="status" className="mb-stack-md p-4 bg-secondary-container/40 text-on-secondary-container rounded-xl text-sm flex items-center gap-2">
+              <span className="material-symbols-outlined text-base">check_circle</span>
+              {info}
+            </div>
+          )}
 
           {step === "register" ? (
             <form onSubmit={handleRegister} className="space-y-stack-md">
@@ -157,7 +227,8 @@ export default function RegisterPage() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Min. 12 characters"
+                    placeholder="Min. 12 characters with upper, lower, number, symbol"
+                    aria-describedby="password-checklist"
                     className="w-full pl-12 pr-12 py-4 bg-surface-container-lowest border border-outline-variant rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all placeholder:text-outline-variant font-body-md"
                   />
                   <button
@@ -170,10 +241,25 @@ export default function RegisterPage() {
                     </span>
                   </button>
                 </div>
-                <p className="font-label-sm text-[11px] text-on-surface-variant flex items-center gap-1">
-                  <span className="material-symbols-outlined text-[14px]">info</span>
-                  Use symbols for medical-grade security.
-                </p>
+                {/* UX-005 F-006: live requirements checklist */}
+                <ul id="password-checklist" className="space-y-1 pt-2">
+                  {passwordChecks.map((c) => (
+                    <li
+                      key={c.id}
+                      className={`flex items-center gap-2 text-[12px] font-label-sm transition-colors ${
+                        c.ok ? "text-secondary" : "text-on-surface-variant"
+                      }`}
+                    >
+                      <span
+                        className="material-symbols-outlined text-[16px]"
+                        style={c.ok ? { fontVariationSettings: "'FILL' 1" } : undefined}
+                      >
+                        {c.ok ? "check_circle" : "radio_button_unchecked"}
+                      </span>
+                      {c.label}
+                    </li>
+                  ))}
+                </ul>
               </div>
 
               {/* Privacy consent */}
@@ -203,8 +289,8 @@ export default function RegisterPage() {
               {/* CTA */}
               <button
                 type="submit"
-                disabled={loading}
-                className="w-full bg-primary hover:bg-primary-container text-white font-manrope font-bold py-4 rounded-xl shadow-lg shadow-primary/10 transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50"
+                disabled={!canSubmitRegister}
+                className="w-full bg-primary hover:bg-primary-container text-white font-manrope font-bold py-4 rounded-xl shadow-lg shadow-primary/10 transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary"
               >
                 {loading ? "Creating account…" : "Create Account"}
                 {!loading && <span className="material-symbols-outlined">arrow_forward</span>}
@@ -234,20 +320,31 @@ export default function RegisterPage() {
 
               <button
                 type="submit"
-                disabled={loading}
-                className="w-full bg-primary hover:bg-primary-container text-white font-manrope font-bold py-4 rounded-xl shadow-lg shadow-primary/10 transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50"
+                disabled={loading || code.length !== 6}
+                className="w-full bg-primary hover:bg-primary-container text-white font-manrope font-bold py-4 rounded-xl shadow-lg shadow-primary/10 transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? "Verifying…" : "Verify Account"}
                 {!loading && <span className="material-symbols-outlined">arrow_forward</span>}
               </button>
 
-              <button
-                type="button"
-                onClick={() => { setStep("register"); setError(null); }}
-                className="w-full text-on-surface-variant text-sm hover:text-primary transition-colors"
-              >
-                ← Back
-              </button>
+              {/* UX-005 F-001/F-002: resend with cooldown */}
+              <div className="flex items-center justify-between text-sm">
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={cooldown > 0 || loading}
+                  className="text-secondary font-bold hover:underline disabled:text-on-surface-variant disabled:no-underline disabled:cursor-not-allowed"
+                >
+                  {cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleUseDifferentEmail}
+                  className="text-on-surface-variant hover:text-primary transition-colors"
+                >
+                  Use a different email
+                </button>
+              </div>
             </form>
           )}
 

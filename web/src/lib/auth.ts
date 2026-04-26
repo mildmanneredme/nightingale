@@ -88,7 +88,7 @@ function mapCognitoError(err: unknown): string {
     case "ExpiredCodeException":
       return "That code has expired. Please request a new one.";
     case "InvalidPasswordException":
-      return "Password must be at least 8 characters.";
+      return "Password must be at least 12 characters and include uppercase, lowercase, number, and symbol.";
     default:
       return err instanceof Error ? err.message : "Something went wrong. Please try again.";
   }
@@ -151,6 +151,20 @@ export function confirmSignUp(email: string, code: string): Promise<void> {
     const user = new CognitoUser({ Username: email, Pool: getPool() });
 
     user.confirmRegistration(code, true, (err) => {
+      if (err) return reject(new Error(mapCognitoError(err)));
+      resolve();
+    });
+  });
+}
+
+// ---------------------------------------------------------------------------
+// resendConfirmationCode (UX-005 F-001)
+// ---------------------------------------------------------------------------
+
+export function resendConfirmationCode(email: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const user = new CognitoUser({ Username: email, Pool: getPool() });
+    user.resendConfirmationCode((err) => {
       if (err) return reject(new Error(mapCognitoError(err)));
       resolve();
     });
