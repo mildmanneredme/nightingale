@@ -369,6 +369,7 @@ export interface DoctorQueueItem {
   presentingComplaint?: string;
   priorityFlags: string[];
   createdAt: string;
+  clinicalContextWarnings?: string[]; // PRD-023 F-024
 }
 
 export interface DoctorConsultation {
@@ -389,6 +390,7 @@ export interface DoctorConsultation {
   allergies?: unknown;
   medications?: unknown;
   conditions?: unknown;
+  clinicalContextWarnings?: string[]; // PRD-023 F-025
 }
 
 export function getDoctorQueue(

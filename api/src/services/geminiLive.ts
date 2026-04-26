@@ -7,6 +7,7 @@ import { GoogleGenAI, Session, LiveServerMessage, Modality } from "@google/genai
 type GeminiErrorEvent = { message?: string };
 import { config } from "../config";
 import { detectRedFlag } from "./redFlagDetector";
+import { getPatientPreContext, renderPreContextPrompt } from "./patientPreContext";
 import { pool } from "../db";
 import { logger } from "../logger";
 import { WsClientMessage, WsServerMessage } from "../types/ws-messages";
@@ -53,10 +54,20 @@ export class GeminiLiveSession {
   async start(): Promise<void> {
     const ai = new GoogleGenAI({ apiKey: config.gemini.apiKey });
 
+    // PRD-023 F-023: inject the anonymised patient baseline into the system
+    // prompt at session start so the AI can skip basic identity questions and
+    // tailor its opening turn to known allergies/meds/conditions.
+    const preContextPrompt = renderPreContextPrompt(
+      await getPatientPreContext(this.consultationId)
+    );
+    const systemInstruction = preContextPrompt
+      ? `${SYSTEM_PROMPT}\n\n${preContextPrompt}`
+      : SYSTEM_PROMPT;
+
     this.geminiSession = await ai.live.connect({
       model: config.gemini.model,
       config: {
-        systemInstruction: SYSTEM_PROMPT,
+        systemInstruction,
         responseModalities: [Modality.AUDIO],
         inputAudioTranscription: {},
         outputAudioTranscription: {},

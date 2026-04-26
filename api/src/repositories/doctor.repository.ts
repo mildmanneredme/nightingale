@@ -16,6 +16,7 @@ export interface ConsultationQueueRow {
   createdAt: Date;
   patientDob: string | null;
   patientSex: string | null;
+  clinicalContextWarnings: string[]; // PRD-023 F-024
 }
 
 export interface ConsultationDetailRow {
@@ -36,6 +37,7 @@ export interface ConsultationDetailRow {
   allergies: unknown;
   medications: unknown;
   conditions: unknown;
+  clinicalContextWarnings: string[]; // PRD-023 F-025
 }
 
 export interface ConsultationUpdateRow {
@@ -85,6 +87,26 @@ export async function countQueuedConsultationsForDoctor(doctorId: string): Promi
   return parseInt(rows[0].count, 10);
 }
 
+// PRD-023 F-024/F-025: server-side derivation of clinicalContextWarnings.
+// Lists each baseline-incomplete category as a human-readable string. Cheap
+// because the joins all hit small per-patient tables already indexed on
+// patient_id.
+const CLINICAL_WARNINGS_SQL = `
+  ARRAY_REMOVE(ARRAY[
+    CASE WHEN p.allergies_none_declared = FALSE
+              AND NOT EXISTS (SELECT 1 FROM patient_allergies a    WHERE a.patient_id   = p.id)
+         THEN 'No allergies on file' END,
+    CASE WHEN p.medications_none_declared = FALSE
+              AND NOT EXISTS (SELECT 1 FROM patient_medications m  WHERE m.patient_id   = p.id)
+         THEN 'No current medications listed' END,
+    CASE WHEN p.conditions_none_declared = FALSE
+              AND NOT EXISTS (SELECT 1 FROM patient_conditions con WHERE con.patient_id = p.id)
+         THEN 'No known conditions listed' END,
+    CASE WHEN p.date_of_birth  IS NULL THEN 'Date of birth missing'  END,
+    CASE WHEN p.biological_sex IS NULL THEN 'Biological sex missing' END
+  ], NULL)
+`;
+
 export async function listQueuedConsultationsForDoctor(
   doctorId: string,
   limit: number,
@@ -99,7 +121,8 @@ export async function listQueuedConsultationsForDoctor(
        c.priority_flags      AS "priorityFlags",
        c.created_at          AS "createdAt",
        p.date_of_birth       AS "patientDob",
-       p.biological_sex      AS "patientSex"
+       p.biological_sex      AS "patientSex",
+       ${CLINICAL_WARNINGS_SQL} AS "clinicalContextWarnings"
      FROM consultations c
      JOIN patients p ON p.id = c.patient_id
      WHERE c.assigned_doctor_id = $1
@@ -139,7 +162,8 @@ export async function findConsultationDetailForDoctor(
        (SELECT json_agg(json_build_object('name', m.name, 'dose', m.dose))
         FROM patient_medications m WHERE m.patient_id = p.id) AS medications,
        (SELECT json_agg(json_build_object('name', con.name))
-        FROM patient_conditions con WHERE con.patient_id = p.id) AS conditions
+        FROM patient_conditions con WHERE con.patient_id = p.id) AS conditions,
+       ${CLINICAL_WARNINGS_SQL} AS "clinicalContextWarnings"
      FROM consultations c
      JOIN patients p ON p.id = c.patient_id
      WHERE c.id = $1 AND c.assigned_doctor_id = $2`,

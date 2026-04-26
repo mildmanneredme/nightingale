@@ -119,6 +119,29 @@ export default function DoctorConsultationPage() {
                   </div>
                 )}
 
+                {/* PRD-023 F-025: clinical context warnings — what the system does NOT know about this patient */}
+                {(consultation.clinicalContextWarnings ?? []).length > 0 && (
+                  <div className="bg-tertiary-container/40 border border-tertiary/30 rounded-xl p-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="material-symbols-outlined text-on-tertiary-container">help</span>
+                      <p className="font-label-sm text-on-tertiary-container uppercase tracking-wider">
+                        Patient profile is incomplete
+                      </p>
+                    </div>
+                    <p className="font-body-md text-on-tertiary-container text-sm mb-2">
+                      The following baseline information was not on file when this consultation was created:
+                    </p>
+                    <ul className="space-y-1">
+                      {(consultation.clinicalContextWarnings ?? []).map((w) => (
+                        <li key={w} className="font-body-md text-on-tertiary-container text-sm flex items-center gap-2">
+                          <span className="material-symbols-outlined text-base">radio_button_unchecked</span>
+                          {w}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
                 {/* SOAP Note */}
                 {soap && (
                   <div className="bg-white rounded-xl border border-slate-100 shadow-card p-6">

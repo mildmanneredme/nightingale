@@ -215,6 +215,15 @@ export default function DoctorQueuePage() {
                           })}
                         </div>
                       )}
+                      {(item.clinicalContextWarnings ?? []).length > 0 && (
+                        <div
+                          className="flex items-center gap-2 text-on-tertiary-container bg-tertiary-container/50 px-2 py-1 rounded text-[10px] font-bold tracking-wider uppercase w-fit"
+                          title={(item.clinicalContextWarnings ?? []).join("\n")}
+                        >
+                          <span className="material-symbols-outlined text-[14px]">help</span>
+                          Baseline incomplete ({(item.clinicalContextWarnings ?? []).length})
+                        </div>
+                      )}
                     </div>
 
                     {/* Footer */}

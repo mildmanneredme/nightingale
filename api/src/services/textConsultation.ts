@@ -30,7 +30,8 @@ export interface AiTextResponse {
 
 export async function sendTextMessage(
   patientMessage: string,
-  history: TextTurn[]
+  history: TextTurn[],
+  preContextPrompt?: string
 ): Promise<AiTextResponse> {
   const ai = new GoogleGenAI({ apiKey: config.gemini.apiKey });
 
@@ -39,9 +40,13 @@ export async function sendTextMessage(
     parts: [{ text: t.text }],
   }));
 
+  const systemInstruction = preContextPrompt
+    ? `${SYSTEM_INSTRUCTION}\n\n${preContextPrompt}`
+    : SYSTEM_INSTRUCTION;
+
   const chat = ai.chats.create({
     model: config.gemini.chatModel,
-    config: { systemInstruction: SYSTEM_INSTRUCTION },
+    config: { systemInstruction },
     history: chatHistory,
   });
 

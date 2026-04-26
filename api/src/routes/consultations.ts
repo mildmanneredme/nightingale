@@ -6,6 +6,7 @@ import { logger } from "../logger";
 import { GeminiLiveSession } from "../services/geminiLive";
 import { WsServerMessage } from "../types/ws-messages";
 import { sendTextMessage, TextTurn } from "../services/textConsultation";
+import { getPatientPreContext, renderPreContextPrompt } from "../services/patientPreContext";
 import { runEngine } from "../services/clinicalAiEngine";
 import { getResponseTimeEstimate } from "./availability";
 import { validateBody } from "../middleware/validate";
@@ -226,7 +227,12 @@ router.post("/:id/chat", validateBody(ChatMessageSchema), async (req, res, next)
       timestamp_ms: Date.now(),
     };
 
-    const aiResponse = await sendTextMessage(message.trim(), history);
+    // PRD-023 F-022: inject the patient baseline into the system prompt only
+    // on the first turn — once history exists Gemini already has the context.
+    const preContextPrompt = history.length === 0
+      ? renderPreContextPrompt(await getPatientPreContext(req.params.id))
+      : undefined;
+    const aiResponse = await sendTextMessage(message.trim(), history, preContextPrompt);
 
     const aiTurn: TextTurn = {
       speaker: "ai",
