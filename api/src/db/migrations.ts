@@ -19,11 +19,22 @@ import * as path from "path";
 import { Pool, PoolClient } from "pg";
 import { logger } from "../logger";
 
-// Exported so tests can override with a mock pool
-export const MIGRATIONS_DIR = path.resolve(
-  __dirname,
-  "../../../infra/database/migrations"
-);
+// Resolve migrations dir for both production (Docker) and development (ts-node).
+// Production: dist/db/migrations.js → /app/dist/db → ../../migrations = /app/migrations
+//             (Dockerfile copies infra/database/migrations to /app/migrations)
+// Development: src/db/migrations.ts → api/src/db → ../../../infra/database/migrations
+// MIGRATIONS_DIR env var overrides both for tests / unusual deployments.
+function resolveMigrationsDir(): string {
+  const override = process.env.MIGRATIONS_DIR;
+  if (override) return override;
+  const candidates = [
+    path.resolve(__dirname, "../../migrations"),
+    path.resolve(__dirname, "../../../infra/database/migrations"),
+  ];
+  return candidates.find((c) => fs.existsSync(c)) ?? candidates[candidates.length - 1];
+}
+
+export const MIGRATIONS_DIR = resolveMigrationsDir();
 
 const CREATE_TRACKING_TABLE = `
   CREATE TABLE IF NOT EXISTS schema_migrations (
