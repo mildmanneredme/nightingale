@@ -4,7 +4,7 @@ export default function HomePage() {
   return (
     <>
       {/* Emergency Strip */}
-      <div className="bg-error text-on-error py-2 px-6 text-center font-label-sm sticky top-0 z-[60]">
+      <div className="bg-error text-on-error py-2 px-6 text-center font-label-sm">
         Medical emergency? Call 000.
       </div>
 
@@ -110,38 +110,36 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Who it's for — 2-col split */}
-      <section className="bg-surface-container py-24">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid md:grid-cols-2 gap-16 items-center">
-            <div className="rounded-2xl overflow-hidden shadow-2xl">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                className="w-full aspect-square object-cover"
-                src="/landing-hero-feature.png"
-                alt=""
-              />
-            </div>
-            <div className="space-y-stack-lg">
-              <h2 className="font-display-xl text-display-xl text-primary">For patients, by doctors.</h2>
-              <div className="space-y-8">
-                <div className="flex gap-4">
-                  <div className="bg-primary-container p-3 rounded-lg h-fit text-on-primary-container">
-                    <span className="material-symbols-outlined">verified_user</span>
-                  </div>
-                  <div>
-                    <h4 className="font-headline-md text-primary text-xl">For Busy Professionals</h4>
-                    <p className="font-body-md text-on-surface-variant">Skip the waiting room. Access healthcare around your schedule, not ours.</p>
-                  </div>
+      {/* Who it's for — full-bleed background */}
+      <section className="relative py-32 overflow-hidden">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          className="absolute inset-0 w-full h-full object-cover"
+          src="/landing-hero-feature.png"
+          alt=""
+        />
+        {/* Gradient: clear on left, white on right so text is legible */}
+        <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/50 to-white/95" />
+        <div className="relative z-10 max-w-7xl mx-auto px-6 flex justify-end">
+          <div className="max-w-lg space-y-stack-lg">
+            <h2 className="font-display-xl text-display-xl text-primary">For patients, by doctors.</h2>
+            <div className="space-y-8">
+              <div className="flex gap-4">
+                <div className="bg-primary-container p-3 rounded-lg h-fit text-on-primary-container">
+                  <span className="material-symbols-outlined">verified_user</span>
                 </div>
-                <div className="flex gap-4">
-                  <div className="bg-primary-container p-3 rounded-lg h-fit text-on-primary-container">
-                    <span className="material-symbols-outlined">family_restroom</span>
-                  </div>
-                  <div>
-                    <h4 className="font-headline-md text-primary text-xl">For Modern Families</h4>
-                    <p className="font-body-md text-on-surface-variant">Reliable medical advice for the whole household, just a message away.</p>
-                  </div>
+                <div>
+                  <h4 className="font-headline-md text-primary text-xl">For Busy Professionals</h4>
+                  <p className="font-body-md text-on-surface-variant">Skip the waiting room. Access healthcare around your schedule, not ours.</p>
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <div className="bg-primary-container p-3 rounded-lg h-fit text-on-primary-container">
+                  <span className="material-symbols-outlined">family_restroom</span>
+                </div>
+                <div>
+                  <h4 className="font-headline-md text-primary text-xl">For Modern Families</h4>
+                  <p className="font-body-md text-on-surface-variant">Reliable medical advice for the whole household, just a message away.</p>
                 </div>
               </div>
             </div>
