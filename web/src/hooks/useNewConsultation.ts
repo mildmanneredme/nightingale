@@ -22,9 +22,10 @@ export function useNewConsultation() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!complaint.trim()) return;
     setLoading(true);
     try {
-      const consultation = await createConsultation(type, complaint || undefined);
+      const consultation = await createConsultation(type, complaint.trim());
       if (type === "voice") {
         router.push(`/consultation/${consultation.id}/audio-check`);
       } else {
@@ -42,12 +43,15 @@ export function useNewConsultation() {
     }
   }
 
+  const canSubmit = complaint.trim().length > 0 && !loading;
+
   return {
     complaint,
     setComplaint,
     type,
     setType,
     loading,
+    canSubmit,
     handleSubmit,
     maxChars: NEW_CONSULTATION_MAX_CHARS,
   };

@@ -5,7 +5,7 @@ import ConsultationStepper from "@/components/ConsultationStepper";
 import { useNewConsultation } from "@/hooks/useNewConsultation";
 
 export default function NewConsultationPage() {
-  const { complaint, setComplaint, type, setType, loading, handleSubmit, maxChars } =
+  const { complaint, setComplaint, type, setType, loading, canSubmit, handleSubmit, maxChars } =
     useNewConsultation();
 
   return (
@@ -153,8 +153,8 @@ export default function NewConsultationPage() {
           {/* CTA */}
           <button
             type="submit"
-            disabled={loading}
-            className="w-full py-5 bg-primary text-white font-manrope font-bold text-lg rounded-2xl shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+            disabled={!canSubmit}
+            className="w-full py-5 bg-primary text-white font-manrope font-bold text-lg rounded-2xl shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
             {loading ? "Starting…" : "Commence Consultation"}
             {!loading && <span className="material-symbols-outlined">arrow_forward</span>}
