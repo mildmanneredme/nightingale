@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { getConsultations, Consultation, getToken } from "@/lib/api";
+import { getConsultations, getMe, Consultation, getToken } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import TopAppBar from "@/components/TopAppBar";
@@ -40,6 +40,14 @@ export default function DashboardPage() {
     enabled: !!token,
   });
 
+  // PRD-023: real profile completeness drives the welcome banner + greeting.
+  const { data: me } = useQuery({
+    queryKey: ["me"],
+    queryFn: getMe,
+    staleTime: 30_000,
+    enabled: !!token,
+  });
+
   const initialConsultations = initialData?.data ?? [];
   const initialHasMore = initialData?.pagination?.hasMore ?? false;
   const consultations = [...initialConsultations, ...extraConsultations];
@@ -65,6 +73,11 @@ export default function DashboardPage() {
     return "Good evening";
   })();
 
+  const firstName = me?.preferredName?.trim() || me?.firstName?.trim() || "";
+  const personalisedGreeting = firstName ? `${greeting}, ${firstName}` : greeting;
+  const missingRequired = me?.completeness?.missingRequired ?? [];
+  const completenessPct = me?.completeness?.percentage ?? null;
+
   return (
     <>
       <TopAppBar activeNav="health" />
@@ -72,11 +85,52 @@ export default function DashboardPage() {
       <main className="pt-24 pb-20 md:pb-8 px-4 md:px-patient-margin max-w-7xl mx-auto">
         {/* Welcome */}
         <section className="mb-stack-lg">
-          <h1 className="font-headline-lg text-headline-lg text-primary">{greeting}</h1>
+          <h1 className="font-headline-lg text-headline-lg text-primary">{personalisedGreeting}</h1>
           <p className="font-body-md text-on-surface-variant mt-1">
             Here is an overview of your health status and upcoming consultations.
           </p>
         </section>
+
+        {/* PRD-023: profile-completeness banner — only shown when fields are missing */}
+        {missingRequired.length > 0 && (
+          <section className="mb-stack-lg rounded-2xl border border-secondary/30 bg-secondary-container/30 p-5">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center shrink-0 text-secondary">
+                <span className="material-symbols-outlined">checklist</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <h2 className="font-manrope font-bold text-primary">
+                    Finish setting up your profile
+                  </h2>
+                  {completenessPct !== null && (
+                    <span className="font-clinical-data text-secondary text-sm shrink-0">
+                      {completenessPct}% complete
+                    </span>
+                  )}
+                </div>
+                <p className="font-body-md text-on-secondary-container text-sm mb-3">
+                  Your assigned doctor needs the following before they can review a consultation:
+                </p>
+                <ul className="space-y-1 mb-4">
+                  {missingRequired.slice(0, 5).map((item: string) => (
+                    <li key={item} className="flex items-center gap-2 text-on-secondary-container text-sm">
+                      <span className="material-symbols-outlined text-base">radio_button_unchecked</span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href="/onboarding"
+                  className="inline-flex items-center gap-2 bg-secondary text-white font-manrope font-bold px-4 py-2 rounded-xl hover:opacity-90 transition-opacity text-sm"
+                >
+                  Complete now
+                  <span className="material-symbols-outlined text-base">arrow_forward</span>
+                </Link>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Bento grid */}
         <div className="grid grid-cols-12 gap-gutter">

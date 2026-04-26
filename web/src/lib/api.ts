@@ -235,6 +235,17 @@ export function updateMe(fields: Partial<Omit<Patient, "id" | "email" | "allergi
   });
 }
 
+export function recordOnboardingStep(
+  step: 1 | 2 | 3,
+  skipped: boolean,
+  skippedFields: string[] = []
+): Promise<void> {
+  return apiFetch("/api/v1/patients/me/onboarding-step", {
+    method: "POST",
+    body: JSON.stringify({ step, skipped, skippedFields }),
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Medical history
 // ---------------------------------------------------------------------------

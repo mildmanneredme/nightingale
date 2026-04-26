@@ -3,6 +3,14 @@ import { render, screen, waitFor } from "@testing-library/react";
 
 vi.mock("@/lib/api", () => ({
   getConsultations: vi.fn(),
+  getMe: vi.fn().mockResolvedValue({
+    id: "p1",
+    email: "test@test.com",
+    allergies: [],
+    medications: [],
+    conditions: [],
+    completeness: { percentage: 100, missingRequired: [], missingOptional: [] },
+  }),
   setToken: vi.fn(),
 }));
 vi.mock("next/navigation", () => ({

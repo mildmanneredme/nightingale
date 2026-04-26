@@ -48,7 +48,9 @@ export default function RegisterPage() {
       const token = await signIn(email, password);
       setToken(token);
       await registerPatient(email, PRIVACY_VERSION);
-      router.replace("/dashboard");
+      // PRD-023: route to the onboarding wizard before the dashboard so we
+      // capture identity, address/Medicare/GP, and a clinical baseline.
+      router.replace("/onboarding");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Verification failed.");
     } finally {
