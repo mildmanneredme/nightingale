@@ -1,10 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import React from "react";
+import { ToastContext } from "@/hooks/useToast";
+import { Toast } from "@/components/Toast";
 
 vi.mock("@/lib/api", () => ({
   getMe: vi.fn(),
   updateMe: vi.fn(),
+  addAllergy: vi.fn(),
+  deleteAllergy: vi.fn(),
+  addMedication: vi.fn(),
+  deleteMedication: vi.fn(),
+  addCondition: vi.fn(),
+  deleteCondition: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -16,6 +24,25 @@ import { getMe, updateMe } from "@/lib/api";
 
 const mockGetMe = getMe as ReturnType<typeof vi.fn>;
 const mockUpdateMe = updateMe as ReturnType<typeof vi.fn>;
+
+// Wrap the page in a real ToastContext so the success toast renders into the
+// DOM (the page uses useToast which is a no-op without a provider).
+function renderWithToasts(ui: React.ReactElement) {
+  const toasts: Array<{ id: string; level: "success"; title: string; detail?: string; autoDismissMs: number }> = [];
+  const ctx = {
+    toasts,
+    addToast: (level: "success", title: string, opts?: { detail?: string }) => {
+      toasts.push({ id: String(toasts.length), level, title, detail: opts?.detail, autoDismissMs: 3000 });
+    },
+    removeToast: () => {},
+  };
+  return render(
+    <ToastContext.Provider value={ctx as never}>
+      {ui}
+      <Toast />
+    </ToastContext.Provider>
+  );
+}
 
 const adultPatient = {
   id: "p1",
@@ -85,7 +112,7 @@ describe("ProfilePage — guardian section visibility", () => {
 describe("ProfilePage — guardian save", () => {
   it("saves updated guardian fields and shows confirmation", async () => {
     mockGetMe.mockResolvedValue(minorPatient);
-    render(<ProfilePage />);
+    renderWithToasts(<ProfilePage />);
 
     await waitFor(() => screen.getByLabelText(/guardian name/i));
 
@@ -100,8 +127,10 @@ describe("ProfilePage — guardian save", () => {
       );
     });
 
+    // Confirmation now lives in a toast (was an inline div before the
+    // toast refactor). Assert the toast title is shown.
     await waitFor(() =>
-      expect(screen.getByText(/guardian details updated/i)).toBeTruthy()
+      expect(screen.getByText(/profile saved/i)).toBeTruthy()
     );
   });
 });
