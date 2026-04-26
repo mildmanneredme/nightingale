@@ -18,8 +18,9 @@ export default function MarketingNav() {
   return (
     <header className="bg-white/80 backdrop-blur-md text-slate-900 font-manrope antialiased tracking-tight sticky top-0 w-full z-50 border-b border-slate-200 shadow-sm">
       <div className="flex justify-between items-center px-6 py-4 max-w-7xl mx-auto">
-        <Link href="/" className="text-xl font-bold tracking-tighter text-slate-900">
-          Nightingale
+        <Link href="/" aria-label="Nightingale home">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/nightingale-logo.png" alt="Nightingale" className="h-9 w-auto" />
         </Link>
 
         {/* Desktop nav */}
