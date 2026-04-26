@@ -29,7 +29,7 @@ export default function DoctorRenewalsPage() {
   });
 
   const initialItems = initialData?.data ?? [];
-  const initialHasMore = initialData?.pagination.hasMore ?? false;
+  const initialHasMore = initialData?.pagination?.hasMore ?? false;
   const items = [...initialItems, ...extraItems];
   const showHasMore = hasMore ?? initialHasMore;
   const effectiveOffset = offset === 0 ? initialItems.length : offset;

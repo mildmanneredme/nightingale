@@ -46,7 +46,7 @@ export default function RenewalsPage() {
   });
 
   const initialRenewals = initialData?.data ?? [];
-  const initialHasMore = initialData?.pagination.hasMore ?? false;
+  const initialHasMore = initialData?.pagination?.hasMore ?? false;
   const renewals = [...initialRenewals, ...extraRenewals];
   const showHasMore = hasMore ?? initialHasMore;
   const effectiveOffset = offset === 0 ? initialRenewals.length : offset;

@@ -53,7 +53,7 @@ export default function DoctorQueuePage() {
   });
 
   const initialQueue = initialData?.data ?? [];
-  const initialHasMore = initialData?.pagination.hasMore ?? false;
+  const initialHasMore = initialData?.pagination?.hasMore ?? false;
   const queue = [...initialQueue, ...extraQueue];
   const showHasMore = hasMore ?? initialHasMore;
   const effectiveOffset = offset === 0 ? initialQueue.length : offset;

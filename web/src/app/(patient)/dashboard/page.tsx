@@ -41,7 +41,7 @@ export default function DashboardPage() {
   });
 
   const initialConsultations = initialData?.data ?? [];
-  const initialHasMore = initialData?.pagination.hasMore ?? false;
+  const initialHasMore = initialData?.pagination?.hasMore ?? false;
   const consultations = [...initialConsultations, ...extraConsultations];
   const showHasMore = hasMore ?? initialHasMore;
   const effectiveOffset = consultOffset === 0 ? initialConsultations.length : consultOffset;

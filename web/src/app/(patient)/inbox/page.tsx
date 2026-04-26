@@ -58,7 +58,7 @@ export default function InboxPage() {
   });
 
   const initialItems = initialData?.items ?? [];
-  const initialHasMore = initialData?.pagination.hasMore ?? false;
+  const initialHasMore = initialData?.pagination?.hasMore ?? false;
   const initialUnread = initialData?.unreadCount ?? 0;
   const items = [...initialItems, ...extraItems];
   const unreadCount = Math.max(0, initialUnread + extraUnread);
