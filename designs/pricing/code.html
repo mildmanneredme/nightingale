@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Pricing | Nightingale Australian Healthcare Marketing</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Public+Sans:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#89d3d4",
+                        "primary-container": "#1a365d",
+                        "tertiary": "#321b00",
+                        "surface-container-low": "#f4f3f7",
+                        "on-surface-variant": "#43474e",
+                        "secondary": "#13696a",
+                        "on-secondary-fixed-variant": "#004f50",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed-dim": "#f2bc82",
+                        "on-surface": "#1a1c1e",
+                        "on-secondary": "#ffffff",
+                        "primary-fixed": "#d6e3ff",
+                        "on-primary-container": "#86a0cd",
+                        "on-secondary-container": "#1a6d6e",
+                        "on-secondary-fixed": "#002020",
+                        "surface-tint": "#455f88",
+                        "on-primary-fixed-variant": "#2d476f",
+                        "tertiary-container": "#4f2e00",
+                        "on-background": "#1a1c1e",
+                        "outline-variant": "#c4c6cf",
+                        "on-primary": "#ffffff",
+                        "surface-container-high": "#e9e7eb",
+                        "primary-fixed-dim": "#adc7f7",
+                        "surface-dim": "#dad9dd",
+                        "on-error": "#ffffff",
+                        "inverse-primary": "#adc7f7",
+                        "inverse-surface": "#2f3033",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-on-surface": "#f1f0f4",
+                        "background": "#faf9fd",
+                        "surface": "#faf9fd",
+                        "on-tertiary-container": "#c6955e",
+                        "surface-bright": "#faf9fd",
+                        "secondary-fixed": "#a5eff0",
+                        "on-tertiary-fixed-variant": "#633f0f",
+                        "surface-variant": "#e3e2e6",
+                        "tertiary-fixed": "#ffddba",
+                        "on-primary-fixed": "#001b3c",
+                        "outline": "#74777f",
+                        "on-tertiary-fixed": "#2b1700",
+                        "on-tertiary": "#ffffff",
+                        "surface-container": "#efedf1",
+                        "secondary-container": "#a2eded",
+                        "surface-container-highest": "#e3e2e6",
+                        "error": "#ba1a1a",
+                        "primary": "#002045"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-sm": "8px",
+                        "gutter": "24px",
+                        "stack-lg": "32px",
+                        "doctor-margin": "16px",
+                        "patient-margin": "32px",
+                        "unit": "8px",
+                        "stack-md": "16px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Public Sans"],
+                        "headline-md": ["Manrope"],
+                        "headline-lg": ["Manrope"],
+                        "display-xl": ["Manrope"],
+                        "body-md": ["Public Sans"],
+                        "body-lg": ["Public Sans"],
+                        "clinical-data": ["Public Sans"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", {"lineHeight": "1", "fontWeight": "700"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                        "display-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "clinical-data": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body {
+            background-color: #faf9fd;
+        }
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 1.5rem;
+        }
+        .comparison-table-row:nth-child(even) {
+            background-color: rgba(244, 243, 247, 0.5);
+        }
+    </style>
+</head>
+<body class="font-body-md text-on-surface antialiased">
+<!-- TopAppBar -->
+<header class="bg-white/80 dark:bg-slate-950/80 backdrop-blur-md fixed top-0 w-full z-50 border-b border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-none">
+<nav class="flex justify-between items-center px-6 py-4 max-w-7xl mx-auto font-manrope antialiased tracking-tight">
+<div class="text-xl font-bold tracking-tighter text-slate-900 dark:text-slate-50">Nightingale</div>
+<!-- Desktop Links -->
+<div class="hidden md:flex items-center gap-8">
+<a class="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors" href="#">How It Works</a>
+<a class="text-slate-900 dark:text-white font-semibold" href="#">Pricing</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors" href="#">Safety</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors" href="#">For Doctors</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors" href="#">About</a>
+</div>
+<button class="bg-primary text-on-primary px-5 py-2.5 rounded-xl font-semibold scale-95 active:scale-90 transition-transform">
+                Get Started
+            </button>
+</nav>
+</header>
+<main class="pt-32 pb-20">
+<!-- Hero Section -->
+<section class="max-w-4xl mx-auto px-6 text-center mb-16">
+<h1 class="font-display-xl text-display-xl text-primary mb-6">Simple, transparent clinical marketing.</h1>
+<p class="font-body-lg text-body-lg text-outline max-w-2xl mx-auto">
+                One flat fee for Australian health practitioners. No hidden tiers, no complicated contracts. Just professional bedside manner in digital form.
+            </p>
+</section>
+<!-- Pricing Card Section -->
+<section class="max-w-7xl mx-auto px-6 mb-24 flex justify-center">
+<div class="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-10 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+<!-- Accent Background Decorative -->
+<div class="absolute -top-24 -right-24 w-48 h-48 bg-secondary/5 rounded-full blur-3xl group-hover:bg-secondary/10 transition-colors"></div>
+<div class="relative z-10 text-center">
+<span class="inline-block px-3 py-1 bg-secondary-container text-on-secondary-container font-label-sm text-label-sm rounded-full mb-6">PRACTITIONER PLAN</span>
+<div class="flex items-center justify-center gap-1 mb-2">
+<span class="text-display-xl font-display-xl text-primary">$50</span>
+<div class="text-left">
+<span class="block font-label-sm text-label-sm text-primary leading-tight">AUD</span>
+<span class="block font-body-md text-body-md text-outline">/month</span>
+</div>
+</div>
+<p class="text-body-md font-body-md text-outline mb-8">Comprehensive digital management for individual specialists.</p>
+<ul class="text-left space-y-4 mb-10">
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-body-md text-on-surface">Unlimited clinical waveforms</span>
+</li>
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-body-md text-on-surface">AHPRA-compliant messaging</span>
+</li>
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-body-md text-on-surface">Digital Bedside Manner toolkit</span>
+</li>
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-body-md text-on-surface">SOAP Data Panel export</span>
+</li>
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-body-md text-on-surface">24/7 Priority AU support</span>
+</li>
+</ul>
+<button class="w-full bg-primary text-on-primary py-4 rounded-2xl font-headline-md text-body-md hover:opacity-90 transition-opacity">
+                        Start 14-Day Free Trial
+                    </button>
+<p class="mt-4 font-label-sm text-label-sm text-outline">No credit card required to start.</p>
+</div>
+</div>
+</section>
+<!-- Comparison Table -->
+<section class="max-w-5xl mx-auto px-6 mb-24">
+<div class="text-center mb-12">
+<h2 class="font-headline-lg text-headline-lg text-primary">How we compare</h2>
+<p class="font-body-md text-body-md text-outline">Clinical precision meets modern software design.</p>
+</div>
+<div class="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+<div class="grid grid-cols-3 bg-surface-container border-b border-slate-200">
+<div class="p-6 font-label-sm text-label-sm text-outline uppercase tracking-wider">Features</div>
+<div class="p-6 font-label-sm text-label-sm text-primary flex items-center justify-center gap-2">
+<span class="text-xl font-bold">Nightingale</span>
+</div>
+<div class="p-6 font-label-sm text-label-sm text-outline flex items-center justify-center">Legacy Software</div>
+</div>
+<!-- Row 1 -->
+<div class="grid grid-cols-3 comparison-table-row">
+<div class="p-6 font-body-md text-on-surface border-r border-slate-100">Patient Experience</div>
+<div class="p-6 flex justify-center border-r border-slate-100">
+<div class="text-secondary font-clinical-data text-clinical-data">Human-Centric Focus</div>
+</div>
+<div class="p-6 flex justify-center text-outline font-body-md">Clinical/Sterile</div>
+</div>
+<!-- Row 2 -->
+<div class="grid grid-cols-3 comparison-table-row">
+<div class="p-6 font-body-md text-on-surface border-r border-slate-100">Compliance</div>
+<div class="p-6 flex justify-center border-r border-slate-100 text-secondary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<div class="p-6 flex justify-center text-outline">
+<span class="material-symbols-outlined">check</span>
+</div>
+</div>
+<!-- Row 3 -->
+<div class="grid grid-cols-3 comparison-table-row">
+<div class="p-6 font-body-md text-on-surface border-r border-slate-100">Mobile Support</div>
+<div class="p-6 flex justify-center border-r border-slate-100 text-secondary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">smartphone</span>
+</div>
+<div class="p-6 flex justify-center text-outline">
+<span class="material-symbols-outlined">browser_not_supported</span>
+</div>
+</div>
+<!-- Row 4 -->
+<div class="grid grid-cols-3 comparison-table-row">
+<div class="p-6 font-body-md text-on-surface border-r border-slate-100">Pricing Transparency</div>
+<div class="p-6 flex justify-center border-r border-slate-100 text-secondary">
+<span class="font-clinical-data text-clinical-data">Flat $50 AUD</span>
+</div>
+<div class="p-6 flex justify-center text-outline">
+<span class="font-clinical-data text-clinical-data">Custom Quote/Tiers</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Refund Policy Note -->
+<section class="max-w-3xl mx-auto px-6">
+<div class="bg-surface-container-low border border-slate-100 p-8 rounded-3xl flex items-start gap-6">
+<div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-secondary">policy</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-primary mb-2">Our Refund Policy</h3>
+<p class="font-body-md text-body-md text-outline">
+                        We believe in our product. If Nightingale doesn't improve your practitioner workflow within the first 30 days, we'll provide a full refund, no questions asked. We're committed to supporting the Australian healthcare community.
+                    </p>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="w-full border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-manrope text-sm relative after:content-[''] after:block after:h-2 after:w-full after:bg-red-600 after:absolute after:bottom-0 after:left-0">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-12 px-6 pt-20 pb-10 max-w-7xl mx-auto divide-y divide-slate-100 dark:divide-slate-900 md:divide-y-0">
+<div class="pb-8 md:pb-0">
+<div class="font-bold text-slate-900 dark:text-slate-50 mb-4">Nightingale</div>
+<p class="text-slate-500 dark:text-slate-400">The Digital Bedside Manner for Modern Practitioners.</p>
+</div>
+<div class="pt-8 md:pt-0">
+<h4 class="font-bold mb-4">Product</h4>
+<ul class="space-y-2">
+<li><a class="text-slate-500 dark:text-slate-400 hover:underline transition-all" href="#">How It Works</a></li>
+<li><a class="text-slate-900 dark:text-white font-medium hover:underline transition-all" href="#">Pricing</a></li>
+<li><a class="text-slate-500 dark:text-slate-400 hover:underline transition-all" href="#">Safety</a></li>
+</ul>
+</div>
+<div class="pt-8 md:pt-0">
+<h4 class="font-bold mb-4">Company</h4>
+<ul class="space-y-2">
+<li><a class="text-slate-500 dark:text-slate-400 hover:underline transition-all" href="#">About</a></li>
+<li><a class="text-slate-500 dark:text-slate-400 hover:underline transition-all" href="#">For Doctors</a></li>
+<li><a class="text-slate-500 dark:text-slate-400 hover:underline transition-all" href="#">Support</a></li>
+</ul>
+</div>
+<div class="pt-8 md:pt-0">
+<h4 class="font-bold mb-4">Legal</h4>
+<ul class="space-y-2">
+<li><a class="text-slate-500 dark:text-slate-400 hover:underline transition-all" href="#">Privacy</a></li>
+<li><a class="text-slate-500 dark:text-slate-400 hover:underline transition-all" href="#">Terms</a></li>
+</ul>
+</div>
+</div>
+<div class="max-w-7xl mx-auto px-6 pb-12">
+<p class="text-slate-500 dark:text-slate-400 opacity-80">
+                © 2024 Nightingale. Australian Healthcare Marketing. In case of emergency, call 000.
+            </p>
+</div>
+</footer>
+</body></html>

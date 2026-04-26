@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Nightingale | Modern Australian Healthcare</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Public+Sans:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#89d3d4",
+                        "primary-container": "#1a365d",
+                        "tertiary": "#321b00",
+                        "surface-container-low": "#f4f3f7",
+                        "on-surface-variant": "#43474e",
+                        "secondary": "#13696a",
+                        "on-secondary-fixed-variant": "#004f50",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed-dim": "#f2bc82",
+                        "on-surface": "#1a1c1e",
+                        "on-secondary": "#ffffff",
+                        "primary-fixed": "#d6e3ff",
+                        "on-primary-container": "#86a0cd",
+                        "on-secondary-container": "#1a6d6e",
+                        "on-secondary-fixed": "#002020",
+                        "surface-tint": "#455f88",
+                        "on-primary-fixed-variant": "#2d476f",
+                        "tertiary-container": "#4f2e00",
+                        "on-background": "#1a1c1e",
+                        "outline-variant": "#c4c6cf",
+                        "on-primary": "#ffffff",
+                        "surface-container-high": "#e9e7eb",
+                        "primary-fixed-dim": "#adc7f7",
+                        "surface-dim": "#dad9dd",
+                        "on-error": "#ffffff",
+                        "inverse-primary": "#adc7f7",
+                        "inverse-surface": "#2f3033",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-on-surface": "#f1f0f4",
+                        "background": "#faf9fd",
+                        "surface": "#faf9fd",
+                        "on-tertiary-container": "#c6955e",
+                        "surface-bright": "#faf9fd",
+                        "secondary-fixed": "#a5eff0",
+                        "on-tertiary-fixed-variant": "#633f0f",
+                        "surface-variant": "#e3e2e6",
+                        "tertiary-fixed": "#ffddba",
+                        "on-primary-fixed": "#001b3c",
+                        "outline": "#74777f",
+                        "on-tertiary-fixed": "#2b1700",
+                        "on-tertiary": "#ffffff",
+                        "surface-container": "#efedf1",
+                        "secondary-container": "#a2eded",
+                        "surface-container-highest": "#e3e2e6",
+                        "error": "#ba1a1a",
+                        "primary": "#002045"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-sm": "8px",
+                        "gutter": "24px",
+                        "stack-lg": "32px",
+                        "doctor-margin": "16px",
+                        "patient-margin": "32px",
+                        "unit": "8px",
+                        "stack-md": "16px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Public Sans"],
+                        "headline-md": ["Manrope"],
+                        "headline-lg": ["Manrope"],
+                        "display-xl": ["Manrope"],
+                        "body-md": ["Public Sans"],
+                        "body-lg": ["Public Sans"],
+                        "clinical-data": ["Public Sans"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", {"lineHeight": "1", "fontWeight": "700"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                        "display-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "clinical-data": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md">
+<!-- Emergency Strip -->
+<div class="bg-error text-on-error py-2 px-6 text-center font-label-sm sticky top-0 z-[60]">
+        Medical emergency? Call 000.
+    </div>
+<!-- TopAppBar -->
+<header class="bg-white/80 dark:bg-slate-950/80 backdrop-blur-md text-slate-900 dark:text-slate-50 font-manrope antialiased tracking-tight fixed top-10 w-full z-50 border-b border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-none">
+<div class="flex justify-between items-center px-6 py-4 max-w-7xl mx-auto">
+<div class="text-xl font-bold tracking-tighter text-slate-900 dark:text-slate-50">
+                Nightingale
+            </div>
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-slate-900 dark:text-white font-semibold" href="#">How It Works</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors" href="#">Pricing</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors" href="#">Safety</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors" href="#">For Doctors</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors" href="#">About</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="bg-secondary text-white px-6 py-2.5 rounded-full font-label-sm hover:bg-on-secondary-container scale-95 active:scale-90 transition-all">
+                    Get Started
+                </button>
+</div>
+</div>
+</header>
+<main class="pt-24">
+<!-- Hero Section -->
+<section class="relative min-h-[870px] flex items-center justify-center overflow-hidden">
+<div class="absolute inset-0 z-0">
+<img class="w-full h-full object-cover opacity-10" data-alt="Minimalist clinical office interior with soft natural light, clean white surfaces, and a single green plant, blurred soft background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCSUvQMMAAKXp75PhlasJv79ONtutkOezUSTxOwURF4xMQ-MOJ3vhjrvhgW8Wkw-j6e3CUT_NEfaHNuh4kPmvcLvF2cQ2sCFKXvm08b_ey6gAssB_es2xYcsviRmcNTZ5NKHjl9A7VIzAoWXag1D-6uIfY0n5EYvlGe647l6LRBfxIsfgv73oofPv2LJ100qpEEaDwiOQTpV1CjRisoclRVgzABVKYUu_88Dds88NBv-hiOby7GKuOoKXEUqV3y7i38kgdK0SpwzLre"/>
+<div class="absolute inset-0 bg-gradient-to-b from-white via-white/50 to-white"></div>
+</div>
+<div class="relative z-10 max-w-7xl mx-auto px-6 text-center space-y-stack-lg">
+<div class="inline-flex items-center gap-2 bg-secondary-container/30 border border-secondary-container px-4 py-1.5 rounded-full text-secondary font-label-sm">
+<span class="flex h-2 w-2 rounded-full bg-secondary"></span>
+                    Trusted Australian Healthcare
+                </div>
+<h1 class="font-display-xl text-primary max-w-4xl mx-auto">
+                    Healthcare that feels human. <br/><span class="text-secondary">Available now.</span>
+</h1>
+<p class="font-body-lg text-outline max-w-2xl mx-auto">
+                    Connect with leading Australian practitioners instantly. Digital bedside manner meets medical authority.
+                </p>
+<div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+<button class="bg-secondary text-white px-8 py-4 rounded-full font-label-sm text-lg flex items-center gap-2 hover:shadow-xl hover:shadow-secondary/20 transition-all scale-95 active:scale-90">
+                        Get Started ($50)
+                        <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+<button class="bg-white border border-outline-variant text-primary px-8 py-4 rounded-full font-label-sm text-lg hover:bg-surface-container transition-all">
+                        View Services
+                    </button>
+</div>
+</div>
+</section>
+<!-- Trust Band Stats -->
+<section class="bg-primary py-16">
+<div class="max-w-7xl mx-auto px-6">
+<div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+<div class="text-center space-y-1">
+<div class="font-display-xl text-secondary-fixed text-3xl">15k+</div>
+<div class="font-label-sm text-on-primary-container uppercase tracking-widest">Active Patients</div>
+</div>
+<div class="text-center space-y-1">
+<div class="font-display-xl text-secondary-fixed text-3xl">4.9/5</div>
+<div class="font-label-sm text-on-primary-container uppercase tracking-widest">Average Rating</div>
+</div>
+<div class="text-center space-y-1">
+<div class="font-display-xl text-secondary-fixed text-3xl">100%</div>
+<div class="font-label-sm text-on-primary-container uppercase tracking-widest">AHPRA Registered</div>
+</div>
+<div class="text-center space-y-1">
+<div class="font-display-xl text-secondary-fixed text-3xl">&lt; 5m</div>
+<div class="font-label-sm text-on-primary-container uppercase tracking-widest">Response Time</div>
+</div>
+</div>
+</div>
+</section>
+<!-- How It Works (Bento Style) -->
+<section class="py-24 px-6 max-w-7xl mx-auto">
+<div class="text-center mb-16">
+<h2 class="font-headline-lg text-primary">How It Works</h2>
+<p class="font-body-md text-outline">Three simple steps to better health.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<div class="bg-white border border-outline-variant p-10 rounded-xl space-y-4 hover:border-secondary transition-colors group">
+<div class="bg-secondary-container w-12 h-12 rounded-lg flex items-center justify-center text-secondary group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">description</span>
+</div>
+<h3 class="font-headline-md text-primary">1. Quick Check-in</h3>
+<p class="font-body-md text-on-surface-variant">Complete a brief digital assessment about your symptoms and medical history.</p>
+</div>
+<div class="bg-white border border-outline-variant p-10 rounded-xl space-y-4 hover:border-secondary transition-colors group">
+<div class="bg-secondary-container w-12 h-12 rounded-lg flex items-center justify-center text-secondary group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">stethoscope</span>
+</div>
+<h3 class="font-headline-md text-primary">2. Doctor Review</h3>
+<p class="font-body-md text-on-surface-variant">A registered Australian GP reviews your case and creates a personalized plan.</p>
+</div>
+<div class="bg-white border border-outline-variant p-10 rounded-xl space-y-4 hover:border-secondary transition-colors group">
+<div class="bg-secondary-container w-12 h-12 rounded-lg flex items-center justify-center text-secondary group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">medication</span>
+</div>
+<h3 class="font-headline-md text-primary">3. Fast Delivery</h3>
+<p class="font-body-md text-on-surface-variant">Get your prescription or treatment plan delivered discreetly to your door.</p>
+</div>
+</div>
+</section>
+<!-- Who it's for 2-col split -->
+<section class="bg-surface-container py-24">
+<div class="max-w-7xl mx-auto px-6">
+<div class="grid md:grid-cols-2 gap-16 items-center">
+<div class="rounded-2xl overflow-hidden shadow-2xl">
+<img class="w-full aspect-square object-cover" data-alt="A smiling Australian doctor in a modern clinic environment holding a digital tablet and talking warmly to a patient" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYFEszUofxLegwyDSOslWNZJpKGm5KK5RecEV58ojbxaBMywkBSul5PNi_IdlKWX1JCSyY5Xiu2HwO60a0G5O39RFzOHnznq9dO4tygK1qhmsxJQxhfGebA5eEhDMNwolPs5jQopoIMmrqa9HZqg_WK3wSD5ja6r8UQM0Fgo-t33wsfkvoQre3HUDe_IZb6Gk7HsDPdk-L9OKeEzoez_jWG3RT3-MF24awq9cmyKJhlLD9VVKYhgu4_U1CnTgMUDSk6pTpACIgy0Fi"/>
+</div>
+<div class="space-y-stack-lg">
+<h2 class="font-display-xl text-primary">For patients, by doctors.</h2>
+<div class="space-y-8">
+<div class="flex gap-4">
+<div class="bg-primary-container p-3 rounded-lg h-fit text-on-primary-container">
+<span class="material-symbols-outlined">verified_user</span>
+</div>
+<div>
+<h4 class="font-headline-md text-primary text-xl">For Busy Professionals</h4>
+<p class="font-body-md text-on-surface-variant">Skip the waiting room. Access healthcare around your schedule, not ours.</p>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="bg-primary-container p-3 rounded-lg h-fit text-on-primary-container">
+<span class="material-symbols-outlined">family_restroom</span>
+</div>
+<div>
+<h4 class="font-headline-md text-primary text-xl">For Modern Families</h4>
+<p class="font-body-md text-on-surface-variant">Reliable medical advice for the whole household, just a message away.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Safety Callout Card -->
+<section class="py-24 px-6">
+<div class="max-w-5xl mx-auto bg-secondary text-on-secondary rounded-[2rem] p-12 md:p-16 relative overflow-hidden">
+<div class="absolute top-0 right-0 p-8 opacity-10">
+<span class="material-symbols-outlined text-[120px]">security</span>
+</div>
+<div class="relative z-10 max-w-2xl space-y-6">
+<h2 class="font-headline-lg text-white">Your safety is our priority.</h2>
+<p class="font-body-lg text-secondary-fixed">
+                        Every consultation is handled with the highest clinical standards. We use bank-grade encryption and adhere to all Australian health privacy regulations.
+                    </p>
+<div class="flex items-center gap-6 pt-4">
+<div class="flex -space-x-3">
+<img class="w-12 h-12 rounded-full border-2 border-secondary object-cover" data-alt="Professional headshot of a female doctor in a white coat with a friendly expression" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDb_cw1x6sn58eRCIaaR2NemGDrRdWeJrVkgIc5u4DBmHUXevoB8aGIcbaW0MMTzO064hVjUG6OaXiXrZsUG8Q8IdqPOWpZWeuDqKq8QcNzuixN9CCMzgLbVW_ZxjGdTUX1zYvRwpH2ZSdFrowNx9sjsqcSWlcFYXJEEixMfaJig84gsARs8xL3Aq3KWiH3xnnWor_1mZVXJMgrNu5s8G8yc_LYu-dXGe3ZYOtzCqqaU9KTZz00a-KjZn-ztHTMge-CxdTskoDznNtl"/>
+<img class="w-12 h-12 rounded-full border-2 border-secondary object-cover" data-alt="Professional headshot of a male doctor in a blue shirt with clinical background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCg8vSG-YSLUMWrwz4OoPdoYXuhPwZlag5xJR982S-tlrQ2XrBfgg3tBiBGPzlClPzJeF4yMhhww5zv33LgUWXySMAbDaZwnAgHoibdVqolS4VWoJaNEBehSSr7eOUHOLgyRR_nudJy5K0O54lJGq2eFYolywQoarqV0iXHBNXD6wFmRK9hgDS9jgDTvsmozIPabf_0z8F3itgNvHMFL6yJgLvAb7H0_rgx1Wdesm022QZTKZtoPoDOFMqq4vQ6iz4b5pmXlMq65u6H"/>
+</div>
+<div class="text-sm font-label-sm">
+                            Reviewed by AHPRA registered practitioners
+                        </div>
+</div>
+</div>
+</div>
+</section>
+<!-- Footer CTA Banner -->
+<section class="pb-24 px-6">
+<div class="max-w-7xl mx-auto bg-primary text-on-primary rounded-3xl p-16 text-center space-y-8 border border-white/10">
+<h2 class="font-display-xl">Ready to start your first consult?</h2>
+<p class="font-body-lg text-on-primary-container">Join thousands of Australians getting better healthcare.</p>
+<button class="bg-secondary text-white px-12 py-5 rounded-full font-label-sm text-xl hover:bg-secondary/90 transition-all shadow-lg shadow-secondary/20">
+                    Get Started ($50)
+                </button>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="w-full border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-manrope text-sm">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-12 px-6 pt-20 pb-10 max-w-7xl mx-auto relative after:content-[''] after:block after:h-2 after:w-full after:bg-red-600 after:absolute after:bottom-0 after:left-0">
+<div class="col-span-1 md:col-span-1 space-y-6">
+<div class="font-bold text-slate-900 dark:text-slate-50 text-2xl">Nightingale</div>
+<p class="text-slate-500">Transforming the Australian medical landscape through digital innovation and clinical excellence.</p>
+</div>
+<div>
+<h5 class="font-bold text-slate-900 dark:text-slate-50 mb-6 uppercase tracking-wider text-xs">Product</h5>
+<ul class="space-y-4">
+<li><a class="text-slate-500 hover:underline transition-all" href="#">How It Works</a></li>
+<li><a class="text-slate-500 hover:underline transition-all" href="#">Pricing</a></li>
+<li><a class="text-slate-500 hover:underline transition-all" href="#">Safety</a></li>
+<li><a class="text-slate-500 hover:underline transition-all" href="#">For Doctors</a></li>
+</ul>
+</div>
+<div>
+<h5 class="font-bold text-slate-900 dark:text-slate-50 mb-6 uppercase tracking-wider text-xs">Company</h5>
+<ul class="space-y-4">
+<li><a class="text-slate-500 hover:underline transition-all" href="#">About</a></li>
+<li><a class="text-slate-500 hover:underline transition-all" href="#">Privacy</a></li>
+<li><a class="text-slate-500 hover:underline transition-all" href="#">Terms</a></li>
+<li><a class="text-slate-500 hover:underline transition-all" href="#">Support</a></li>
+</ul>
+</div>
+<div>
+<h5 class="font-bold text-slate-900 dark:text-slate-50 mb-6 uppercase tracking-wider text-xs">Emergency</h5>
+<p class="text-slate-500 mb-4">In case of medical emergency, please contact triple zero immediately.</p>
+<div class="bg-error-container text-on-error-container p-4 rounded-xl font-bold text-center">
+                    Call 000
+                </div>
+</div>
+<div class="col-span-full pt-10 border-t border-slate-100 dark:divide-slate-900 text-center md:text-left text-slate-500">
+                © 2024 Nightingale. Australian Healthcare Marketing. In case of emergency, call 000.
+            </div>
+</div>
+</footer>
+</body></html>

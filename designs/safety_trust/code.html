@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Safety &amp; Trust | Nightingale</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Public+Sans:wght@400;600;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "error-container": "#ffdad6",
+                      "secondary-fixed-dim": "#89d3d4",
+                      "primary-container": "#1a365d",
+                      "tertiary": "#321b00",
+                      "surface-container-low": "#f4f3f7",
+                      "on-surface-variant": "#43474e",
+                      "secondary": "#13696a",
+                      "on-secondary-fixed-variant": "#004f50",
+                      "on-error-container": "#93000a",
+                      "tertiary-fixed-dim": "#f2bc82",
+                      "on-surface": "#1a1c1e",
+                      "on-secondary": "#ffffff",
+                      "primary-fixed": "#d6e3ff",
+                      "on-primary-container": "#86a0cd",
+                      "on-secondary-container": "#1a6d6e",
+                      "on-secondary-fixed": "#002020",
+                      "surface-tint": "#455f88",
+                      "on-primary-fixed-variant": "#2d476f",
+                      "tertiary-container": "#4f2e00",
+                      "on-background": "#1a1c1e",
+                      "outline-variant": "#c4c6cf",
+                      "on-primary": "#ffffff",
+                      "surface-container-high": "#e9e7eb",
+                      "primary-fixed-dim": "#adc7f7",
+                      "surface-dim": "#dad9dd",
+                      "on-error": "#ffffff",
+                      "inverse-primary": "#adc7f7",
+                      "inverse-surface": "#2f3033",
+                      "surface-container-lowest": "#ffffff",
+                      "inverse-on-surface": "#f1f0f4",
+                      "background": "#faf9fd",
+                      "surface": "#faf9fd",
+                      "on-tertiary-container": "#c6955e",
+                      "surface-bright": "#faf9fd",
+                      "secondary-fixed": "#a5eff0",
+                      "on-tertiary-fixed-variant": "#633f0f",
+                      "surface-variant": "#e3e2e6",
+                      "tertiary-fixed": "#ffddba",
+                      "on-primary-fixed": "#001b3c",
+                      "outline": "#74777f",
+                      "on-tertiary-fixed": "#2b1700",
+                      "on-tertiary": "#ffffff",
+                      "surface-container": "#efedf1",
+                      "secondary-container": "#a2eded",
+                      "surface-container-highest": "#e3e2e6",
+                      "error": "#ba1a1a",
+                      "primary": "#002045"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "stack-sm": "8px",
+                      "gutter": "24px",
+                      "stack-lg": "32px",
+                      "doctor-margin": "16px",
+                      "patient-margin": "32px",
+                      "unit": "8px",
+                      "stack-md": "16px"
+              },
+              "fontFamily": {
+                      "label-sm": ["Public Sans"],
+                      "headline-md": ["Manrope"],
+                      "headline-lg": ["Manrope"],
+                      "display-xl": ["Manrope"],
+                      "body-md": ["Public Sans"],
+                      "body-lg": ["Public Sans"],
+                      "clinical-data": ["Public Sans"]
+              },
+              "fontSize": {
+                      "label-sm": ["12px", {"lineHeight": "1", "fontWeight": "700"}],
+                      "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                      "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                      "display-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                      "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "clinical-data": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "600"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-background font-body-md text-on-background antialiased">
+<!-- TopAppBar -->
+<header class="bg-white/80 dark:bg-slate-950/80 backdrop-blur-md fixed top-0 w-full z-50 border-b border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-none">
+<nav class="flex justify-between items-center px-6 py-4 max-w-7xl mx-auto">
+<div class="text-xl font-bold tracking-tighter text-slate-900 dark:text-slate-50 font-manrope antialiased tracking-tight">Nightingale</div>
+<div class="hidden md:flex items-center space-x-8">
+<a class="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors font-manrope antialiased tracking-tight" href="#">How It Works</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors font-manrope antialiased tracking-tight" href="#">Pricing</a>
+<a class="text-slate-900 dark:text-white font-semibold font-manrope antialiased tracking-tight" href="#">Safety</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors font-manrope antialiased tracking-tight" href="#">For Doctors</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors font-manrope antialiased tracking-tight" href="#">About</a>
+</div>
+<button class="bg-primary text-on-primary px-6 py-2.5 rounded-full font-label-sm scale-95 active:scale-90 transition-transform">
+                Get Started
+            </button>
+</nav>
+</header>
+<main class="pt-32 pb-20">
+<!-- Hero Section: Trust & Identity -->
+<section class="max-w-7xl mx-auto px-6 mb-24">
+<div class="max-w-3xl">
+<span class="inline-block px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm mb-6 uppercase tracking-wider">The Nightingale Standard</span>
+<h1 class="font-display-xl text-display-xl text-primary mb-6">Medical safety, <br/><span class="text-secondary">reimagined for digital care.</span></h1>
+<p class="text-body-lg font-body-lg text-outline max-w-2xl">We combine the rigor of Australian healthcare regulations with the precision of Human-in-the-Loop AI to ensure every interaction is clinical-grade and secure.</p>
+</div>
+</section>
+<!-- HITL Diagram Section (Bento Inspired) -->
+<section class="max-w-7xl mx-auto px-6 mb-32">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<div class="lg:col-span-12 mb-12">
+<h2 class="font-headline-lg text-headline-lg text-primary mb-4 text-center">Human-in-the-Loop Architecture</h2>
+<p class="text-body-md font-body-md text-outline text-center max-w-2xl mx-auto">AI never acts alone. Every clinical insight is generated by AI and verified by an Australian-registered General Practitioner before reaching you.</p>
+</div>
+<!-- Diagram Visualization -->
+<div class="lg:col-span-12 glass-panel p-12 rounded-3xl overflow-hidden relative border border-outline-variant">
+<div class="flex flex-col md:flex-row justify-between items-center relative z-10 gap-12">
+<!-- Node 1: Patient -->
+<div class="flex flex-col items-center gap-4 group">
+<div class="w-20 h-20 rounded-full bg-primary-fixed flex items-center justify-center text-primary shadow-sm border border-primary/10 transition-transform group-hover:scale-110">
+<span class="material-symbols-outlined text-3xl" data-icon="person">person</span>
+</div>
+<div class="text-center">
+<p class="font-headline-md text-label-sm text-primary">Patient</p>
+<p class="text-clinical-data font-clinical-data text-outline">Input &amp; Context</p>
+</div>
+</div>
+<!-- Connector -->
+<div class="hidden md:block flex-1 h-0.5 bg-gradient-to-r from-primary-fixed to-secondary-container relative">
+<span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-white px-2 material-symbols-outlined text-secondary text-sm" data-icon="arrow_forward">arrow_forward</span>
+</div>
+<!-- Node 2: AI Engine -->
+<div class="flex flex-col items-center gap-4 group">
+<div class="w-24 h-24 rounded-2xl bg-secondary flex items-center justify-center text-on-secondary shadow-lg border border-secondary/20 transition-transform group-hover:rotate-12">
+<span class="material-symbols-outlined text-4xl" data-icon="neurology">neurology</span>
+</div>
+<div class="text-center">
+<p class="font-headline-md text-label-sm text-secondary">AI Diagnostic Engine</p>
+<p class="text-clinical-data font-clinical-data text-outline">Clinical Synthesis</p>
+</div>
+</div>
+<!-- Connector -->
+<div class="hidden md:block flex-1 h-0.5 bg-gradient-to-r from-secondary-container to-tertiary-fixed-dim relative">
+<span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-white px-2 material-symbols-outlined text-tertiary-container text-sm" data-icon="check_circle">check_circle</span>
+</div>
+<!-- Node 3: GP (The Lock) -->
+<div class="flex flex-col items-center gap-4 group">
+<div class="w-20 h-20 rounded-full bg-tertiary-fixed flex items-center justify-center text-tertiary shadow-sm border border-tertiary/10 transition-transform group-hover:scale-110">
+<span class="material-symbols-outlined text-3xl" data-icon="medical_services">medical_services</span>
+</div>
+<div class="text-center">
+<p class="font-headline-md text-label-sm text-tertiary">Registered GP</p>
+<p class="text-clinical-data font-clinical-data text-outline">Medical Validation</p>
+</div>
+</div>
+<!-- Connector -->
+<div class="hidden md:block flex-1 h-0.5 bg-gradient-to-r from-tertiary-fixed-dim to-primary-fixed relative">
+<span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-white px-2 material-symbols-outlined text-primary text-sm" data-icon="done_all">done_all</span>
+</div>
+<!-- Node 4: Patient Return -->
+<div class="flex flex-col items-center gap-4">
+<div class="w-20 h-20 rounded-full bg-primary-fixed flex items-center justify-center text-primary shadow-sm border border-primary/10">
+<span class="material-symbols-outlined text-3xl" data-icon="verified">verified</span>
+</div>
+<div class="text-center">
+<p class="font-headline-md text-label-sm text-primary">Outcome</p>
+<p class="text-clinical-data font-clinical-data text-outline">Safe Care Plan</p>
+</div>
+</div>
+</div>
+<!-- Decorative Background for Diagram -->
+<div class="absolute inset-0 opacity-5 pointer-events-none">
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-[radial-gradient(circle,_#13696a_0%,_transparent_70%)]"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Doctor Credentialing Section -->
+<section class="max-w-7xl mx-auto px-6 mb-32">
+<div class="flex flex-col md:flex-row gap-gutter items-center">
+<div class="w-full md:w-1/2 space-y-6">
+<h2 class="font-headline-lg text-headline-lg text-primary">Every doctor is vetted.</h2>
+<p class="text-body-lg font-body-lg text-outline">We don't just hire doctors; we partner with the best clinical minds in Australia. Our rigorous onboarding process ensures that every GP on the Nightingale platform meets the highest national standards.</p>
+<ul class="space-y-4">
+<li class="flex items-start gap-4">
+<span class="material-symbols-outlined text-secondary" data-icon="verified_user">verified_user</span>
+<div>
+<p class="font-bold font-clinical-data text-primary">AHPRA Registered</p>
+<p class="text-clinical-data font-clinical-data text-outline">Mandatory active registration with the Australian Health Practitioner Regulation Agency.</p>
+</div>
+</li>
+<li class="flex items-start gap-4">
+<span class="material-symbols-outlined text-secondary" data-icon="history_edu">history_edu</span>
+<div>
+<p class="font-bold font-clinical-data text-primary">Ongoing Training</p>
+<p class="text-clinical-data font-clinical-data text-outline">Continuous medical education in telehealth and digital-first clinical practices.</p>
+</div>
+</li>
+<li class="flex items-start gap-4">
+<span class="material-symbols-outlined text-secondary" data-icon="gavel">gavel</span>
+<div>
+<p class="font-bold font-clinical-data text-primary">Professional Indemnity</p>
+<p class="text-clinical-data font-clinical-data text-outline">Comprehensive insurance coverage for all telehealth services provided.</p>
+</div>
+</li>
+</ul>
+</div>
+<div class="w-full md:w-1/2">
+<div class="relative p-doctor-margin bg-surface-container rounded-3xl border border-outline-variant">
+<img alt="Australian doctor smiling professionally" class="rounded-2xl w-full h-[400px] object-cover grayscale hover:grayscale-0 transition-all duration-700" data-alt="professional male doctor in Australia wearing clinical scrubs in a bright modern medical facility with clinical data panels on the wall" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC4KrsfJSNyK0vkxLSck14mi48FDcEf-M50Wv5IJj7Eyk0ovxxr5h35hX575yRpSIYHRl9W6PFtDLTZ3cWy3zjcJW0T_86F2b0MXmOJbSxkOXIQ0NoQFJxGu6SrQ5uio3FTedY-tQTH41cMVc40y2kRfRNG1DKcWWyWoe2QAB7PzsJWLDkxhEBZ8S-vOLieugq0M2f7DwBLzlUXT3D44cQNSGSRHKItM7S9uaYUoYDA4Rn2BSyqK6acETkxaNyAEAOdCuIVGtKT4Cjx"/>
+<div class="absolute -bottom-6 -left-6 bg-white p-6 rounded-2xl shadow-lg border border-outline-variant max-w-[240px]">
+<div class="flex items-center gap-2 mb-2">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="font-label-sm text-secondary">Verified Practitioner</span>
+</div>
+<p class="font-clinical-data text-primary">Dr. James Henderson</p>
+<p class="text-clinical-data font-clinical-data text-outline">AHPRA #MED0001234567</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Data Security Section (Asymmetric Layout) -->
+<section class="bg-primary text-on-primary py-24 mb-32">
+<div class="max-w-7xl mx-auto px-6">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-16">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-primary mb-8">Military-grade <br/>data sovereignty.</h2>
+<p class="text-body-lg font-body-lg text-on-primary-container mb-12">Your health data is your most private asset. We host all Nightingale data on local Australian servers, ensuring full compliance with the Australian Privacy Act and My Health Record standards.</p>
+<div class="grid grid-cols-2 gap-8">
+<div class="space-y-2">
+<p class="text-display-xl font-display-xl text-secondary-fixed">AES-256</p>
+<p class="font-label-sm text-on-primary-container">End-to-End Encryption</p>
+</div>
+<div class="space-y-2">
+<p class="text-display-xl font-display-xl text-secondary-fixed">IRAP</p>
+<p class="font-label-sm text-on-primary-container">Certified Data Center</p>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 gap-gutter">
+<div class="p-8 rounded-2xl bg-primary-container border border-on-primary/10">
+<span class="material-symbols-outlined text-secondary-fixed-dim text-3xl mb-4" data-icon="location_on">location_on</span>
+<h3 class="font-headline-md text-headline-md mb-2">Data Sovereignty</h3>
+<p class="text-body-md font-body-md text-on-primary-container">All clinical data is stored in Sydney and Melbourne. Your information never leaves Australian shores.</p>
+</div>
+<div class="p-8 rounded-2xl bg-primary-container border border-on-primary/10">
+<span class="material-symbols-outlined text-secondary-fixed-dim text-3xl mb-4" data-icon="lock_reset">lock_reset</span>
+<h3 class="font-headline-md text-headline-md mb-2">Zero-Trust Access</h3>
+<p class="text-body-md font-body-md text-on-primary-container">Strict 2FA requirements and time-limited access keys for clinical staff during review periods.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Emergency Protocol Section -->
+<section class="max-w-7xl mx-auto px-6 mb-32">
+<div class="bg-error-container/20 rounded-3xl p-12 border border-error/10 relative overflow-hidden">
+<div class="flex flex-col md:flex-row items-center gap-12 relative z-10">
+<div class="w-full md:w-2/3">
+<div class="flex items-center gap-3 text-error mb-4">
+<span class="material-symbols-outlined" data-icon="emergency_home">emergency_home</span>
+<span class="font-label-sm uppercase tracking-widest">Emergency Protocols</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-primary mb-6">Built-in emergency redirection.</h2>
+<p class="text-body-lg font-body-lg text-outline mb-8">Nightingale is not for emergencies. If our AI or a GP detects clinical indicators of a high-risk event (such as stroke or cardiac symptoms), our system automatically terminates the digital flow and provides immediate instructions to call 000 or visit an ER.</p>
+<div class="flex flex-wrap gap-4">
+<div class="bg-white px-4 py-3 rounded-xl border border-error/20 flex items-center gap-3">
+<span class="w-3 h-3 rounded-full bg-error animate-pulse"></span>
+<span class="font-clinical-data text-primary">Instant Clinical Escalation</span>
+</div>
+<div class="bg-white px-4 py-3 rounded-xl border border-error/20 flex items-center gap-3">
+<span class="material-symbols-outlined text-error text-xl" data-icon="call">call</span>
+<span class="font-clinical-data text-primary">Direct 000 Integration</span>
+</div>
+</div>
+</div>
+<div class="w-full md:w-1/3 flex justify-center">
+<div class="w-48 h-48 rounded-full border-8 border-error/10 flex items-center justify-center">
+<div class="text-center">
+<p class="text-display-xl font-display-xl text-error">000</p>
+<p class="font-label-sm text-error">Dial Immediately</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Decorative pulse -->
+<div class="absolute -top-24 -right-24 w-64 h-64 bg-error/5 rounded-full blur-3xl"></div>
+</div>
+</section>
+<!-- Final CTA -->
+<section class="max-w-7xl mx-auto px-6 text-center">
+<h2 class="font-display-xl text-display-xl text-primary mb-6">Safe, verified, Australian care.</h2>
+<p class="text-body-lg font-body-lg text-outline mb-10 max-w-xl mx-auto">Join the 15,000+ patients who trust Nightingale for their primary care needs.</p>
+<div class="flex flex-col sm:flex-row justify-center gap-4">
+<button class="bg-primary text-on-primary px-8 py-4 rounded-full font-label-sm text-lg hover:shadow-lg transition-all">Get Started with Nightingale</button>
+<button class="bg-white text-primary border border-outline-variant px-8 py-4 rounded-full font-label-sm text-lg hover:bg-surface-container transition-all">Download Audit Report</button>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="w-full border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-manrope text-sm relative after:content-[''] after:block after:h-2 after:w-full after:bg-red-600 after:absolute after:bottom-0 after:left-0">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-12 px-6 pt-20 pb-10 max-w-7xl mx-auto relative">
+<div class="col-span-1 md:col-span-1">
+<div class="font-bold text-slate-900 dark:text-slate-50 mb-6 text-xl">Nightingale</div>
+<p class="text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">Modern medical standards for the digital age. Healthcare that prioritizes your safety.</p>
+</div>
+<div class="col-span-1">
+<p class="text-slate-900 dark:text-white font-medium mb-4">Platform</p>
+<div class="flex flex-col space-y-3">
+<a class="text-slate-500 dark:text-slate-400 hover:underline transition-all" href="#">How It Works</a>
+<a class="text-slate-500 dark:text-slate-400 hover:underline transition-all" href="#">Pricing</a>
+<a class="text-slate-900 dark:text-white font-medium hover:underline transition-all" href="#">Safety</a>
+</div>
+</div>
+<div class="col-span-1">
+<p class="text-slate-900 dark:text-white font-medium mb-4">Professionals</p>
+<div class="flex flex-col space-y-3">
+<a class="text-slate-500 dark:text-slate-400 hover:underline transition-all" href="#">For Doctors</a>
+<a class="text-slate-500 dark:text-slate-400 hover:underline transition-all" href="#">Support</a>
+<a class="text-slate-500 dark:text-slate-400 hover:underline transition-all" href="#">Clinical Guidelines</a>
+</div>
+</div>
+<div class="col-span-1">
+<p class="text-slate-900 dark:text-white font-medium mb-4">Legal</p>
+<div class="flex flex-col space-y-3">
+<a class="text-slate-500 dark:text-slate-400 hover:underline transition-all" href="#">Privacy</a>
+<a class="text-slate-500 dark:text-slate-400 hover:underline transition-all" href="#">Terms</a>
+<a class="text-slate-500 dark:text-slate-400 hover:underline transition-all" href="#">About</a>
+</div>
+</div>
+</div>
+<div class="max-w-7xl mx-auto px-6 py-8 border-t border-slate-100 dark:border-slate-900 flex flex-col md:flex-row justify-between items-center gap-4">
+<div class="text-slate-500 dark:text-slate-400 text-sm">© 2024 Nightingale. Australian Healthcare Marketing. In case of emergency, call 000.</div>
+<div class="flex items-center gap-6">
+<span class="w-8 h-8 rounded bg-slate-100 dark:bg-slate-900 flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-400 text-sm" data-icon="language">language</span>
+</span>
+<span class="text-slate-500 font-medium">AU / EN</span>
+</div>
+</div>
+</footer>
+</body></html>
