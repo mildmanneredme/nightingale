@@ -60,6 +60,8 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | **BUG-004** | [API Client Constructs Absolute localhost URLs](../shipped/BUG-004-api-client-localhost-url.md) | Bug Fix | Sprint 8 | Week 17 | **Shipped 2026-04-25** ✅ |
 | **BUG-005** | [Cognito Login 400 / Silent Failure](../shipped/BUG-005-cognito-login-400.md) | Bug Fix | Sprint 8 | Week 17 | **Shipped 2026-04-25** ✅ |
 | **BUG-006** | [Staging Deployment Failures: Consultation Broken End-to-End](../shipped/BUG-006-staging-deployment-failures.md) | Bug Fix | Sprint 8 | Week 17 | **Shipped 2026-04-25** ✅ |
+| — | — | — | — | — | — |
+| **QA-001** | [Playwright End-to-End Test Suite](QA-001-playwright-e2e-suite.md) | Quality Assurance | Periodic / on-request | Not in per-PR CI | Not started |
 
 ---
 
