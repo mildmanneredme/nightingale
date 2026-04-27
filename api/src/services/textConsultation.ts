@@ -57,7 +57,7 @@ export async function sendTextMessage(
 
   const usage = result.usageMetadata;
   if (consultationId && usage) {
-    await recordUsage({
+    void recordUsage({
       consultationId,
       operation: "text_chat",
       provider: "google",

@@ -147,6 +147,31 @@ describe("GET /api/v1/admin/llm-usage/summary", () => {
   });
 });
 
+describe("GET /api/v1/admin/llm-usage/summary date range filtering", () => {
+  it("respects ?from and ?to query params and excludes out-of-range rows", async () => {
+    const pool = getTestPool();
+    // Insert a row in the past via raw SQL to control created_at
+    await pool.query(
+      `INSERT INTO llm_usage (consultation_id, operation, provider, model_id, input_tokens, output_tokens, cost_usd_micros, created_at)
+       VALUES (NULL, 'soap_generation', 'anthropic', 'claude-sonnet-4-6', 500, 200, 9000, '2020-01-15T00:00:00Z')`
+    );
+    await recordUsage({
+      consultationId: null,
+      operation: "text_chat",
+      provider: "google",
+      modelId: "gemini-2.5-flash",
+      inputTokens: 100,
+      outputTokens: 50,
+    }, pool);
+
+    // Range that excludes the 2020 row
+    const res = await request(adminApp).get("/api/v1/admin/llm-usage/summary?from=2024-01-01&to=2099-01-01");
+    expect(res.status).toBe(200);
+    expect(res.body.totals.calls).toBe(1);
+    expect(res.body.totals.inputTokens).toBe(100);
+  });
+});
+
 describe("GET /api/v1/admin/llm-usage/by-consultation", () => {
   it("groups rows by consultation and returns top spenders", async () => {
     const pool = getTestPool();
@@ -221,5 +246,14 @@ describe("GET /api/v1/admin/llm-usage/consultation/:id", () => {
     expect(res.status).toBe(200);
     expect(res.body.data).toHaveLength(3);
     expect(res.body.data[0].operation).toBe("text_chat");
+  });
+});
+
+describe("GET /api/v1/admin/llm-usage/by-consultation pagination limit clamping", () => {
+  it("clamps ?limit=999 to the server maximum of 200", async () => {
+    const res = await request(adminApp).get("/api/v1/admin/llm-usage/by-consultation?limit=999");
+    expect(res.status).toBe(200);
+    // The response limit field must be clamped, not the raw query value
+    expect(res.body.pagination.limit).toBe(200);
   });
 });

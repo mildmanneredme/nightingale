@@ -171,6 +171,8 @@ router.get("/stats", async (_req, res, next) => {
 
 // ---------------------------------------------------------------------------
 // LLM cost dashboard endpoints
+// Auth inherited from app.ts: requireAuth + requireRole("admin") applied to the
+// entire /api/v1/admin/* mount — no per-route auth needed here.
 // All cost values returned as USD (string, 6 decimal places) for client display.
 // ---------------------------------------------------------------------------
 

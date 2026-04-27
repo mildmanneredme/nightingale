@@ -391,7 +391,7 @@ Please generate the clinical outputs as specified.`;
           { role: "user", content: userMessage },
         ]);
 
-        await recordUsage(
+        void recordUsage(
           {
             consultationId,
             operation: "soap_generation",

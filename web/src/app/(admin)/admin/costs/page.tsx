@@ -220,7 +220,7 @@ export default function LlmCostsDashboard() {
             {byConsultation.map((c) => (
               <tr
                 key={c.consultationId ?? "unattributed"}
-                className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer"
+                className={`border-t border-gray-100 hover:bg-gray-50 ${c.consultationId ? "cursor-pointer" : "cursor-default"}`}
                 onClick={() => c.consultationId && openDetail(c.consultationId)}
               >
                 <td className="px-4 py-3">

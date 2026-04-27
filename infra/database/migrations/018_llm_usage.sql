@@ -25,9 +25,11 @@ CREATE TABLE IF NOT EXISTS llm_pricing (
 CREATE INDEX IF NOT EXISTS idx_llm_pricing_lookup
   ON llm_pricing (provider, model_id, effective_from DESC);
 
+-- llm_usage is append-only: never UPDATE or DELETE rows. Costs already
+-- reconciled against this ledger may appear in billing reports and audit trails.
 CREATE TABLE IF NOT EXISTS llm_usage (
   id                  UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-  consultation_id     UUID,
+  consultation_id     UUID         REFERENCES consultations(id) ON DELETE SET NULL,
   operation           TEXT         NOT NULL,
   provider            TEXT         NOT NULL,
   model_id            TEXT         NOT NULL,
