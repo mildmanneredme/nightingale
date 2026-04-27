@@ -1,9 +1,9 @@
 # Project Nightingale — Master Roadmap
 
-> **Status:** In Progress — Sprint 8 (Auth Fixes, UI Redesign & Clinical Knowledge Expansion)
+> **Status:** In Progress — Sprint 9 (Onboarding, Auth Polish & Family Accounts Scoping)
 > **Phase:** 1 MVP (Months 1–6)
 > **Target:** 100 beta patients, 200 consultations completed
-> **Last updated:** 2026-04-25 (Sprint 8 complete — 7 backlog items shipped; auth P0s, UI redesign, clinical knowledge expansion all done)
+> **Last updated:** 2026-04-27 (Sprint 9 complete — BUG-007, PRD-023, UX-005 shipped; PRD-024 fully scoped and ready for sprint planning)
 
 ---
 
@@ -63,10 +63,10 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | — | — | — | — | — | — |
 | **QA-001** | [Playwright End-to-End Test Suite](QA-001-playwright-e2e-suite.md) | Quality Assurance | Periodic / on-request | Not in per-PR CI | Not started |
 | — | — | — | — | — | — |
-| **BUG-007** | [Remove Placeholder & Fake Content from Patient Surfaces](BUG-007-remove-placeholder-content.md) | Bug Fix | Onboarding | P0 — pre-beta credibility | Not started |
-| **PRD-023** | [Patient Onboarding & Clinical Baseline](PRD-023-patient-onboarding-clinical-baseline.md) | Build — Patient Experience | Onboarding | P1 — pre-beta clinical safety | Not started |
-| **PRD-024** | [Family Accounts & Multi-Patient Profiles](PRD-024-family-accounts-multi-patient-profiles.md) | Build — Identity + Compliance | Phase 2 (post-beta) | P2 — design decisions resolved 2026-04-26 | Ready for sprint planning |
-| **UX-005** | [Auth Flow Polish](UX-005-auth-flow-polish.md) | UX Fixes | Onboarding | P2 — before scaling beyond pilot | Not started |
+| **BUG-007** | [Remove Placeholder & Fake Content from Patient Surfaces](../shipped/BUG-007-remove-placeholder-content.md) | Bug Fix | Onboarding | P0 — pre-beta credibility | **Shipped 2026-04-26** ✅ |
+| **PRD-023** | [Patient Onboarding & Clinical Baseline](../shipped/PRD-023-patient-onboarding-clinical-baseline.md) | Build — Patient Experience | Onboarding | P1 — pre-beta clinical safety | **Shipped 2026-04-26** ✅ |
+| **PRD-024** | [Family Accounts & Multi-Patient Profiles](PRD-024-family-accounts-multi-patient-profiles.md) | Build — Identity + Compliance | Phase 2 (post-beta) | P2 — all decisions + clarifications resolved 2026-04-26 | Ready for sprint planning |
+| **UX-005** | [Auth Flow Polish](../shipped/UX-005-auth-flow-polish.md) | UX Fixes | Onboarding | P2 — before scaling beyond pilot | **Shipped 2026-04-26** ✅ |
 
 ---
 
@@ -109,6 +109,9 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | [BUG-004](../shipped/BUG-004-api-client-localhost-url.md) | API Client localhost URL | 2026-04-25 | `api.ts` rewritten to use relative paths throughout; `NEXT_PUBLIC_API_URL` removed from browser code; Next.js rewrite proxy handles API routing in all environments; `api.test.ts` updated |
 | [BUG-005](../shipped/BUG-005-cognito-login-400.md) | Cognito Login 400 / Silent Failure | 2026-04-25 | `getPool()` guard for missing env vars; `mapCognitoError()` centralised in auth.ts; login page renders inline error messages for all Cognito failure modes |
 | [BUG-006](../shipped/BUG-006-staging-deployment-failures.md) | Staging Deployment Failures | 2026-04-25 | End-to-end consultation flow restored on staging |
+| [BUG-007](../shipped/BUG-007-remove-placeholder-content.md) | Remove Placeholder & Fake Content | 2026-04-26 | Fake vitals, hardcoded 85% completeness, broken legal links removed from all patient surfaces |
+| [PRD-023](../shipped/PRD-023-patient-onboarding-clinical-baseline.md) | Patient Onboarding & Clinical Baseline | 2026-04-26 | 3-step onboarding wizard; clinical baseline (allergies/medications/conditions); profile completeness; AI pre-context; doctor queue warnings; DB migration 016 |
+| [UX-005](../shipped/UX-005-auth-flow-polish.md) | Auth Flow Polish | 2026-04-26 | Live password checklist (12-char Cognito policy); resend code with 60s cooldown; "Use a different email" flow; fee messaging unified |
 
 ---
 
