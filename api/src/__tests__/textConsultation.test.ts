@@ -234,4 +234,47 @@ describe("POST /api/v1/consultations/:id/chat", () => {
 
     expect(res.status).toBe(404);
   });
+
+  it("handles markdown-fenced JSON from Gemini without leaking raw JSON to the patient", async () => {
+    await registerPatient(app, COGNITO_SUB);
+    const id = await createTextConsultation(app);
+
+    mockSendMessage.mockResolvedValueOnce({
+      text:
+        "```json\n" +
+        JSON.stringify({
+          type: "emergency",
+          message: "Please call 000 immediately or go to your nearest emergency department.",
+        }) +
+        "\n```",
+    });
+
+    const res = await request(app)
+      .post(`/api/v1/consultations/${id}/chat`)
+      .send({ message: "I dropped a brick on my toe on purpose" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.aiResponse.type).toBe("emergency");
+    expect(res.body.aiResponse.message).toMatch(/000/);
+    // Crucially, the raw payload should not contain code fences or a "type"
+    // field embedded in the visible message.
+    expect(res.body.aiResponse.message).not.toMatch(/```/);
+    expect(res.body.aiResponse.message).not.toMatch(/"type"/);
+  });
+
+  it("falls back to a safe message when Gemini returns unparseable text", async () => {
+    await registerPatient(app, COGNITO_SUB);
+    const id = await createTextConsultation(app);
+
+    mockSendMessage.mockResolvedValueOnce({ text: "totally not json" });
+
+    const res = await request(app)
+      .post(`/api/v1/consultations/${id}/chat`)
+      .send({ message: "hello" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.aiResponse.type).toBe("question");
+    // Must not echo the raw model output.
+    expect(res.body.aiResponse.text).not.toContain("totally not json");
+  });
 });

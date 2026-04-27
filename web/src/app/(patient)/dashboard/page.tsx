@@ -121,7 +121,7 @@ export default function DashboardPage() {
                   ))}
                 </ul>
                 <Link
-                  href="/onboarding"
+                  href="/profile"
                   className="inline-flex items-center gap-2 bg-secondary text-white font-manrope font-bold px-4 py-2 rounded-xl hover:opacity-90 transition-opacity text-sm"
                 >
                   Complete now
