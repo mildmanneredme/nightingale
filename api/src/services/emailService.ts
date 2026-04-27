@@ -17,6 +17,27 @@ if (config.sendgrid.apiKey) {
   sgMail.setApiKey(config.sendgrid.apiKey);
 }
 
+// ---------------------------------------------------------------------------
+// Generic transactional send — for internal/admin emails that don't need
+// delivery tracking in the notifications table.
+// ---------------------------------------------------------------------------
+export async function sendEmail(params: {
+  to: string;
+  subject: string;
+  html: string;
+}): Promise<void> {
+  if (!config.sendgrid.apiKey) {
+    logger.warn({ to: params.to, subject: params.subject }, "SendGrid not configured — skipping email");
+    return;
+  }
+  await sgMail.send({
+    to: params.to,
+    from: { email: config.sendgrid.fromEmail, name: config.sendgrid.fromName },
+    subject: params.subject,
+    html: params.html,
+  });
+}
+
 export interface NotificationRecord {
   id: string;
   sendgridMessageId: string | null;

@@ -8,6 +8,7 @@ import {
   AUTH_TOKEN_MISSING,
 } from "../errors/codes";
 import { logger } from "../logger";
+import { findDoctorBySub, insertAuditLog } from "../repositories/doctor.repository";
 
 // Lazily instantiated — verifier is only created if Cognito vars are configured.
 // Routes that require auth call requireAuth(); unauthenticated routes skip it.
@@ -55,6 +56,32 @@ export function requireRole(...roles: string[]): RequestHandler {
     next();
   };
 }
+
+// PRD-025: gate that enforces doctor status='approved' on action endpoints.
+// Fails closed — a missing doctors row is treated as pending (not approved).
+export const requireApprovedDoctor: RequestHandler = async (req, res, next) => {
+  const sub = req.user?.sub;
+  if (!sub) {
+    res.status(401).json({ error: "Missing bearer token" });
+    return;
+  }
+  try {
+    const doctor = await findDoctorBySub(sub);
+    if (!doctor || doctor.status !== "approved") {
+      await insertAuditLog({
+        eventType: "doctor.action_blocked_pending",
+        actorId: sub,
+        ahpraNumber: doctor?.ahpra_number ?? "unknown",
+        metadata: { attempted_route: req.path, status: doctor?.status ?? "not_found" },
+      });
+      res.status(403).json({ error: "Verification pending", code: "DOCTOR_NOT_APPROVED" });
+      return;
+    }
+    next();
+  } catch (err) {
+    next(err);
+  }
+};
 
 export const requireAuth: RequestHandler = async (req, res, next) => {
   const header = req.headers.authorization;

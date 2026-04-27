@@ -1,6 +1,37 @@
 "use client";
+import { useState } from "react";
+import Link from "next/link";
+import { submitDemoRequest } from "@/lib/api";
 
 export default function ForDoctorsPage() {
+  const [demoName, setDemoName]       = useState("");
+  const [demoEmail, setDemoEmail]     = useState("");
+  const [demoAhpra, setDemoAhpra]     = useState("");
+  const [demoSpecialty, setDemoSpecialty] = useState("");
+  const [demoMessage, setDemoMessage] = useState("");
+  const [demoLoading, setDemoLoading] = useState(false);
+  const [demoSent, setDemoSent]       = useState(false);
+  const [demoError, setDemoError]     = useState<string | null>(null);
+
+  async function handleDemoSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setDemoLoading(true);
+    setDemoError(null);
+    try {
+      await submitDemoRequest({
+        name: demoName,
+        email: demoEmail,
+        ahpraNumber: demoAhpra || undefined,
+        specialty: demoSpecialty || undefined,
+        message: demoMessage || undefined,
+      });
+      setDemoSent(true);
+    } catch (err: unknown) {
+      setDemoError(err instanceof Error ? err.message : "Submission failed. Please try again.");
+    } finally {
+      setDemoLoading(false);
+    }
+  }
   return (
     <main className="pt-0">
       {/* Hero Section: Full-bleed background */}
@@ -58,12 +89,12 @@ export default function ForDoctorsPage() {
             </div>
 
             <div className="flex items-center gap-4 pt-4">
-              <a
-                href="mailto:doctors@nightingale.health?subject=GP Partner Interest"
+              <Link
+                href="/register/doctor"
                 className="px-8 py-4 bg-primary text-white font-bold rounded-2xl shadow-lg hover:shadow-primary/20 transition-all active:scale-95"
               >
                 Apply to Practice
-              </a>
+              </Link>
               <a
                 href="#demo"
                 className="px-8 py-4 bg-white text-slate-900 font-bold border border-slate-200 rounded-2xl hover:bg-slate-50 transition-all"
@@ -194,65 +225,85 @@ export default function ForDoctorsPage() {
               <h2 className="font-headline-lg text-primary mb-4">Request a Clinical Demo</h2>
               <p className="text-slate-500">Join our network of Australian medical professionals.</p>
             </div>
-            <form
-              action="mailto:doctors@nightingale.health"
-              method="get"
-              encType="text/plain"
-              className="space-y-6"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {demoSent ? (
+              <div className="p-6 bg-green-50 border border-green-200 rounded-2xl text-center">
+                <span className="material-symbols-outlined text-4xl text-green-600 block mb-3" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                <p className="font-bold text-green-900 text-lg mb-1">Request received</p>
+                <p className="text-green-700 text-sm">We&rsquo;ll be in touch within 1–2 business days.</p>
+              </div>
+            ) : (
+              <form onSubmit={handleDemoSubmit} className="space-y-6">
+                {demoError && (
+                  <div className="p-3 bg-red-50 text-red-700 rounded-xl text-sm">{demoError}</div>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="font-label-sm text-slate-700 ml-1 block">FULL NAME</label>
+                    <input
+                      className="w-full px-5 py-4 rounded-xl border border-slate-300 focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none"
+                      placeholder="Dr. Julian Smith"
+                      type="text"
+                      required
+                      value={demoName}
+                      onChange={(e) => setDemoName(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="font-label-sm text-slate-700 ml-1 block">AHPRA NUMBER (optional)</label>
+                    <input
+                      className="w-full px-5 py-4 rounded-xl border border-slate-300 focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none"
+                      placeholder="MED000123456"
+                      type="text"
+                      value={demoAhpra}
+                      onChange={(e) => setDemoAhpra(e.target.value)}
+                    />
+                  </div>
+                </div>
                 <div className="space-y-2">
-                  <label className="font-label-sm text-slate-700 ml-1 block">FULL NAME</label>
+                  <label className="font-label-sm text-slate-700 ml-1 block">PROFESSIONAL EMAIL</label>
                   <input
                     className="w-full px-5 py-4 rounded-xl border border-slate-300 focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none"
-                    placeholder="Dr. Julian Smith"
-                    type="text"
-                    name="name"
+                    placeholder="smith.j@medicalclinic.com.au"
+                    type="email"
+                    required
+                    value={demoEmail}
+                    onChange={(e) => setDemoEmail(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="font-label-sm text-slate-700 ml-1 block">AHPRA NUMBER</label>
+                  <label className="font-label-sm text-slate-700 ml-1 block">PRACTICE SPECIALTY (optional)</label>
                   <input
                     className="w-full px-5 py-4 rounded-xl border border-slate-300 focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none"
-                    placeholder="MED000123456"
+                    placeholder="General Practice"
                     type="text"
-                    name="ahpra"
+                    value={demoSpecialty}
+                    onChange={(e) => setDemoSpecialty(e.target.value)}
                   />
                 </div>
-              </div>
-              <div className="space-y-2">
-                <label className="font-label-sm text-slate-700 ml-1 block">PROFESSIONAL EMAIL</label>
-                <input
-                  className="w-full px-5 py-4 rounded-xl border border-slate-300 focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none"
-                  placeholder="smith.j@medicalclinic.com.au"
-                  type="email"
-                  name="email"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="font-label-sm text-slate-700 ml-1 block">PRACTICE SPECIALTY</label>
-                <select
-                  className="w-full px-5 py-4 rounded-xl border border-slate-300 focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none bg-white"
-                  name="specialty"
-                >
-                  <option>General Practice</option>
-                  <option>Psychiatry</option>
-                  <option>Paediatrics</option>
-                  <option>Other</option>
-                </select>
-              </div>
-              <div className="pt-4">
-                <button
-                  type="submit"
-                  className="w-full py-5 bg-primary text-white font-bold rounded-xl text-lg hover:bg-slate-900 transition-colors shadow-lg"
-                >
-                  Submit Application
-                </button>
-              </div>
-              <p className="text-center text-xs text-slate-400 mt-6">
-                By submitting, you agree to our Terms of Service and Privacy Policy for Practitioners.
-              </p>
-            </form>
+                <div className="space-y-2">
+                  <label className="font-label-sm text-slate-700 ml-1 block">MESSAGE (optional)</label>
+                  <textarea
+                    className="w-full px-5 py-4 rounded-xl border border-slate-300 focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none resize-none"
+                    placeholder="Tell us about your practice or any questions you have."
+                    rows={3}
+                    value={demoMessage}
+                    onChange={(e) => setDemoMessage(e.target.value)}
+                  />
+                </div>
+                <div className="pt-4">
+                  <button
+                    type="submit"
+                    disabled={demoLoading}
+                    className="w-full py-5 bg-primary text-white font-bold rounded-xl text-lg hover:bg-slate-900 transition-colors shadow-lg disabled:opacity-50"
+                  >
+                    {demoLoading ? "Sending…" : "Request Demo"}
+                  </button>
+                </div>
+                <p className="text-center text-xs text-slate-400 mt-6">
+                  By submitting, you agree to our Terms of Service and Privacy Policy for Practitioners.
+                </p>
+              </form>
+            )}
           </div>
         </div>
       </section>

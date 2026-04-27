@@ -142,6 +142,20 @@ export function signUp(email: string, password: string): Promise<void> {
   });
 }
 
+export function signUpDoctor(email: string, password: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const attrs = [
+      new CognitoUserAttribute({ Name: "email", Value: email }),
+      new CognitoUserAttribute({ Name: "custom:role", Value: "doctor" }),
+    ];
+
+    getPool().signUp(email, password, attrs, [], (err) => {
+      if (err) return reject(new Error(mapCognitoError(err)));
+      resolve();
+    });
+  });
+}
+
 // ---------------------------------------------------------------------------
 // confirmSignUp
 // ---------------------------------------------------------------------------

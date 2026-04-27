@@ -10,6 +10,7 @@ import patientRouter from "./routes/patients";
 import consultationRouter from "./routes/consultations";
 import photoRouter from "./routes/photos";
 import doctorRouter from "./routes/doctor";
+import doctorRegistrationRouter from "./routes/doctorRegistration";
 import adminRouter from "./routes/admin";
 import inboxRouter from "./routes/inbox";
 import webhooksRouter from "./routes/webhooks";
@@ -119,6 +120,8 @@ app.use("/api/v1/patients", requireAuth, userWriteLimiter, userReadLimiter, pati
 app.use("/api/v1/consultations", requireAuth, userWriteLimiter, userReadLimiter, consultationRouter);
 app.use("/api/v1/consultations", requireAuth, userWriteLimiter, userReadLimiter, photoRouter);
 app.use("/api/v1/doctor", requireAuth, requireRole("doctor"), userWriteLimiter, userReadLimiter, doctorRouter);
+// Doctor registration, demo requests, and admin application review (mixed auth — applied per-route internally)
+app.use("/api/v1", doctorRegistrationRouter);
 app.use("/api/v1/admin", requireAuth, requireRole("admin"), userWriteLimiter, userReadLimiter, adminRouter);
 // Doctor schedule management
 app.use("/api/v1/doctor/schedule", requireAuth, requireRole("doctor"), userWriteLimiter, userReadLimiter, availabilityRouter);

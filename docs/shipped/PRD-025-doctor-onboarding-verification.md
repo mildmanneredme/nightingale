@@ -1,6 +1,6 @@
 # PRD-025 — Doctor Onboarding & Admin Verification
 
-> **Status:** Draft
+> **Status:** In progress — Sprint 10
 > **Phase:** Beta
 > **Type:** Technical — Doctor Web App + Admin Portal + API + Auth
 > **Owner:** CTO
@@ -49,8 +49,8 @@ Researched Australian comparators (Eucalyptus, InstantScripts, Updoc, Hub Health
 |---|-------------|
 | F-001 | "Apply Now" button on `/for-doctors` links to `/register/doctor` (in-app signup). |
 | F-002 | "Request a Demo" button on `/for-doctors` opens a form collecting: full name, email, AHPRA number (optional), specialty (optional), message (optional). |
-| F-003 | Demo form submits to `POST /v1/marketing/demo-request`; the backend forwards the contents to `robert.s.xie@gmail.com` via SendGrid and returns 202 to the client. |
-| F-004 | Demo form is rate-limited (5 / IP / hour) and CAPTCHA-protected at the same threshold as patient registration. |
+| F-003 | Demo form submits to `POST /v1/marketing/demo-request`; the backend forwards the contents to the address in `ADMIN_NOTIFICATION_EMAIL` (env var) via SendGrid and returns 202 to the client. |
+| F-004 | Demo form is rate-limited (5 / IP / hour). No CAPTCHA for Phase 1 — existing per-IP rate limiting is sufficient. |
 | F-005 | The page copy near the Apply Now CTA explicitly states: "We collect the minimum information needed to verify your AHPRA registration. Heavier credentialing (indemnity, Medicare provider number, ID) happens after our team has confirmed you on the AHPRA register." |
 
 ### Doctor application form
@@ -67,16 +67,16 @@ Researched Australian comparators (Eucalyptus, InstantScripts, Updoc, Hub Health
 | F-013 | Cognito `signUp` runs with `custom:role=doctor`; pre-signup Lambda is updated to allow this and assigns the user to the `doctors` Cognito group at confirmation. |
 | F-014 | After Cognito email verification, the client calls `POST /v1/doctors/register` with the form payload; the backend creates a `doctors` row with `status='pending'`. |
 | F-015 | Duplicate AHPRA numbers are rejected with a clear error: "An application with this AHPRA number already exists." |
-| F-016 | On successful application, applicant lands on `/doctor/pending` (see below) and receives a "we received your application" email. |
+| F-016 | On successful application, applicant lands on `/doctor/queue` (which renders the pending holding pattern — see F-017/F-018) and receives a "we received your application" email. |
 
 ### Pending doctor experience
 
 | # | Requirement |
 |---|-------------|
-| F-017 | `/doctor/queue` for `status='pending'` users renders a frosted-glass overlay showing **counts only**: "Cases waiting for review (12)", "Average wait time (14 min)", "Cases reviewed today across the platform (47)". No patient initials, no presenting complaints, no consultation IDs. |
-| F-018 | A persistent banner reads: "Your application is being reviewed. We're verifying your AHPRA registration. You'll receive an email when this is complete — usually within 1–2 business days." |
-| F-019 | All action UI (Claim, Approve, Amend, Reject, Set availability) is hidden or visibly disabled with a tooltip "Available after verification". |
-| F-020 | Top navigation suppresses links to consultation detail, schedule, and renewals queue for pending users. |
+| F-017 | `/doctor/queue` for `status='pending'` users renders the **full queue page UI** with a frosted-glass overlay on the consultation list. The overlay shows platform counts only: "Cases waiting for review (12)", "Reviewed today across the platform (47)". No patient initials, no presenting complaints, no consultation IDs, no case detail links are present anywhere in the DOM (counts come from the separate `mode: "counts"` API response — no PHI is sent to the client at all). |
+| F-018 | A persistent banner at the top of the queue page reads: "Your application is being reviewed. We're verifying your AHPRA registration. You'll receive an email when this is complete — usually within 1–2 business days." |
+| F-019 | All action UI (Claim, Approve, Amend, Reject, Set availability) is hidden for pending users. No separate `/doctor/pending` route — the queue page handles both states based on the `GET /v1/doctor/me` response. |
+| F-020 | Top navigation is fully visible for pending users (consistent experience) but navigation to consultation detail, schedule, and renewals queue is suppressed — those routes redirect to `/doctor/queue` with a "Complete verification first" toast. |
 | F-021 | If the doctor's status changes to `rejected`, `/doctor/queue` redirects to `/doctor/rejected`, which shows the rejection reason verbatim and a "If you believe this is an error, contact applications@nightingale.health" line. |
 
 ### Backend gating
@@ -106,9 +106,9 @@ Researched Australian comparators (Eucalyptus, InstantScripts, Updoc, Hub Health
 
 | # | Requirement |
 |---|-------------|
-| F-035 | `demo-request-internal.html` — to `robert.s.xie@gmail.com` — name, email, AHPRA, specialty, message, IP, user-agent. |
+| F-035 | `demo-request-internal.html` — to `ADMIN_NOTIFICATION_EMAIL` — name, email, AHPRA, specialty, message, IP, user-agent. |
 | F-036 | `doctor-application-received.html` — to applicant — confirms application received, expected timeline (1–2 business days), what we're verifying. |
-| F-037 | `doctor-application-internal.html` — to `robert.s.xie@gmail.com` — new application notification with deep link to `/admin/doctors/applications/:id`. |
+| F-037 | `doctor-application-internal.html` — to `ADMIN_NOTIFICATION_EMAIL` — new application notification with deep link to `/admin/doctors/applications/:id`. |
 | F-038 | `doctor-approved.html` — to applicant — welcome, link to log in, brief on next steps (Phase-2 onboarding for indemnity / Medicare provider number lives outside this PRD). |
 | F-039 | `doctor-rejected.html` — to applicant — rejection reason verbatim, contact email for queries. |
 
@@ -126,7 +126,7 @@ Researched Australian comparators (Eucalyptus, InstantScripts, Updoc, Hub Health
 
 ## Data Model
 
-New migration `infra/database/migrations/014_doctor_application_status.sql`:
+New migration `infra/database/migrations/017_doctor_application_status.sql`:
 
 ```sql
 ALTER TABLE doctors
@@ -141,7 +141,8 @@ ALTER TABLE doctors
   ADD COLUMN approved_by_admin_sub TEXT,
   ADD COLUMN rejected_at TIMESTAMPTZ,
   ADD COLUMN rejected_by_admin_sub TEXT,
-  ADD COLUMN rejection_reason TEXT;
+  ADD COLUMN rejection_reason TEXT,
+  ADD COLUMN application_ip TEXT;
 
 -- Backfill: any pre-existing doctors row is treated as already approved
 -- so the gate doesn't break the existing queue for the founding doctor(s).
@@ -210,11 +211,11 @@ CREATE INDEX doctors_status_applied_at_idx ON doctors (status, applied_at);
 
 - [ ] "Apply Now" on `/for-doctors` navigates to `/register/doctor` (no `mailto:`).
 - [ ] "Request a Demo" submits a form; SendGrid delivers a notification to `robert.s.xie@gmail.com`.
-- [ ] A new applicant can complete `/register/doctor`, verify their email, and land on `/doctor/pending`.
+- [ ] A new applicant can complete `/register/doctor`, verify their email, and land on `/doctor/queue` showing the pending holding pattern with counts and banner.
 - [ ] An applicant with a duplicate AHPRA number sees a clear error and is not given an account.
 - [ ] Pending doctor's `/doctor/queue` shows counts only; no patient initials or presenting complaints anywhere in the response payload (verified via Playwright network assertion).
 - [ ] Pending doctor's attempt to `POST /v1/doctor/consultations/:id/approve` returns `403 DOCTOR_NOT_APPROVED` and writes `doctor.action_blocked_pending`.
-- [ ] Admin sees the new application at `/admin/doctors/applications` within 5 seconds of submission.
+- [ ] Admin sees the new application at `/admin/doctors/applications` within 5 seconds of submission, including the applicant's IP address.
 - [ ] Admin cannot submit the approve modal without ticking the AHPRA-verification checkbox.
 - [ ] Approve transitions status to `approved`, sends the approval email, writes `doctor.application_approved` to audit, and unlocks the queue + action endpoints on the doctor's next request.
 - [ ] Reject with reason transitions to `rejected`, sends the rejection email containing the reason, writes `doctor.application_rejected`, and the doctor sees the reason on `/doctor/rejected`.
@@ -230,6 +231,16 @@ CREATE INDEX doctors_status_applied_at_idx ON doctors (status, applied_at);
 - PRD-013 (Doctor review dashboard) — queue and action endpoints being gated.
 - PRD-022 (Public marketing site) — host of `/for-doctors`.
 - UX-003 (Admin portal) — pattern reused for the new applications page.
+
+### ⚠ Deployment risk — Cognito pre-signup Lambda
+
+`infra/lambda/cognito-pre-signup/index.js` currently rejects all `custom:role=doctor` registrations at the Cognito level. F-013 requires updating this Lambda to allow doctor self-registration and assign the `doctors` Cognito group on email confirmation.
+
+**Risk:** This Lambda runs synchronously during every Cognito sign-up trigger. A broken deploy blocks all patient registrations as well as doctor ones — it is not scoped to a single role. Before deploying:
+1. Test the updated Lambda locally against Cognito's event payload schema.
+2. Deploy to staging Cognito user pool first; verify patient registration still works end-to-end.
+3. Deploy to production Lambda only after staging sign-off.
+4. Keep the previous version alias live for 10-minute instant rollback.
 
 ---
 

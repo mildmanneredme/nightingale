@@ -86,5 +86,7 @@ export const config = {
     apiKey: optional("SENDGRID_API_KEY", ""),
     fromEmail: optional("SENDGRID_FROM_EMAIL", "noreply@nightingale.com.au"),
     fromName: optional("SENDGRID_FROM_NAME", "Nightingale Health"),
+    // Destination for internal admin notifications (demo requests, new doctor applications).
+    adminNotificationEmail: optional("ADMIN_NOTIFICATION_EMAIL", "admin@nightingale.com.au"),
   },
 } as const;

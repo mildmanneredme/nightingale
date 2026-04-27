@@ -87,6 +87,31 @@ async function apiFetch<T>(
   return res.json();
 }
 
+async function apiFetchPublic<T>(
+  path: string,
+  init: RequestInit = {}
+): Promise<T> {
+  const res = await fetch(path, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...(init.headers ?? {}),
+    },
+  });
+
+  if (!res.ok) {
+    let message = "Request failed";
+    try {
+      const body = await res.json();
+      message = body.error ?? message;
+    } catch {}
+    throw new ApiError(res.status, message);
+  }
+
+  if (res.status === 204) return undefined as T;
+  return res.json();
+}
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -362,6 +387,30 @@ export function getConsultationPhotoCount(
 // Doctor portal
 // ---------------------------------------------------------------------------
 
+export interface DoctorStatus {
+  status: "pending" | "approved" | "rejected";
+  rejection_reason: string | null;
+  applied_at: string;
+  approved_at: string | null;
+}
+
+export interface DoctorApplication {
+  id: string;
+  cognito_sub: string;
+  full_name: string;
+  ahpra_number: string;
+  email: string;
+  status: "pending" | "approved" | "rejected";
+  mobile: string | null;
+  specialty: string | null;
+  primary_state: string | null;
+  hours_per_week: string | null;
+  applied_at: string;
+  approved_at: string | null;
+  rejected_at: string | null;
+  rejection_reason: string | null;
+}
+
 export interface DoctorQueueItem {
   id: string;
   status: string;
@@ -371,6 +420,10 @@ export interface DoctorQueueItem {
   createdAt: string;
   clinicalContextWarnings?: string[]; // PRD-023 F-024
 }
+
+export type DoctorQueueResponse =
+  | { mode: "full"; data: DoctorQueueItem[]; pagination: Pagination }
+  | { mode: "counts"; waiting: number; reviewedToday: number };
 
 export interface DoctorConsultation {
   id: string;
@@ -393,10 +446,28 @@ export interface DoctorConsultation {
   clinicalContextWarnings?: string[]; // PRD-023 F-025
 }
 
+export function getDoctorMe(): Promise<DoctorStatus> {
+  return apiFetch("/api/v1/doctor/me");
+}
+
+export function registerDoctor(data: {
+  fullName: string;
+  ahpraNumber: string;
+  mobile: string;
+  specialty: string;
+  primaryState: string;
+  hoursPerWeek?: string;
+}): Promise<{ status: string; doctorId: string }> {
+  return apiFetch("/api/v1/doctors/register", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
 export function getDoctorQueue(
   limit = 20,
   offset = 0
-): Promise<PaginatedResponse<DoctorQueueItem>> {
+): Promise<DoctorQueueResponse> {
   return apiFetch(`/api/v1/doctor/queue?limit=${limit}&offset=${offset}`);
 }
 
@@ -682,5 +753,51 @@ export function reassignConsultation(
   return apiFetch(`/api/v1/admin/consultations/${consultationId}/reassign`, {
     method: "POST",
     body: JSON.stringify({ doctorId }),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Admin — doctor applications (PRD-025)
+// ---------------------------------------------------------------------------
+
+export function getAdminDoctorApplications(): Promise<{ data: DoctorApplication[] }> {
+  return apiFetch("/api/v1/admin/doctors/applications");
+}
+
+export function getAdminDoctorApplication(id: string): Promise<DoctorApplication> {
+  return apiFetch(`/api/v1/admin/doctors/applications/${id}`);
+}
+
+export function approveApplication(id: string): Promise<{ status: string }> {
+  return apiFetch(`/api/v1/admin/doctors/applications/${id}/approve`, {
+    method: "POST",
+    body: JSON.stringify({ verifiedOnAhpraRegister: true }),
+  });
+}
+
+export function rejectApplication(
+  id: string,
+  reason: string
+): Promise<{ status: string }> {
+  return apiFetch(`/api/v1/admin/doctors/applications/${id}/reject`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Marketing — demo request (public, no auth)
+// ---------------------------------------------------------------------------
+
+export function submitDemoRequest(data: {
+  name: string;
+  email: string;
+  ahpraNumber?: string;
+  specialty?: string;
+  message?: string;
+}): Promise<{ message: string }> {
+  return apiFetchPublic("/api/v1/marketing/demo-request", {
+    method: "POST",
+    body: JSON.stringify(data),
   });
 }

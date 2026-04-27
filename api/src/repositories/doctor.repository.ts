@@ -2,9 +2,27 @@ import { pool } from "../db";
 
 export interface DoctorRow {
   id: string;
+  cognito_sub: string;
   full_name: string;
   ahpra_number: string;
   email: string;
+  status: string;
+  mobile: string | null;
+  specialty: string | null;
+  primary_state: string | null;
+  hours_per_week: string | null;
+  applied_at: Date;
+  approved_at: Date | null;
+  rejected_at: Date | null;
+  rejection_reason: string | null;
+  application_ip: string | null;
+}
+
+export interface DoctorStatusRow {
+  status: string;
+  rejection_reason: string | null;
+  applied_at: Date;
+  approved_at: Date | null;
 }
 
 export interface ConsultationQueueRow {
@@ -51,10 +69,124 @@ export interface AiFetchRow {
 
 export async function findDoctorBySub(sub: string): Promise<DoctorRow | null> {
   const { rows } = await pool.query<DoctorRow>(
-    `SELECT id, full_name, ahpra_number, email FROM doctors WHERE cognito_sub = $1`,
+    `SELECT id, cognito_sub, full_name, ahpra_number, email, status,
+            mobile, specialty, primary_state, hours_per_week,
+            applied_at, approved_at, rejected_at, rejection_reason, application_ip
+     FROM doctors WHERE cognito_sub = $1`,
     [sub]
   );
   return rows[0] ?? null;
+}
+
+export async function findDoctorStatusBySub(sub: string): Promise<DoctorStatusRow | null> {
+  const { rows } = await pool.query<DoctorStatusRow>(
+    `SELECT status, rejection_reason, applied_at, approved_at
+     FROM doctors WHERE cognito_sub = $1`,
+    [sub]
+  );
+  return rows[0] ?? null;
+}
+
+export async function createDoctorApplication(params: {
+  cognitoSub: string;
+  fullName: string;
+  ahpraNumber: string;
+  email: string;
+  mobile: string;
+  specialty: string;
+  primaryState: string;
+  hoursPerWeek: string | null;
+  applicationIp: string;
+}): Promise<DoctorRow> {
+  const { rows } = await pool.query<DoctorRow>(
+    `INSERT INTO doctors
+       (cognito_sub, full_name, ahpra_number, email, mobile, specialty,
+        primary_state, hours_per_week, application_ip, status)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')
+     ON CONFLICT (cognito_sub) DO UPDATE
+       SET full_name = EXCLUDED.full_name,
+           ahpra_number = EXCLUDED.ahpra_number,
+           mobile = EXCLUDED.mobile,
+           specialty = EXCLUDED.specialty,
+           primary_state = EXCLUDED.primary_state,
+           hours_per_week = EXCLUDED.hours_per_week,
+           application_ip = EXCLUDED.application_ip
+     RETURNING id, cognito_sub, full_name, ahpra_number, email, status,
+               mobile, specialty, primary_state, hours_per_week,
+               applied_at, approved_at, rejected_at, rejection_reason, application_ip`,
+    [
+      params.cognitoSub, params.fullName, params.ahpraNumber, params.email,
+      params.mobile, params.specialty, params.primaryState,
+      params.hoursPerWeek ?? null, params.applicationIp,
+    ]
+  );
+  return rows[0];
+}
+
+export async function listPendingDoctorApplications(): Promise<DoctorRow[]> {
+  const { rows } = await pool.query<DoctorRow>(
+    `SELECT id, cognito_sub, full_name, ahpra_number, email, status,
+            mobile, specialty, primary_state, hours_per_week,
+            applied_at, approved_at, rejected_at, rejection_reason, application_ip
+     FROM doctors
+     WHERE status = 'pending'
+     ORDER BY applied_at ASC`
+  );
+  return rows;
+}
+
+export async function findDoctorApplicationById(id: string): Promise<DoctorRow | null> {
+  const { rows } = await pool.query<DoctorRow>(
+    `SELECT id, cognito_sub, full_name, ahpra_number, email, status,
+            mobile, specialty, primary_state, hours_per_week,
+            applied_at, approved_at, rejected_at, rejection_reason, application_ip
+     FROM doctors WHERE id = $1`,
+    [id]
+  );
+  return rows[0] ?? null;
+}
+
+export async function approveDoctorApplication(
+  doctorId: string,
+  adminSub: string
+): Promise<void> {
+  await pool.query(
+    `UPDATE doctors
+     SET status = 'approved', approved_at = NOW(), approved_by_admin_sub = $1
+     WHERE id = $2`,
+    [adminSub, doctorId]
+  );
+}
+
+export async function rejectDoctorApplication(
+  doctorId: string,
+  adminSub: string,
+  reason: string
+): Promise<void> {
+  await pool.query(
+    `UPDATE doctors
+     SET status = 'rejected', rejected_at = NOW(),
+         rejected_by_admin_sub = $1, rejection_reason = $2
+     WHERE id = $3`,
+    [adminSub, reason, doctorId]
+  );
+}
+
+export async function countPlatformQueueStats(): Promise<{
+  waiting: number;
+  reviewedToday: number;
+}> {
+  const { rows } = await pool.query<{ waiting: string; reviewed_today: string }>(
+    `SELECT
+       COUNT(*) FILTER (WHERE status = 'queued_for_review')        AS waiting,
+       COUNT(*) FILTER (WHERE status IN ('approved','amended','rejected')
+                          AND reviewed_at >= CURRENT_DATE)         AS reviewed_today
+     FROM consultations`
+  );
+  return {
+    waiting: parseInt(rows[0].waiting, 10),
+    reviewedToday: parseInt(rows[0].reviewed_today, 10),
+  };
 }
 
 export async function insertAuditLog(params: {

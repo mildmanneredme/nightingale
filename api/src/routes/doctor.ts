@@ -3,6 +3,7 @@ import { sendResponseReadyEmail, sendRejectionEmail } from "../services/emailSer
 import { scheduleFollowUp } from "./followup";
 import { logger } from "../logger";
 import { validateBody } from "../middleware/validate";
+import { requireApprovedDoctor } from "../middleware/auth";
 import {
   AmendConsultationSchema,
   RejectConsultationSchema,
@@ -10,8 +11,10 @@ import {
 } from "../schemas/doctor.schema";
 import {
   findDoctorBySub,
+  findDoctorStatusBySub,
   insertAuditLog,
   countQueuedConsultationsForDoctor,
+  countPlatformQueueStats,
   listQueuedConsultationsForDoctor,
   findConsultationDetailForDoctor,
   approveConsultation,
@@ -27,12 +30,41 @@ function cognitoSub(req: Parameters<RequestHandler>[0]): string {
 }
 
 // ---------------------------------------------------------------------------
-// GET /queue — consultations assigned to this doctor in queued_for_review
+// GET /me — returns this doctor's application status (PRD-025)
+// ---------------------------------------------------------------------------
+router.get("/me", async (req, res, next) => {
+  try {
+    const status = await findDoctorStatusBySub(cognitoSub(req));
+    if (!status) {
+      res.status(404).json({ error: "Doctor profile not found" });
+      return;
+    }
+    res.status(200).json(status);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// GET /queue — full list for approved doctors; counts-only for pending (PRD-025)
 // ---------------------------------------------------------------------------
 router.get("/queue", async (req, res, next) => {
   try {
     if (Array.isArray(req.query.limit) || Array.isArray(req.query.offset)) {
       res.status(400).json({ error: "limit and offset must be single values" });
+      return;
+    }
+
+    const doctor = await findDoctorBySub(cognitoSub(req));
+    if (!doctor) {
+      res.status(404).json({ error: "Doctor not found" });
+      return;
+    }
+
+    // Pending/rejected doctors get counts only — no PHI reaches an unverified doctor.
+    if (doctor.status !== "approved") {
+      const stats = await countPlatformQueueStats();
+      res.status(200).json({ mode: "counts", ...stats });
       return;
     }
 
@@ -47,12 +79,6 @@ router.get("/queue", async (req, res, next) => {
     const limit = Math.min(!isNaN(rawLimit) ? rawLimit : 20, 100);
     const offset = Math.max(0, !isNaN(rawOffset) ? rawOffset : 0);
 
-    const doctor = await findDoctorBySub(cognitoSub(req));
-    if (!doctor) {
-      res.status(404).json({ error: "Doctor not found" });
-      return;
-    }
-
     // Priority sort: LOW_CONFIDENCE and CANNOT_ASSESS flags first, then oldest first
     const [total, rows] = await Promise.all([
       countQueuedConsultationsForDoctor(doctor.id),
@@ -60,6 +86,7 @@ router.get("/queue", async (req, res, next) => {
     ]);
 
     res.status(200).json({
+      mode: "full",
       data: rows,
       pagination: {
         total,
@@ -76,7 +103,7 @@ router.get("/queue", async (req, res, next) => {
 // ---------------------------------------------------------------------------
 // GET /consultations/:id — full consultation detail; writes audit log
 // ---------------------------------------------------------------------------
-router.get("/consultations/:id", async (req, res, next) => {
+router.get("/consultations/:id", requireApprovedDoctor, async (req, res, next) => {
   try {
     const doctor = await findDoctorBySub(cognitoSub(req));
     if (!doctor) {
@@ -107,7 +134,7 @@ router.get("/consultations/:id", async (req, res, next) => {
 // ---------------------------------------------------------------------------
 // POST /consultations/:id/approve
 // ---------------------------------------------------------------------------
-router.post("/consultations/:id/approve", validateBody(ApproveConsultationSchema), async (req, res, next) => {
+router.post("/consultations/:id/approve", requireApprovedDoctor, validateBody(ApproveConsultationSchema), async (req, res, next) => {
   try {
     const doctor = await findDoctorBySub(cognitoSub(req));
     if (!doctor) {
@@ -146,7 +173,7 @@ router.post("/consultations/:id/approve", validateBody(ApproveConsultationSchema
 // ---------------------------------------------------------------------------
 // POST /consultations/:id/amend
 // ---------------------------------------------------------------------------
-router.post("/consultations/:id/amend", validateBody(AmendConsultationSchema), async (req, res, next) => {
+router.post("/consultations/:id/amend", requireApprovedDoctor, validateBody(AmendConsultationSchema), async (req, res, next) => {
   try {
     const { doctorDraft } = req.body;
 
@@ -193,7 +220,7 @@ router.post("/consultations/:id/amend", validateBody(AmendConsultationSchema), a
 // ---------------------------------------------------------------------------
 // POST /consultations/:id/reject
 // ---------------------------------------------------------------------------
-router.post("/consultations/:id/reject", validateBody(RejectConsultationSchema), async (req, res, next) => {
+router.post("/consultations/:id/reject", requireApprovedDoctor, validateBody(RejectConsultationSchema), async (req, res, next) => {
   try {
     const { reasonCode, message } = req.body;
 

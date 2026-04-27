@@ -3,23 +3,31 @@
  *
  * Runs before a new user is registered. Handles:
  * - Setting custom attributes (role, is_anonymous, is_paediatric)
- * - Blocking self-registration for doctor/admin roles
+ * - Blocking admin self-registration (doctors can self-register per PRD-025)
  * - Flagging paediatric accounts (DOB under 18)
  */
 exports.handler = async (event) => {
   const { triggerSource, request } = event;
   const attrs = request.userAttributes;
 
-  // Doctors and admins cannot self-register — PRD-004 F-005, F-006
   const role = attrs["custom:role"];
-  if (role === "doctor" || role === "admin") {
-    throw new Error("Doctor and admin accounts must be created by an administrator.");
+
+  // Admins cannot self-register — PRD-004 F-006
+  if (role === "admin") {
+    throw new Error("Admin accounts must be created by an administrator.");
   }
 
   // Default new self-registrations to patient role
   if (!role) {
     event.response.autoConfirmUser = false;
     event.request.userAttributes["custom:role"] = "patient";
+  }
+
+  // Doctor self-registration (PRD-025): allowed but lands in status='pending'
+  // until admin verifies AHPRA on the public register. The doctors table row
+  // and the pending gate are enforced by the API — not here.
+  if (role === "doctor") {
+    event.response.autoConfirmUser = false;
   }
 
   // Paediatric flag — PRD-004 F-022, F-023
