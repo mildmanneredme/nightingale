@@ -8,6 +8,7 @@ type GeminiErrorEvent = { message?: string };
 import { config } from "../config";
 import { detectRedFlag } from "./redFlagDetector";
 import { getPatientPreContext, renderPreContextPrompt } from "./patientPreContext";
+import { recordUsage } from "./llmUsageTracker";
 import { pool } from "../db";
 import { logger } from "../logger";
 import { WsClientMessage, WsServerMessage } from "../types/ws-messages";
@@ -41,6 +42,10 @@ export class GeminiLiveSession {
   // Accumulate partial transcript text between `finished` markers
   private partialInput = "";
   private partialOutput = "";
+
+  // Token usage accumulated across all server messages in this session
+  private totalInputTokens = 0;
+  private totalOutputTokens = 0;
 
   constructor(consultationId: string, browserWs: WebSocket) {
     this.consultationId = consultationId;
@@ -138,6 +143,15 @@ export class GeminiLiveSession {
   // ---------------------------------------------------------------------------
 
   private handleGeminiMessage(msg: LiveServerMessage): void {
+    const usage = msg.usageMetadata as
+      | { promptTokenCount?: number; responseTokenCount?: number; candidatesTokenCount?: number }
+      | undefined;
+    if (usage) {
+      this.totalInputTokens += usage.promptTokenCount ?? 0;
+      this.totalOutputTokens +=
+        usage.responseTokenCount ?? usage.candidatesTokenCount ?? 0;
+    }
+
     const content = msg.serverContent;
     if (!content) return;
 
@@ -252,6 +266,19 @@ export class GeminiLiveSession {
         [JSON.stringify(this.transcript), this.consultationId]
       )
       .catch((err) => logger.error({ err }, "Failed to persist transcript"));
+
+    // One row per Live session — totals aggregated across all turns.
+    if (this.totalInputTokens > 0 || this.totalOutputTokens > 0) {
+      void recordUsage({
+        consultationId: this.consultationId,
+        operation: "live_session",
+        provider: "google",
+        modelId: config.gemini.model,
+        inputTokens: this.totalInputTokens,
+        outputTokens: this.totalOutputTokens,
+        metadata: { sessionDurationMs: Date.now() - this.sessionStartedAt },
+      });
+    }
 
     this.sendToBrowser({ type: "ended", consultationId: this.consultationId });
 

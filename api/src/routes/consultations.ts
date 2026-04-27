@@ -232,7 +232,7 @@ router.post("/:id/chat", validateBody(ChatMessageSchema), async (req, res, next)
     const preContextPrompt = history.length === 0
       ? renderPreContextPrompt(await getPatientPreContext(req.params.id))
       : undefined;
-    const aiResponse = await sendTextMessage(message.trim(), history, preContextPrompt);
+    const aiResponse = await sendTextMessage(message.trim(), history, preContextPrompt, req.params.id);
 
     const aiTurn: TextTurn = {
       speaker: "ai",

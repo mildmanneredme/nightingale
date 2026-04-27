@@ -13,6 +13,15 @@ import {
   findAvgReviewTime,
   findFollowUpStats,
 } from "../repositories/admin.repository";
+import {
+  getUsageSummary,
+  getUsageByModel,
+  getUsageByOperation,
+  getUsageByConsultation,
+  countConsultationsWithUsage,
+  getUsageDaily,
+  getUsageForConsultation,
+} from "../repositories/llmUsage.repository";
 
 const router = Router();
 
@@ -154,6 +163,120 @@ router.get("/stats", async (_req, res, next) => {
         same: parseInt(followup.same),
         worse: parseInt(followup.worse),
       },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// LLM cost dashboard endpoints
+// All cost values returned as USD (string, 6 decimal places) for client display.
+// ---------------------------------------------------------------------------
+
+function microsToUsd(micros: string | number): string {
+  const n = typeof micros === "string" ? parseInt(micros, 10) : micros;
+  return (n / 1_000_000).toFixed(6);
+}
+
+function parseRange(req: { query: Record<string, unknown> }): { from?: string; to?: string } {
+  const from = typeof req.query.from === "string" ? req.query.from : undefined;
+  const to = typeof req.query.to === "string" ? req.query.to : undefined;
+  return { from, to };
+}
+
+router.get("/llm-usage/summary", async (req, res, next) => {
+  try {
+    const range = parseRange(req);
+    const [summary, byModel, byOperation, daily] = await Promise.all([
+      getUsageSummary(range),
+      getUsageByModel(range),
+      getUsageByOperation(range),
+      getUsageDaily(range),
+    ]);
+
+    res.json({
+      totals: {
+        calls: parseInt(summary.total_calls, 10),
+        inputTokens: parseInt(summary.total_input_tokens, 10),
+        outputTokens: parseInt(summary.total_output_tokens, 10),
+        cacheReadTokens: parseInt(summary.total_cache_read_tokens, 10),
+        cacheWriteTokens: parseInt(summary.total_cache_write_tokens, 10),
+        costUsd: microsToUsd(summary.total_cost_micros),
+      },
+      byModel: byModel.map((r) => ({
+        provider: r.provider,
+        modelId: r.model_id,
+        callCount: parseInt(r.call_count, 10),
+        inputTokens: parseInt(r.input_tokens, 10),
+        outputTokens: parseInt(r.output_tokens, 10),
+        cacheReadTokens: parseInt(r.cache_read_tokens, 10),
+        costUsd: microsToUsd(r.cost_micros),
+      })),
+      byOperation: byOperation.map((r) => ({
+        operation: r.operation,
+        callCount: parseInt(r.call_count, 10),
+        costUsd: microsToUsd(r.cost_micros),
+      })),
+      daily: daily.map((r) => ({
+        day: r.day,
+        callCount: parseInt(r.call_count, 10),
+        costUsd: microsToUsd(r.cost_micros),
+      })),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/llm-usage/by-consultation", async (req, res, next) => {
+  try {
+    const range = parseRange(req);
+    const limit = Math.min(parseInt(String(req.query.limit ?? "50"), 10) || 50, 200);
+    const offset = parseInt(String(req.query.offset ?? "0"), 10) || 0;
+
+    const [rows, total] = await Promise.all([
+      getUsageByConsultation(range, limit, offset),
+      countConsultationsWithUsage(range),
+    ]);
+
+    res.json({
+      data: rows.map((r) => ({
+        consultationId: r.consultation_id,
+        callCount: parseInt(r.call_count, 10),
+        costUsd: microsToUsd(r.cost_micros),
+        inputTokens: parseInt(r.input_tokens, 10),
+        outputTokens: parseInt(r.output_tokens, 10),
+        firstCallAt: r.first_call_at,
+        lastCallAt: r.last_call_at,
+        presentingComplaint: r.presenting_complaint,
+        consultationType: r.consultation_type,
+        status: r.status,
+      })),
+      pagination: { total, limit, offset, hasMore: offset + rows.length < total },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/llm-usage/consultation/:id", async (req, res, next) => {
+  try {
+    const rows = await getUsageForConsultation(req.params.id);
+    res.json({
+      data: rows.map((r) => ({
+        id: r.id,
+        operation: r.operation,
+        provider: r.provider,
+        modelId: r.model_id,
+        inputTokens: r.input_tokens,
+        outputTokens: r.output_tokens,
+        cacheReadTokens: r.cache_read_tokens,
+        cacheWriteTokens: r.cache_write_tokens,
+        costUsd: microsToUsd(r.cost_usd_micros),
+        createdAt: r.created_at,
+        metadata: r.metadata,
+      })),
     });
   } catch (err) {
     next(err);
