@@ -120,6 +120,26 @@ export default function ProfilePage() {
                   note="Optional. Used in greetings instead of your first name."
                 />
                 <Field id="dateOfBirth" label="Date of birth" value={p.dateOfBirth} onChange={p.setDateOfBirth} type="date" />
+                <div className="space-y-2">
+                  <label htmlFor="biologicalSex" className="font-clinical-data text-label-sm text-on-surface-variant uppercase tracking-wider block">
+                    Biological sex
+                  </label>
+                  <select
+                    id="biologicalSex"
+                    value={p.biologicalSex}
+                    onChange={(e) => p.setBiologicalSex(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl font-body-md transition-all bg-surface-container-lowest border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  >
+                    <option value="">Select…</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="intersex">Intersex</option>
+                    <option value="prefer_not_to_say">Prefer not to say</option>
+                  </select>
+                  <p className="font-label-sm text-[11px] text-on-surface-variant">
+                    Used by the doctor for clinical assessment (e.g. dosing, screening guidelines).
+                  </p>
+                </div>
                 <Field id="phone" label="Phone number" value={p.phone} onChange={p.setPhone} type="tel" />
                 <Field
                   id="email"

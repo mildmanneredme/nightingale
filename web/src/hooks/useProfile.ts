@@ -50,6 +50,7 @@ export function useProfile() {
   const [lastName, setLastName] = useState("");
   const [preferredName, setPreferredName] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
+  const [biologicalSex, setBiologicalSex] = useState("");
   const [phone, setPhone] = useState("");
 
   // Address & healthcare
@@ -80,6 +81,7 @@ export function useProfile() {
     setLastName(p.lastName ?? "");
     setPreferredName(p.preferredName ?? "");
     setDateOfBirth(p.dateOfBirth ?? "");
+    setBiologicalSex(p.biologicalSex ?? "");
     setPhone(p.phone ?? "");
     setAddress(p.address ?? "");
     setMedicareNumber(p.medicareNumber ?? "");
@@ -113,6 +115,7 @@ export function useProfile() {
         lastName,
         preferredName,
         dateOfBirth,
+        biologicalSex: biologicalSex || undefined,
         phone,
         address,
         medicareNumber: medicareNumber || undefined,
@@ -247,9 +250,9 @@ export function useProfile() {
   // ---------------------------------------------------------------------------
 
   const personalCompleteness = useMemo<SectionCompleteness>(() => {
-    const fields = [firstName, lastName, dateOfBirth, phone];
+    const fields = [firstName, lastName, dateOfBirth, biologicalSex, phone];
     return pct(fields.filter((v) => v.trim()).length, fields.length);
-  }, [firstName, lastName, dateOfBirth, phone]);
+  }, [firstName, lastName, dateOfBirth, biologicalSex, phone]);
 
   const addressHealthcareCompleteness = useMemo<SectionCompleteness>(() => {
     // Only address counts as required; the other three are optional but they
@@ -286,6 +289,7 @@ export function useProfile() {
     lastName, setLastName,
     preferredName, setPreferredName,
     dateOfBirth, setDateOfBirth,
+    biologicalSex, setBiologicalSex,
     phone, setPhone,
     // Address & healthcare
     address, setAddress,

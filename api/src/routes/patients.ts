@@ -82,10 +82,12 @@ function computeCompleteness(
     missingRequired.push("Known conditions (or confirm none)");
   }
 
-  const totalSlots =
-    REQUIRED_FIELDS.length + OPTIONAL_FIELDS.length + 3; // +3 baseline sections
-  const filledSlots = totalSlots - (missingRequired.length + missingOptional.length);
-  const percentage = Math.round((filledSlots / totalSlots) * 100);
+  // The headline percentage is gated on REQUIRED fields + baseline sections so
+  // it matches the list rendered to the patient ("doctor needs the following…").
+  // Optional fields are tracked separately so other surfaces can still see them.
+  const requiredSlots = REQUIRED_FIELDS.length + 3; // +3 baseline sections
+  const filledRequired = requiredSlots - missingRequired.length;
+  const percentage = Math.round((filledRequired / requiredSlots) * 100);
 
   return { percentage, missingRequired, missingOptional };
 }

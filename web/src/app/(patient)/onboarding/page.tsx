@@ -23,6 +23,7 @@ interface FormState {
   firstName: string;
   lastName: string;
   dateOfBirth: string;
+  biologicalSex: string;
   preferredName: string;
   phone: string;
   address: string;
@@ -41,6 +42,7 @@ const EMPTY_FORM: FormState = {
   firstName: "",
   lastName: "",
   dateOfBirth: "",
+  biologicalSex: "",
   preferredName: "",
   phone: "",
   address: "",
@@ -56,7 +58,7 @@ const EMPTY_FORM: FormState = {
 };
 
 const REQUIRED_BY_STEP: Record<1 | 2 | 3, (keyof FormState)[]> = {
-  1: ["firstName", "lastName", "dateOfBirth", "phone"],
+  1: ["firstName", "lastName", "dateOfBirth", "biologicalSex", "phone"],
   2: ["address"],
   3: [], // baseline can always be skipped — soft warning shown instead
 };
@@ -87,6 +89,7 @@ export default function OnboardingPage() {
           lastName: p.lastName ?? "",
           preferredName: p.preferredName ?? "",
           dateOfBirth: p.dateOfBirth ?? "",
+          biologicalSex: p.biologicalSex ?? "",
           phone: p.phone ?? "",
           address: p.address ?? "",
           medicareNumber: p.medicareNumber ?? "",
@@ -117,6 +120,7 @@ export default function OnboardingPage() {
       lastName: form.lastName.trim() || undefined,
       preferredName: form.preferredName.trim() || undefined,
       dateOfBirth: form.dateOfBirth || undefined,
+      biologicalSex: form.biologicalSex || undefined,
       phone: form.phone.trim() || undefined,
     });
   }
@@ -445,6 +449,26 @@ function Step1({
         </div>
         <Field id="preferredName" label="Preferred name (optional)" value={form.preferredName} onChange={(v) => set("preferredName", v)} placeholder="What you'd like the doctor to call you" />
         <Field id="dateOfBirth" label="Date of birth" value={form.dateOfBirth} onChange={(v) => set("dateOfBirth", v)} type="date" required />
+        <div className="space-y-2">
+          <label htmlFor="biologicalSex" className="font-clinical-data text-label-sm text-on-surface-variant uppercase tracking-wider block">
+            Biological sex <span className="text-error">*</span>
+          </label>
+          <select
+            id="biologicalSex"
+            value={form.biologicalSex}
+            onChange={(e) => set("biologicalSex", e.target.value)}
+            className="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-body-md"
+          >
+            <option value="">Select…</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="intersex">Intersex</option>
+            <option value="prefer_not_to_say">Prefer not to say</option>
+          </select>
+          <p className="font-label-sm text-[11px] text-on-surface-variant">
+            Used by the doctor for clinical assessment (e.g. dosing, screening guidelines).
+          </p>
+        </div>
         <Field id="phone" label="Phone number" value={form.phone} onChange={(v) => set("phone", v)} type="tel" placeholder="04xx xxx xxx" required />
       </div>
       <StepFooter saving={saving} onSkip={onSkip} onNext={onNext} nextLabel="Continue" missing={missing} />

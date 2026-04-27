@@ -53,9 +53,40 @@ export async function sendTextMessage(
   const result = await chat.sendMessage({ message: patientMessage });
   const raw = (result.text ?? "").trim();
 
-  try {
-    return JSON.parse(raw) as AiTextResponse;
-  } catch {
-    return { type: "question", text: raw, options: null };
+  return parseAiResponse(raw);
+}
+
+// Gemini occasionally wraps the JSON in ```json … ``` fences despite the
+// system instruction. Strip those before parsing, and fall back to extracting
+// the first {…} substring so the patient never sees raw JSON in the chat.
+export function parseAiResponse(raw: string): AiTextResponse {
+  const cleaned = raw
+    .replace(/^```(?:json|JSON)?\s*\n?/, "")
+    .replace(/\n?```\s*$/, "")
+    .trim();
+
+  const tryParse = (s: string): AiTextResponse | null => {
+    try {
+      const obj = JSON.parse(s) as AiTextResponse;
+      if (obj && typeof obj === "object" && typeof obj.type === "string") return obj;
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+  const direct = tryParse(cleaned);
+  if (direct) return direct;
+
+  const match = cleaned.match(/\{[\s\S]*\}/);
+  if (match) {
+    const extracted = tryParse(match[0]);
+    if (extracted) return extracted;
   }
+
+  return {
+    type: "question",
+    text: "Sorry, I had trouble understanding that. Could you rephrase?",
+    options: null,
+  };
 }
