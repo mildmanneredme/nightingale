@@ -29,6 +29,7 @@ import {
   type PatientProfile,
 } from "./piiAnonymiser";
 import { callClaude } from "./anthropicClient";
+import { recordUsage } from "./llmUsageTracker";
 import { config } from "../config";
 import { getPrompt } from "../prompts/loader";
 
@@ -389,6 +390,21 @@ Please generate the clinical outputs as specified.`;
         const response = await callClaude(systemPrompt, [
           { role: "user", content: userMessage },
         ]);
+
+        void recordUsage(
+          {
+            consultationId,
+            operation: "soap_generation",
+            provider: config.anthropic.useBedrock ? "bedrock" : "anthropic",
+            modelId,
+            inputTokens: response.inputTokens,
+            outputTokens: response.outputTokens,
+            cacheReadTokens: response.cacheReadTokens,
+            cacheWriteTokens: response.cacheCreationTokens,
+            metadata: { promptHash },
+          },
+          dbPool
+        );
 
         const output = parseEngineOutput(response.content);
 

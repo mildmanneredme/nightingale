@@ -801,3 +801,90 @@ export function submitDemoRequest(data: {
     body: JSON.stringify(data),
   });
 }
+
+// ---------------------------------------------------------------------------
+// LLM cost dashboard
+// ---------------------------------------------------------------------------
+
+export interface LlmCostSummary {
+  totals: {
+    calls: number;
+    inputTokens: number;
+    outputTokens: number;
+    cacheReadTokens: number;
+    cacheWriteTokens: number;
+    costUsd: string;
+  };
+  byModel: Array<{
+    provider: string;
+    modelId: string;
+    callCount: number;
+    inputTokens: number;
+    outputTokens: number;
+    cacheReadTokens: number;
+    costUsd: string;
+  }>;
+  byOperation: Array<{
+    operation: string;
+    callCount: number;
+    costUsd: string;
+  }>;
+  daily: Array<{ day: string; callCount: number; costUsd: string }>;
+}
+
+export interface LlmCostByConsultation {
+  consultationId: string | null;
+  callCount: number;
+  costUsd: string;
+  inputTokens: number;
+  outputTokens: number;
+  firstCallAt: string;
+  lastCallAt: string;
+  presentingComplaint: string | null;
+  consultationType: string | null;
+  status: string | null;
+}
+
+export interface LlmCostDetail {
+  id: string;
+  operation: string;
+  provider: string;
+  modelId: string;
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
+  costUsd: string;
+  createdAt: string;
+  metadata: Record<string, unknown> | null;
+}
+
+function rangeQuery(range?: { from?: string; to?: string }): string {
+  if (!range) return "";
+  const parts: string[] = [];
+  if (range.from) parts.push(`from=${encodeURIComponent(range.from)}`);
+  if (range.to) parts.push(`to=${encodeURIComponent(range.to)}`);
+  return parts.length ? `?${parts.join("&")}` : "";
+}
+
+export function getLlmCostSummary(
+  range?: { from?: string; to?: string }
+): Promise<LlmCostSummary> {
+  return apiFetch(`/api/v1/admin/llm-usage/summary${rangeQuery(range)}`);
+}
+
+export function getLlmCostByConsultation(
+  range?: { from?: string; to?: string },
+  limit = 50,
+  offset = 0
+): Promise<PaginatedResponse<LlmCostByConsultation>> {
+  const base = rangeQuery(range);
+  const sep = base ? "&" : "?";
+  return apiFetch(`/api/v1/admin/llm-usage/by-consultation${base}${sep}limit=${limit}&offset=${offset}`);
+}
+
+export function getLlmCostForConsultation(
+  consultationId: string
+): Promise<{ data: LlmCostDetail[] }> {
+  return apiFetch(`/api/v1/admin/llm-usage/consultation/${consultationId}`);
+}

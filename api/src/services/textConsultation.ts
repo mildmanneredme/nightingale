@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { config } from "../config";
+import { recordUsage } from "./llmUsageTracker";
 
 const SYSTEM_INSTRUCTION = `You are a clinical AI assistant conducting a structured patient interview for an Australian telehealth consultation.
 Rules:
@@ -31,7 +32,8 @@ export interface AiTextResponse {
 export async function sendTextMessage(
   patientMessage: string,
   history: TextTurn[],
-  preContextPrompt?: string
+  preContextPrompt?: string,
+  consultationId?: string
 ): Promise<AiTextResponse> {
   const ai = new GoogleGenAI({ apiKey: config.gemini.apiKey });
 
@@ -52,6 +54,18 @@ export async function sendTextMessage(
 
   const result = await chat.sendMessage({ message: patientMessage });
   const raw = (result.text ?? "").trim();
+
+  const usage = result.usageMetadata;
+  if (consultationId && usage) {
+    void recordUsage({
+      consultationId,
+      operation: "text_chat",
+      provider: "google",
+      modelId: config.gemini.chatModel,
+      inputTokens: usage.promptTokenCount ?? 0,
+      outputTokens: usage.candidatesTokenCount ?? 0,
+    });
+  }
 
   return parseAiResponse(raw);
 }
