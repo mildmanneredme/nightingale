@@ -68,7 +68,7 @@ export const config = {
     // Model ID for direct API
     directModelId: optional("ANTHROPIC_MODEL_ID", "claude-sonnet-4-6"),
 
-    maxTokens: 4096,
+    maxTokens: 8192,
   },
 
   s3: {
