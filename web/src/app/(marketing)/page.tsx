@@ -14,7 +14,7 @@ export default function HomePage() {
         <div className="absolute inset-0 z-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            className="w-full h-full object-cover object-top md:object-center"
+            className="w-full h-full object-cover object-right-top md:object-center"
             src="/landing-top-background.png"
             alt=""
           />
