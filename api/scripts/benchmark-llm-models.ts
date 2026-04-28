@@ -476,7 +476,7 @@ function buildUserMessage(scenario: BenchmarkScenario, ragEnabled: boolean): str
     ? `\n\n## Retrieved Australian Clinical Guidelines\n${scenario.ragContext}`
     : "";
 
-  return `PATIENT CONTEXT:\n${scenario.patientContext}\n\nCONSULTATION TRANSCRIPT:\n${transcript}\n\nPRESENTING COMPLAINT: ${scenario.presentation}${ragBlock}\n\nGenerate the clinical assessment JSON.`;
+  return `PATIENT CONTEXT:\n${scenario.patientContext}\n\nCONSULTATION TRANSCRIPT:\n${transcript}\n\nPRESENTING COMPLAINT: ${scenario.presentation}${ragBlock}\n\nGenerate the clinical assessment JSON. IMPORTANT: Output valid JSON only — no markdown fences, no prose before or after the JSON object.`;
 }
 
 function safeParseJson(raw: string): Record<string, unknown> | null {
@@ -494,7 +494,7 @@ async function callAnthropic(model: ModelConfig, scenario: BenchmarkScenario, ra
   const start = Date.now();
   const response = await client.messages.create({
     model: model.apiModel,
-    max_tokens: 2048,
+    max_tokens: 8192,
     system: SYSTEM_PROMPT,
     messages: [{ role: "user", content: buildUserMessage(scenario, ragEnabled) }],
   });
