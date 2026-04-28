@@ -129,7 +129,14 @@ export async function listConsultationsByPatient(
        id,
        status,
        consultation_type AS "consultationType",
-       presenting_complaint AS "presentingComplaint",
+       COALESCE(
+         presenting_complaint,
+         (SELECT elem->>'text'
+          FROM   jsonb_array_elements(transcript) AS elem
+          WHERE  elem->>'speaker' = 'patient'
+          ORDER BY (elem->>'timestamp_ms')::bigint
+          LIMIT  1)
+       ) AS "presentingComplaint",
        created_at AS "createdAt",
        session_started_at AS "sessionStartedAt",
        session_ended_at AS "sessionEndedAt"
@@ -151,7 +158,14 @@ export async function findConsultationByIdAndPatient(
        id,
        status,
        consultation_type AS "consultationType",
-       presenting_complaint AS "presentingComplaint",
+       COALESCE(
+         presenting_complaint,
+         (SELECT elem->>'text'
+          FROM   jsonb_array_elements(transcript) AS elem
+          WHERE  elem->>'speaker' = 'patient'
+          ORDER BY (elem->>'timestamp_ms')::bigint
+          LIMIT  1)
+       ) AS "presentingComplaint",
        transcript,
        red_flags AS "redFlags",
        ai_draft AS "assessment",

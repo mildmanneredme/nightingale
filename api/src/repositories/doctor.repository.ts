@@ -249,7 +249,12 @@ export async function listQueuedConsultationsForDoctor(
        c.id,
        c.status,
        c.consultation_type   AS "consultationType",
-       c.presenting_complaint AS "presentingComplaint",
+       COALESCE(
+         c.presenting_complaint,
+         (SELECT elem->>'text' FROM jsonb_array_elements(c.transcript) AS elem
+          WHERE elem->>'speaker' = 'patient'
+          ORDER BY (elem->>'timestamp_ms')::bigint LIMIT 1)
+       ) AS "presentingComplaint",
        c.priority_flags      AS "priorityFlags",
        c.created_at          AS "createdAt",
        p.date_of_birth       AS "patientDob",
@@ -278,7 +283,12 @@ export async function findConsultationDetailForDoctor(
        c.id,
        c.status,
        c.consultation_type    AS "consultationType",
-       c.presenting_complaint AS "presentingComplaint",
+       COALESCE(
+         c.presenting_complaint,
+         (SELECT elem->>'text' FROM jsonb_array_elements(c.transcript) AS elem
+          WHERE elem->>'speaker' = 'patient'
+          ORDER BY (elem->>'timestamp_ms')::bigint LIMIT 1)
+       ) AS "presentingComplaint",
        c.transcript,
        c.red_flags            AS "redFlags",
        c.soap_note            AS "soapNote",
