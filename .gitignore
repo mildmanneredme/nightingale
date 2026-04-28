@@ -9,6 +9,9 @@
 node_modules/
 dist/
 
+# Generated benchmark output
+api/scripts/benchmark-results/
+
 # Next.js build output
 web/.next/
 web/tsconfig.tsbuildinfo
