@@ -12,12 +12,15 @@ export default function HomePage() {
       <section className="relative min-h-[870px] flex items-center justify-center overflow-hidden">
         {/* Background image with gradient overlay */}
         <div className="absolute inset-0 z-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            className="w-full h-full object-cover object-right-top md:object-center"
-            src="/landing-top-background.png"
-            alt=""
-          />
+          <picture>
+            <source media="(max-width: 767px)" srcSet="/landing-top-background-mobile-vertical.png" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              className="w-full h-full object-cover object-center"
+              src="/landing-top-background.png"
+              alt=""
+            />
+          </picture>
           <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-white/20 to-white" />
         </div>
 
