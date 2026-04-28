@@ -79,6 +79,8 @@ function categoryFromPath(filePath: string): string {
       "question-trees": "question-trees",
       "terminology": "terminology",
       "system-prompts": "terminology", // system-prompts are meta, skip
+      // PRD-030: external open-source sources — sub-categorised by frontmatter
+      "external-sources": "therapeutic-guidelines",
     };
     return map[dir] ?? dir;
   }
