@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ConsultationSocket, TranscriptEvent } from "@/lib/consultation-ws";
+import { ConsultationSocket, TranscriptEvent, SessionNotes } from "@/lib/consultation-ws";
 import { getStreamToken, getToken } from "@/lib/api";
 import ConsultationStepper from "@/components/ConsultationStepper";
 
@@ -13,6 +13,26 @@ interface Turn {
 // Gemini Live sends PCM16 mono at 24 kHz
 const GEMINI_AUDIO_SAMPLE_RATE = 24000;
 
+const EMPTY_NOTES: SessionNotes = {
+  symptoms: [],
+  duration: null,
+  severity: null,
+  medications: [],
+  allergies: [],
+  conditions: [],
+};
+
+function hasNotes(notes: SessionNotes): boolean {
+  return (
+    notes.symptoms.length > 0 ||
+    notes.duration !== null ||
+    notes.severity !== null ||
+    notes.medications.length > 0 ||
+    notes.allergies.length > 0 ||
+    notes.conditions.length > 0
+  );
+}
+
 export default function VoiceConsultationPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -23,6 +43,8 @@ export default function VoiceConsultationPage() {
   const [muted, setMuted] = useState(false);
   const [connectError, setConnectError] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
+  const [sessionNotes, setSessionNotes] = useState<SessionNotes>(EMPTY_NOTES);
+  const [notesExpanded, setNotesExpanded] = useState(false);
 
   const socketRef = useRef<ConsultationSocket | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -138,6 +160,11 @@ export default function VoiceConsultationPage() {
             nextPlayTimeRef.current = 0;
           },
           onEmergency: () => setIsEmergency(true),
+          onSessionNotes: (notes) => {
+            setSessionNotes(notes);
+            // Auto-expand the notes panel on first note captured
+            setNotesExpanded(true);
+          },
           onError: () => {
             if (!cancelled) setConnectError("Could not connect to session. Please go back and try again.");
           },
@@ -174,6 +201,7 @@ export default function VoiceConsultationPage() {
 
   const mins = String(Math.floor(elapsed / 60)).padStart(2, "0");
   const secs = String(elapsed % 60).padStart(2, "0");
+  const notesCaptured = hasNotes(sessionNotes);
 
   return (
     <div className="min-h-screen bg-[#0D1F3C] text-white flex flex-col">
@@ -236,6 +264,47 @@ export default function VoiceConsultationPage() {
         </p>
       </div>
 
+      {/* Real-time session notes panel (PRD-029) */}
+      {notesCaptured && (
+        <div className="mx-4 mb-3 rounded-xl border border-secondary/30 bg-white/5 overflow-hidden">
+          <button
+            onClick={() => setNotesExpanded((v) => !v)}
+            className="w-full flex items-center justify-between px-4 py-2.5 text-left"
+          >
+            <span className="flex items-center gap-2 font-label-sm text-secondary text-xs uppercase tracking-widest font-semibold">
+              <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>assignment</span>
+              Notes captured
+            </span>
+            <span className="material-symbols-outlined text-white/40 text-sm">
+              {notesExpanded ? "expand_less" : "expand_more"}
+            </span>
+          </button>
+
+          {notesExpanded && (
+            <div className="px-4 pb-4 space-y-2">
+              {sessionNotes.symptoms.length > 0 && (
+                <NoteRow icon="symptoms" label="Symptoms" items={sessionNotes.symptoms} />
+              )}
+              {sessionNotes.duration && (
+                <NoteRow icon="schedule" label="Duration" items={[sessionNotes.duration]} />
+              )}
+              {sessionNotes.severity && (
+                <NoteRow icon="vital_signs" label="Severity" items={[sessionNotes.severity]} />
+              )}
+              {sessionNotes.medications.length > 0 && (
+                <NoteRow icon="medication" label="Medications" items={sessionNotes.medications} />
+              )}
+              {sessionNotes.allergies.length > 0 && (
+                <NoteRow icon="warning" label="Allergies" items={sessionNotes.allergies} />
+              )}
+              {sessionNotes.conditions.length > 0 && (
+                <NoteRow icon="medical_information" label="Conditions" items={sessionNotes.conditions} />
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Transcript */}
       <div className="flex-1 overflow-y-auto px-4 space-y-3 pb-4">
         {turns.length === 0 && !connectError && (
@@ -288,6 +357,27 @@ export default function VoiceConsultationPage() {
           to { height: 36px; }
         }
       `}</style>
+    </div>
+  );
+}
+
+function NoteRow({ icon, label, items }: { icon: string; label: string; items: string[] }) {
+  return (
+    <div className="flex items-start gap-2">
+      <span className="material-symbols-outlined text-secondary/60 text-sm mt-0.5 shrink-0">{icon}</span>
+      <div className="min-w-0">
+        <span className="text-white/40 text-[10px] uppercase tracking-wider font-semibold mr-2">{label}</span>
+        <div className="flex flex-wrap gap-1 mt-1">
+          {items.map((item) => (
+            <span
+              key={item}
+              className="text-xs bg-secondary/20 text-secondary-fixed-dim border border-secondary/20 rounded-full px-2 py-0.5 capitalize"
+            >
+              {item}
+            </span>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

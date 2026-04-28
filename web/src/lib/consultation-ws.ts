@@ -1,4 +1,6 @@
-import { WsClientMessage, WsServerMessage } from "@/types/ws-messages";
+import { WsClientMessage, WsServerMessage, SessionNotes } from "@/types/ws-messages";
+
+export type { SessionNotes };
 
 export interface TranscriptEvent {
   speaker: "ai" | "patient";
@@ -12,6 +14,7 @@ export interface ConsultationSocketCallbacks {
   onAudio?: (base64Data: string) => void;
   onInterrupted?: () => void;
   onEmergency?: (message: string) => void;
+  onSessionNotes?: (notes: SessionNotes) => void;
   onEnded?: (consultationId: string) => void;
   onError?: () => void;
 }
@@ -69,6 +72,9 @@ export class ConsultationSocket {
           break;
         case "emergency":
           callbacks.onEmergency?.(msg.message);
+          break;
+        case "session_notes":
+          callbacks.onSessionNotes?.(msg.notes);
           break;
         case "ended":
           callbacks.onEnded?.(msg.consultationId);

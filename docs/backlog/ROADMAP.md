@@ -1,9 +1,9 @@
 # Project Nightingale — Master Roadmap
 
-> **Status:** In Progress — Sprint 9 (Onboarding, Auth Polish & Family Accounts Scoping)
+> **Status:** In Progress — Sprint 10 (Doctor Onboarding, Payments, Photo AI Vision, Clinical Quality)
 > **Phase:** 1 MVP (Months 1–6)
 > **Target:** 100 beta patients, 200 consultations completed
-> **Last updated:** 2026-04-27 (Sprint 9 complete — BUG-007, PRD-023, UX-005 shipped; PRD-024 fully scoped and ready for sprint planning)
+> **Last updated:** 2026-04-28 (PRD-029/030/031 shipped — voice auto-disconnect, clinical knowledge expansion, LLM benchmarking)
 
 ---
 
@@ -67,6 +67,13 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | **PRD-023** | [Patient Onboarding & Clinical Baseline](../shipped/PRD-023-patient-onboarding-clinical-baseline.md) | Build — Patient Experience | Onboarding | P1 — pre-beta clinical safety | **Shipped 2026-04-26** ✅ |
 | **PRD-024** | [Family Accounts & Multi-Patient Profiles](PRD-024-family-accounts-multi-patient-profiles.md) | Build — Identity + Compliance | Phase 2 (post-beta) | P2 — all decisions + clarifications resolved 2026-04-26 | Ready for sprint planning |
 | **UX-005** | [Auth Flow Polish](../shipped/UX-005-auth-flow-polish.md) | UX Fixes | Onboarding | P2 — before scaling beyond pilot | **Shipped 2026-04-26** ✅ |
+| **PRD-025** | [Doctor Onboarding & Admin Verification](../shipped/PRD-025-doctor-onboarding-verification.md) | Build — Doctor Onboarding | Sprint 10 | P1 — pre-beta; self-serve doctor pipeline required before scaling | In progress |
+| **PRD-026** | [Photo AI Vision Analysis](PRD-026-photo-ai-vision-analysis.md) | Build — AI / Clinical | Sprint 10 | P1 — pre-beta clinical quality; skin conditions require photo analysis | Not started |
+| **PRD-027** | [SMS Notifications](PRD-027-sms-notifications.md) | Build — Notifications | Phase 2 | P2 — before scaling beyond beta cohort | Not started |
+| **PRD-028** | [eScript Integration](PRD-028-escript-integration.md) | Build — Clinical / Prescribing | Phase 2 (post-beta) | P3 — significant clinical value; requires eScript platform API agreement | Not started |
+| **PRD-029** | [Voice Agent Auto-Disconnect & Real-Time Session Notes](../shipped/PRD-029-voice-auto-disconnect-session-notes.md) | Build — Voice / UX | Sprint 10 | P1 — clinical UX quality; patients confused about when interview ends | **Shipped 2026-04-28** ✅ |
+| **PRD-030** | [Clinical Knowledge Base — Open-Source Expansion Round 2](../shipped/PRD-030-clinical-knowledge-expansion-round2.md) | Build — Clinical Knowledge | Sprint 10 | P1 — improve AI grounding with additional free AU clinical sources | **Shipped 2026-04-28** ✅ |
+| **PRD-031** | [LLM Model Benchmarking Framework](../shipped/PRD-031-llm-benchmarking-framework.md) | Build — AI / Quality | Sprint 10 | P2 — validate current Claude Sonnet 4.6 choice; identify cost/quality trade-offs | **Shipped 2026-04-28** ✅ |
 
 ---
 
@@ -112,6 +119,9 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | [BUG-007](../shipped/BUG-007-remove-placeholder-content.md) | Remove Placeholder & Fake Content | 2026-04-26 | Fake vitals, hardcoded 85% completeness, broken legal links removed from all patient surfaces |
 | [PRD-023](../shipped/PRD-023-patient-onboarding-clinical-baseline.md) | Patient Onboarding & Clinical Baseline | 2026-04-26 | 3-step onboarding wizard; clinical baseline (allergies/medications/conditions); profile completeness; AI pre-context; doctor queue warnings; DB migration 016 |
 | [UX-005](../shipped/UX-005-auth-flow-polish.md) | Auth Flow Polish | 2026-04-26 | Live password checklist (12-char Cognito policy); resend code with 60s cooldown; "Use a different email" flow; fee messaging unified |
+| [PRD-029](../shipped/PRD-029-voice-auto-disconnect-session-notes.md) | Voice Agent Auto-Disconnect & Real-Time Session Notes | 2026-04-28 | Completion trigger phrase detected in AI output transcription; 3.5s grace period; real-time note extraction (symptoms, duration, severity, meds, allergies, conditions) sent as `session_notes` WS messages; collapsible notes panel in voice UI |
+| [PRD-030](../shipped/PRD-030-clinical-knowledge-expansion-round2.md) | Clinical Knowledge Base — Open-Source Expansion Round 2 | 2026-04-28 | Research + ingestion scripts for 8 additional free AU clinical sources; Healthdirect, ACSQHC, RACGP Red Book extensions, NHMRC obesity/diabetes guidelines, AMH open chapters, Cochrane AU summaries, TGA alerts, DermNet NZ |
+| [PRD-031](../shipped/PRD-031-llm-benchmarking-framework.md) | LLM Model Benchmarking Framework | 2026-04-28 | 20 synthetic AU GP consultation transcripts; evaluation harness for Claude Sonnet 4.6 / Haiku 4.5 / GPT-4o / GPT-4o-mini / Gemini 1.5 Pro / Flash; scoring on SOAP completeness, AHPRA compliance, clinical accuracy, latency, cost |
 
 ---
 
@@ -190,6 +200,40 @@ Sprint 7 was scoped following a full security and user journey audit conducted 2
 
 ---
 
+## Sprint 10 — Doctor Onboarding, Payments & Photo AI Vision
+
+Sprint 10 is the final pre-beta sprint. It ships the three remaining blockers before any real patient can be onboarded, plus the photo AI vision gap identified in the 2026-04-27 product audit.
+
+### P0 Pre-Beta Blockers (must ship before first real patient)
+
+| PRD | Issue | Why It's a Blocker |
+|-----|-------|-------------------|
+| [PRD-007](PRD-007-payments-booking.md) | Stripe payment integration | No payment gate exists; consultations cannot be billed; the consultation state machine (unpaid → paid → in_progress) is not enforced |
+| [PRD-025](../shipped/PRD-025-doctor-onboarding-verification.md) | Doctor self-serve application + admin verification | Currently doctor accounts are admin-created out-of-band; no self-serve pipeline; approved doctor gating on action endpoints not enforced |
+| [PREREQ-001](PREREQ-001-regulatory-legal-prerequisites.md) | Regulatory & legal prerequisites | TGA SaMD advice, Medical Director agreement, DPAs with all vendors, and clinical governance framework are all unresolved — none of these are code, but all gate legal operation |
+
+### P1 Pre-Beta Clinical Quality
+
+| PRD | Issue | Why It Matters |
+|-----|-------|---------------|
+| [PRD-026](PRD-026-photo-ai-vision-analysis.md) | Photo AI vision analysis | Clinical AI engine generates SOAP note and differential from transcript only — photos are never passed to Claude. For skin conditions (one of 5 MVP presentations), the AI assessment ignores the primary diagnostic evidence |
+
+### P2 Phase 2 (before scaling beyond beta)
+
+| PRD | Description |
+|-----|-------------|
+| [PRD-027](PRD-027-sms-notifications.md) | SMS notifications via Twilio — email-only engagement gap for time-sensitive clinical results |
+| [PRD-024](PRD-024-family-accounts-multi-patient-profiles.md) | Family accounts — one login managing multiple patient profiles; large market segment currently blocked |
+
+### P3 Phase 2 (post-beta)
+
+| PRD | Description |
+|-----|-------------|
+| [PRD-028](PRD-028-escript-integration.md) | eScript integration (Fred Dispense / ScriptPad) — converts the service from advice-only to treatment-capable; unlocks the full clinical episode for medication-requiring presentations |
+| [PRD-019](PRD-019-clinical-knowledge-base-proprietary.md) | Proprietary clinical knowledge (eTG, AMH, MIMS) — raises clinical AI quality ceiling for Australian prescribing guidance |
+
+---
+
 ## Dependency Graph
 
 ```
@@ -237,12 +281,30 @@ PRD-021 (Clinical Knowledge Base Expansion)
 
 PRD-013 (Doctor Dashboard)
   └─► PRD-014 (approval triggers patient notification)
+  └─► PRD-026 (photosAnalysed badge added to review ticket)
+  └─► PRD-028 (eScript action added to review UI)
 
 PRD-014 (Patient Notifications)
   └─► PRD-015 (follow-up triggered after notification sent)
+  └─► PRD-027 (SMS extends email notification service)
 
 PRD-015 (Follow-Up)
   └─► PRD-016 (end-to-end test includes follow-up flow)
+
+PRD-010 (Photo Upload)
+  └─► PRD-026 (uploaded photos passed to Claude Vision in engine)
+
+PRD-012 (Clinical AI Engine)
+  └─► PRD-026 (photo vision analysis extends engine pipeline)
+
+PRD-018 (Script Renewals)
+  └─► PRD-028 (renewal approval extended to generate real eScript)
+
+PRD-025 (Doctor Onboarding)
+  └─► PRD-028 (PBS prescriber number captured at onboarding; required for eScript issuance)
+
+PRD-027 (SMS Notifications)
+  └─► PRD-028 (dispense token delivered to patient via SMS)
 ```
 
 ---
@@ -382,7 +444,7 @@ Without explicit Australian grounding, general-purpose LLMs default to US/UK gui
 
 - Native mobile app (iOS/Android)
 - Video consultation
-- Electronic prescription (eScript) — Fred Dispense / ScriptPad
+- Electronic prescription (eScript) — Fred Dispense / ScriptPad (Phase 1 only; planned for Phase 2 in PRD-028)
 - Medicare bulk billing
 - Chronic condition management programs
 - EMR integration
