@@ -13,6 +13,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { Pool } from "pg";
 import { ingestChunk } from "../src/services/rag";
+import { generateEmbedding } from "../src/services/embeddingService";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -179,6 +180,14 @@ async function main() {
       // Skip very short sections (likely footers/disclaimers without substantive content)
       if (section.text.length < 50) continue;
 
+      let embedding: number[] | null = null;
+      try {
+        embedding = await generateEmbedding(section.text);
+      } catch (embedErr) {
+        console.warn(`    [!] Embedding generation failed for "${section.heading}": ${embedErr}`);
+        console.warn(`        Chunk will be stored without embedding (keyword fallback only).`);
+      }
+
       const id = await ingestChunk(
         {
           sourceName,
@@ -193,12 +202,14 @@ async function main() {
             version: meta["version"] ?? null,
           },
         },
+        embedding,
         dbPool
       );
 
       totalChunks++;
       categoryCounts[category] = (categoryCounts[category] ?? 0) + 1;
-      console.log(`    [+] Ingested section "${section.heading}" → ${id}`);
+      const embeddingStatus = embedding ? "with embedding" : "no embedding";
+      console.log(`    [+] Ingested section "${section.heading}" → ${id} (${embeddingStatus})`);
     }
 
     console.log();

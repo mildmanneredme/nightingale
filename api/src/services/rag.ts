@@ -1,25 +1,32 @@
 // PRD-011: Clinical Knowledge Base & RAG Pipeline
+// PRD-032: Semantic RAG — vector cosine similarity via pgvector
+//
 // Retrieves top-K relevant knowledge chunks for a presenting complaint.
-// Embedding generation deferred to actual model integration (Bedrock/OpenAI).
-// At MVP, falls back to keyword (ILIKE text search) since pgvector extension
-// requires superuser to enable and is not available in test environment.
+// Primary path: cosine similarity against Bedrock Titan Embed Text V2 embeddings.
+// Fallback path: keyword ILIKE text search (used when Bedrock is unavailable,
+// e.g. local dev without AWS credentials or unit tests).
 
 import { LRUCache } from "lru-cache";
 import { Pool } from "pg";
 import { pool as defaultPool } from "../db";
 import { logger } from "../logger";
+import {
+  generateEmbedding,
+  formatVectorLiteral,
+} from "./embeddingService";
 
 // ---------------------------------------------------------------------------
-// LRU cache for RAG retrieval results (F-068, F-069)
-// Keyed on sorted, comma-joined keyword set; max 200 entries; 1 hour TTL.
+// LRU cache for RAG retrieval results (F-068, F-069, PRD-032 F-008)
+// Keyed on presenting complaint text + condition + topK.
+// 200 entries, 1 hour TTL.
 // ---------------------------------------------------------------------------
-const ragCache = new LRUCache<string, KnowledgeChunk[]>({
+const ragCache = new LRUCache<string, RagRetrievalResult>({
   max: 200,
-  ttl: 60 * 60 * 1000, // 1 hour
+  ttl: 60 * 60 * 1000,
 });
 
-function cacheKey(keywords: string[], condition?: string, topK?: number): string {
-  return [[...keywords].sort().join(","), condition ?? "", String(topK ?? 5)].join("|");
+function cacheKey(query: string, condition?: string, topK?: number): string {
+  return [query.trim().toLowerCase(), condition ?? "", String(topK ?? 5)].join("|");
 }
 
 // ---------------------------------------------------------------------------
@@ -38,11 +45,13 @@ export interface KnowledgeChunk {
 export interface RagRetrievalResult {
   chunks: KnowledgeChunk[];
   queryKeywords: string[];
+  retrievalMethod: "vector" | "keyword_fallback";
+  topSimilarity?: number;
   consultationId?: string;
 }
 
 // ---------------------------------------------------------------------------
-// Stop words to filter from keyword extraction
+// Stop words used by the keyword fallback path
 // ---------------------------------------------------------------------------
 const STOP_WORDS = new Set([
   "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for",
@@ -57,8 +66,7 @@ const STOP_WORDS = new Set([
 
 // ---------------------------------------------------------------------------
 // extractKeywords
-// Simple keyword extraction from presenting complaint text.
-// Strips punctuation, lowercases, removes stop words, filters short tokens.
+// Used only by the keyword fallback path.
 // ---------------------------------------------------------------------------
 export function extractKeywords(text: string): string[] {
   if (!text || text.trim().length === 0) return [];
@@ -101,10 +109,101 @@ export async function normaliseTerm(
 }
 
 // ---------------------------------------------------------------------------
+// vectorRetrieve (internal)
+// Queries by cosine similarity. Only returns chunks with similarity >= threshold.
+// Chunks ordered closest-first (lowest cosine distance = highest similarity).
+// ---------------------------------------------------------------------------
+const SIMILARITY_THRESHOLD = 0.5;
+
+interface VectorRow extends KnowledgeChunk {
+  similarity: number;
+}
+
+async function vectorRetrieve(
+  embedding: number[],
+  options: { topK: number; condition?: string },
+  dbPool: Pool
+): Promise<{ chunks: KnowledgeChunk[]; topSimilarity: number }> {
+  const vectorLiteral = formatVectorLiteral(embedding);
+  const params: unknown[] = [vectorLiteral, SIMILARITY_THRESHOLD, options.topK];
+
+  const conditionClause = options.condition
+    ? `AND condition = $${params.length + 1}`
+    : "";
+  if (options.condition) params.push(options.condition);
+
+  const sql = `
+    SELECT
+      id,
+      source_name            AS "sourceName",
+      category,
+      condition,
+      chunk_text             AS "chunkText",
+      metadata,
+      1 - (embedding <=> $1::vector) AS similarity
+    FROM knowledge_chunks
+    WHERE embedding IS NOT NULL
+      AND 1 - (embedding <=> $1::vector) >= $2
+    ${conditionClause}
+    ORDER BY embedding <=> $1::vector
+    LIMIT $3
+  `;
+
+  const { rows } = await dbPool.query<VectorRow>(sql, params);
+
+  const chunks: KnowledgeChunk[] = rows.map(({ similarity: _s, ...chunk }) => chunk);
+  const topSimilarity = rows.length > 0 ? rows[0].similarity : 0;
+
+  return { chunks, topSimilarity };
+}
+
+// ---------------------------------------------------------------------------
+// keywordRetrieve (internal)
+// ILIKE fallback — used when embedding generation fails.
+// ---------------------------------------------------------------------------
+async function keywordRetrieve(
+  keywords: string[],
+  options: { topK: number; condition?: string },
+  dbPool: Pool
+): Promise<KnowledgeChunk[]> {
+  if (keywords.length === 0) return [];
+
+  const paramOffset = options.condition ? 2 : 1;
+  const ilikeConditions = keywords
+    .map((_, i) => `chunk_text ILIKE $${paramOffset + i}`)
+    .join(" OR ");
+
+  const params: unknown[] = [];
+  if (options.condition) params.push(options.condition);
+  params.push(...keywords.map((k) => `%${k}%`));
+  params.push(options.topK);
+
+  const limitParam = `$${params.length}`;
+  const conditionClause = options.condition ? `AND condition = $1` : "";
+
+  const sql = `
+    SELECT
+      id,
+      source_name   AS "sourceName",
+      category,
+      condition,
+      chunk_text    AS "chunkText",
+      metadata
+    FROM knowledge_chunks
+    WHERE (${ilikeConditions})
+    ${conditionClause}
+    ORDER BY created_at ASC
+    LIMIT ${limitParam}
+  `;
+
+  const { rows } = await dbPool.query<KnowledgeChunk>(sql, params);
+  return rows;
+}
+
+// ---------------------------------------------------------------------------
 // retrieve
 // Given presenting complaint text, returns top-K relevant chunks.
-// Uses ILIKE keyword text search (pgvector cosine similarity deferred until
-// embeddings are generated and the vector extension is enabled on RDS).
+// Tries vector cosine similarity first; falls back to keyword search on error.
 // ---------------------------------------------------------------------------
 export async function retrieve(
   presentingComplaint: string,
@@ -116,134 +215,104 @@ export async function retrieve(
   dbPool: Pool = defaultPool
 ): Promise<RagRetrievalResult> {
   const { topK = 5, condition, consultationId } = options;
-  const keywords = extractKeywords(presentingComplaint);
 
-  // F-068/F-069/F-070: LRU cache keyed on sorted keyword set
-  const key = cacheKey(keywords, condition, topK);
+  const key = cacheKey(presentingComplaint, condition, topK);
   const cached = ragCache.get(key);
 
   if (cached !== undefined) {
     logger.debug({ cacheKey: key, hit: true }, "rag.retrieve: cache hit");
-    // Write audit log for cache hits with cache_hit: true for observability
-    try {
-      const chunkIds = cached.map((c) => c.id);
-      await dbPool.query(
-        `INSERT INTO audit_log
-           (event_type, actor_id, actor_role, consultation_id, metadata)
-         VALUES
-           ('rag.retrieval_performed', $1, 'system', $2, $3)`,
-        [
-          "00000000-0000-0000-0000-000000000000",
-          consultationId ?? null,
-          JSON.stringify({
-            query_keywords: keywords,
-            chunk_ids: chunkIds,
-            consultation_id: consultationId ?? null,
-            presenting_complaint: presentingComplaint,
-            cache_hit: true,
-          }),
-        ]
-      );
-    } catch (err) {
-      logger.error({ err }, "rag.retrieve: failed to write audit log (cache hit)");
-    }
-    return {
-      chunks: cached,
-      queryKeywords: keywords,
-      ...(consultationId !== undefined && { consultationId }),
-    };
+    await writeAuditLog(dbPool, cached, consultationId, true);
+    return { ...cached, consultationId };
   }
 
   logger.debug({ cacheKey: key, hit: false }, "rag.retrieve: cache miss");
 
-  let chunks: KnowledgeChunk[] = [];
+  let result: RagRetrievalResult;
+  const keywords = extractKeywords(presentingComplaint);
 
-  if (keywords.length > 0) {
-    // Build ILIKE conditions for each keyword — OR across all keywords
-    // so we get any chunk that mentions any keyword
-    const paramOffset = condition ? 2 : 1;
-    const ilikeConditions = keywords
-      .map((_, i) => `chunk_text ILIKE $${paramOffset + i}`)
-      .join(" OR ");
-
-    const params: unknown[] = [];
-    if (condition) {
-      params.push(condition);
-    }
-    params.push(...keywords.map((k) => `%${k}%`));
-    params.push(topK);
-
-    const limitParam = `$${params.length}`;
-
-    const conditionClause = condition ? `AND condition = $1` : "";
-
-    const sql = `
-      SELECT
-        id,
-        source_name   AS "sourceName",
-        category,
-        condition,
-        chunk_text    AS "chunkText",
-        metadata
-      FROM knowledge_chunks
-      WHERE (${ilikeConditions})
-      ${conditionClause}
-      ORDER BY created_at ASC
-      LIMIT ${limitParam}
-    `;
-
-    const { rows } = await dbPool.query<KnowledgeChunk>(sql, params);
-    chunks = rows;
+  try {
+    const embedding = await generateEmbedding(presentingComplaint);
+    const { chunks, topSimilarity } = await vectorRetrieve(
+      embedding,
+      { topK, condition },
+      dbPool
+    );
+    result = {
+      chunks,
+      queryKeywords: keywords,
+      retrievalMethod: "vector",
+      topSimilarity,
+    };
+  } catch (err) {
+    logger.warn(
+      { err },
+      "rag.retrieve: embedding generation failed, falling back to keyword search"
+    );
+    const chunks = await keywordRetrieve(keywords, { topK, condition }, dbPool);
+    result = {
+      chunks,
+      queryKeywords: keywords,
+      retrievalMethod: "keyword_fallback",
+    };
   }
 
-  // Store result in cache (including empty-keyword case — empty array is valid)
-  ragCache.set(key, chunks);
+  ragCache.set(key, result);
+  await writeAuditLog(dbPool, result, consultationId, false);
 
-  // Write audit log
+  return { ...result, consultationId };
+}
+
+// ---------------------------------------------------------------------------
+// writeAuditLog (internal)
+// ---------------------------------------------------------------------------
+async function writeAuditLog(
+  dbPool: Pool,
+  result: RagRetrievalResult,
+  consultationId: string | undefined,
+  cacheHit: boolean
+): Promise<void> {
   try {
-    const chunkIds = chunks.map((c) => c.id);
+    const metadata: Record<string, unknown> = {
+      query_keywords: result.queryKeywords,
+      chunk_ids: result.chunks.map((c) => c.id),
+      consultation_id: consultationId ?? null,
+      retrieval_method: result.retrievalMethod,
+      cache_hit: cacheHit,
+    };
+    if (result.retrievalMethod === "vector" && result.topSimilarity !== undefined) {
+      metadata.top_similarity = result.topSimilarity;
+    }
+
     await dbPool.query(
       `INSERT INTO audit_log
          (event_type, actor_id, actor_role, consultation_id, metadata)
        VALUES
          ('rag.retrieval_performed', $1, 'system', $2, $3)`,
       [
-        // System actor — use a fixed system UUID as actor
         "00000000-0000-0000-0000-000000000000",
         consultationId ?? null,
-        JSON.stringify({
-          query_keywords: keywords,
-          chunk_ids: chunkIds,
-          consultation_id: consultationId ?? null,
-          presenting_complaint: presentingComplaint,
-        }),
+        JSON.stringify(metadata),
       ]
     );
   } catch (err) {
-    // Audit log failures are non-fatal — log but don't throw
     logger.error({ err }, "rag.retrieve: failed to write audit log");
   }
-
-  return {
-    chunks,
-    queryKeywords: keywords,
-    ...(consultationId !== undefined && { consultationId }),
-  };
 }
 
 // ---------------------------------------------------------------------------
 // ingestChunk
-// Inserts a knowledge chunk (embedding generated separately by indexing job).
-// Returns the UUID of the inserted row.
+// Inserts a knowledge chunk. Caller is responsible for generating and
+// passing the embedding (see ingest-knowledge-base.ts / generate-embeddings.ts).
 // ---------------------------------------------------------------------------
 export async function ingestChunk(
   chunk: Omit<KnowledgeChunk, "id">,
+  embedding: number[] | null,
   dbPool: Pool = defaultPool
 ): Promise<string> {
   const { rows } = await dbPool.query<{ id: string }>(
     `INSERT INTO knowledge_chunks
-       (source_name, category, condition, chunk_text, metadata)
-     VALUES ($1, $2, $3, $4, $5)
+       (source_name, category, condition, chunk_text, metadata, embedding)
+     VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING id`,
     [
       chunk.sourceName,
@@ -251,6 +320,7 @@ export async function ingestChunk(
       chunk.condition ?? null,
       chunk.chunkText,
       JSON.stringify(chunk.metadata ?? {}),
+      embedding ? formatVectorLiteral(embedding) : null,
     ]
   );
   return rows[0].id;

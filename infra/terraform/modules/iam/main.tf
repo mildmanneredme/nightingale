@@ -30,6 +30,11 @@ resource "aws_iam_role_policy" "ecs_task" {
         Effect   = "Allow"
         Action   = ["secretsmanager:GetSecretValue"]
         Resource = "arn:aws:secretsmanager:ap-southeast-2:${var.account_id}:secret:nightingale/${var.env}/*"
+      },
+      {
+        Effect = "Allow"
+        Action = ["bedrock:InvokeModel"]
+        Resource = "arn:aws:bedrock:ap-southeast-2::foundation-model/amazon.titan-embed-text-v2:0"
       }
     ]
   })

@@ -3,7 +3,7 @@
 > **Status:** In Progress — Sprint 10 (Doctor Onboarding, Payments, Photo AI Vision, Clinical Quality)
 > **Phase:** 1 MVP (Months 1–6)
 > **Target:** 100 beta patients, 200 consultations completed
-> **Last updated:** 2026-04-28 (PRD-029/030/031 shipped — voice auto-disconnect, clinical knowledge expansion, LLM benchmarking)
+> **Last updated:** 2026-04-28 (PRD-029/030/031/032 shipped — voice auto-disconnect, clinical knowledge expansion, LLM benchmarking, semantic RAG)
 
 ---
 
@@ -74,6 +74,7 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | **PRD-029** | [Voice Agent Auto-Disconnect & Real-Time Session Notes](../shipped/PRD-029-voice-auto-disconnect-session-notes.md) | Build — Voice / UX | Sprint 10 | P1 — clinical UX quality; patients confused about when interview ends | **Shipped 2026-04-28** ✅ |
 | **PRD-030** | [Clinical Knowledge Base — Open-Source Expansion Round 2](../shipped/PRD-030-clinical-knowledge-expansion-round2.md) | Build — Clinical Knowledge | Sprint 10 | P1 — improve AI grounding with additional free AU clinical sources | **Shipped 2026-04-28** ✅ |
 | **PRD-031** | [LLM Model Benchmarking Framework](../shipped/PRD-031-llm-benchmarking-framework.md) | Build — AI / Quality | Sprint 10 | P2 — validate current Claude Sonnet 4.6 choice; identify cost/quality trade-offs | **Shipped 2026-04-28** ✅ |
+| **PRD-032** | [Semantic RAG Pipeline (Vector Embeddings)](../shipped/PRD-032-semantic-rag-pipeline.md) | Build — AI / Clinical | Sprint 10 | P1 — replace broken keyword search with Bedrock Titan cosine similarity; activate knowledge base contribution | **Shipped 2026-04-28** ✅ |
 
 ---
 
@@ -122,6 +123,7 @@ An AI-first human-in-the-loop (HITL) telehealth platform. Patients conduct a str
 | [PRD-029](../shipped/PRD-029-voice-auto-disconnect-session-notes.md) | Voice Agent Auto-Disconnect & Real-Time Session Notes | 2026-04-28 | Completion trigger phrase detected in AI output transcription; 3.5s grace period; real-time note extraction (symptoms, duration, severity, meds, allergies, conditions) sent as `session_notes` WS messages; collapsible notes panel in voice UI |
 | [PRD-030](../shipped/PRD-030-clinical-knowledge-expansion-round2.md) | Clinical Knowledge Base — Open-Source Expansion Round 2 | 2026-04-28 | Research + ingestion scripts for 8 additional free AU clinical sources; Healthdirect, ACSQHC, RACGP Red Book extensions, NHMRC obesity/diabetes guidelines, AMH open chapters, Cochrane AU summaries, TGA alerts, DermNet NZ |
 | [PRD-031](../shipped/PRD-031-llm-benchmarking-framework.md) | LLM Model Benchmarking Framework | 2026-04-28 | 20 synthetic AU GP consultation transcripts; evaluation harness for Claude Sonnet 4.6 / Haiku 4.5 / GPT-4o / GPT-4o-mini / Gemini 1.5 Pro / Flash; scoring on SOAP completeness, AHPRA compliance, clinical accuracy, latency, cost |
+| [PRD-032](../shipped/PRD-032-semantic-rag-pipeline.md) | Semantic RAG Pipeline (Vector Embeddings) | 2026-04-28 | Bedrock Titan Embed Text V2 (ap-southeast-2); pgvector migration 019; cosine similarity ≥0.5 threshold; keyword fallback; backfill script; benchmark --rag-comparison flag; `retrieval_method` audit field |
 
 ---
 

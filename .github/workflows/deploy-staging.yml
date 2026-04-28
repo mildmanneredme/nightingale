@@ -78,6 +78,52 @@ jobs:
           fi
           echo "Migrations completed successfully"
 
+      - name: Run embeddings backfill
+        run: |
+          TASK_DEF=$(aws ecs describe-task-definition \
+            --task-definition nightingale-staging-api \
+            --region ap-southeast-2 \
+            --query "taskDefinition.taskDefinitionArn" \
+            --output text)
+
+          NET_CONFIG=$(aws ecs describe-services \
+            --cluster nightingale-staging \
+            --services nightingale-staging-api \
+            --region ap-southeast-2 \
+            --query "services[0].networkConfiguration.awsvpcConfiguration" \
+            --output json)
+          SUBNETS=$(echo $NET_CONFIG | jq -r '[.subnets[]] | join(",")' | sed 's/,/","/g' | sed 's/^/"/' | sed 's/$/"/')
+          SGS=$(echo $NET_CONFIG | jq -r '[.securityGroups[]] | join(",")' | sed 's/,/","/g' | sed 's/^/"/' | sed 's/$/"/')
+
+          TASK_ARN=$(aws ecs run-task \
+            --cluster nightingale-staging \
+            --task-definition $TASK_DEF \
+            --launch-type FARGATE \
+            --network-configuration "awsvpcConfiguration={subnets=[$SUBNETS],securityGroups=[$SGS],assignPublicIp=DISABLED}" \
+            --overrides '{"containerOverrides":[{"name":"api","command":["node","dist/scripts/generate-embeddings.js"]}]}' \
+            --region ap-southeast-2 \
+            --query "tasks[0].taskArn" \
+            --output text)
+
+          echo "Embeddings backfill task: $TASK_ARN"
+          aws ecs wait tasks-stopped \
+            --cluster nightingale-staging \
+            --tasks $TASK_ARN \
+            --region ap-southeast-2
+
+          EXIT_CODE=$(aws ecs describe-tasks \
+            --cluster nightingale-staging \
+            --tasks $TASK_ARN \
+            --region ap-southeast-2 \
+            --query "tasks[0].containers[0].exitCode" \
+            --output text)
+
+          if [ "$EXIT_CODE" != "0" ]; then
+            echo "Embeddings backfill task failed with exit code $EXIT_CODE"
+            exit 1
+          fi
+          echo "Embeddings backfill completed successfully"
+
       - name: Update ECS service
         run: |
           aws ecs update-service \

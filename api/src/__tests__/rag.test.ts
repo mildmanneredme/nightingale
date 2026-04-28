@@ -96,13 +96,16 @@ describe("normaliseTerm", () => {
 // ---------------------------------------------------------------------------
 describe("ingestChunk", () => {
   it("inserts a knowledge chunk and returns a UUID", async () => {
-    const id = await ingestChunk({
-      sourceName: "RACGP Red Book 2024",
-      category: "therapeutic-guidelines",
-      condition: "urti",
-      chunkText: "Most URTIs are viral and self-limiting. Antibiotics are not indicated.",
-      metadata: { version: "2024" },
-    });
+    const id = await ingestChunk(
+      {
+        sourceName: "RACGP Red Book 2024",
+        category: "therapeutic-guidelines",
+        condition: "urti",
+        chunkText: "Most URTIs are viral and self-limiting. Antibiotics are not indicated.",
+        metadata: { version: "2024" },
+      },
+      null
+    );
 
     expect(id).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i

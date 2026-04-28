@@ -1,5 +1,6 @@
 #!/usr/bin/env tsx
 // PRD-031: LLM Model Benchmarking Framework
+// PRD-032: Added --rag-comparison flag for RAG A/B measurement
 //
 // Tests flagship models from Anthropic, OpenAI, and Google against synthetic
 // Australian GP consultation transcripts using the exact production task format.
@@ -17,6 +18,7 @@
 //   npx tsx api/scripts/benchmark-llm-models.ts
 //   npx tsx api/scripts/benchmark-llm-models.ts --scenario S04-mental-health-anxiety
 //   npx tsx api/scripts/benchmark-llm-models.ts --model claude-sonnet-4-6
+//   npx tsx api/scripts/benchmark-llm-models.ts --rag-comparison   # runs each scenario with and without RAG context
 //
 // Results: api/scripts/benchmark-results/<timestamp>.json + stdout summary
 
@@ -65,6 +67,9 @@ interface BenchmarkScenario {
   expectedKeywords: string[];
   forbiddenPhrases: string[];
   expectedRedFlags: string[];
+  // Synthetic RAG context — mirrors what Bedrock Titan retrieval would return
+  // for this presentation. Used by --rag-comparison runs (PRD-032 F-010).
+  ragContext: string;
 }
 
 const SCENARIOS: BenchmarkScenario[] = [
@@ -88,6 +93,7 @@ const SCENARIOS: BenchmarkScenario[] = [
     expectedKeywords: ["viral", "supportive", "paracetamol", "rest", "penicillin", "allergy"],
     forbiddenPhrases: ["you have a bacterial", "you are infected with", "diagnosis is", "definitely"],
     expectedRedFlags: ["difficulty breathing", "severe worsening", "return if worse", "000"],
+    ragContext: `## RACGP — Upper Respiratory Tract Infection (URTI)\nMost URTIs are viral. Antibiotics are not indicated. Penicillin-allergic patients should avoid amoxicillin and amoxicillin-clavulanate. Symptomatic management: paracetamol or ibuprofen for fever/pain, saline nasal irrigation, rest, fluids. Advise return if: high fever persisting >3 days, difficulty breathing, or significant worsening.`,
   },
   {
     id: "S02-uti-uncomplicated",
@@ -109,6 +115,7 @@ const SCENARIOS: BenchmarkScenario[] = [
     expectedKeywords: ["urinary tract", "dysuria", "frequency", "trimethoprim", "nitrofurantoin", "antibiotic"],
     forbiddenPhrases: ["you definitely have a UTI", "you are infected", "I diagnose"],
     expectedRedFlags: ["loin pain", "fever", "pyelonephritis", "worsening"],
+    ragContext: `## RACGP — Uncomplicated Urinary Tract Infection in Women\nFirst-line: trimethoprim 300 mg nocte for 3 days, or nitrofurantoin 100 mg (m/r) BD for 5 days. Avoid nitrofurantoin in eGFR <30. Oral contraceptive pill interactions: trimethoprim may reduce contraceptive efficacy — advise barrier method. Pyelonephritis red flags: loin pain, rigors, fever >38°C — requires urine MCS and likely IV antibiotics.`,
   },
   {
     id: "S03-rash-tick-bite",
@@ -130,6 +137,7 @@ const SCENARIOS: BenchmarkScenario[] = [
     expectedKeywords: ["tick", "erythema", "annular", "amlodipine", "photo", "in-person"],
     forbiddenPhrases: ["you have Lyme disease", "definitely tinea", "I diagnose"],
     expectedRedFlags: ["fever", "spreading rash", "neurological", "in-person assessment"],
+    ragContext: `## DermNet / RACGP — Tick Bite and Erythema Migrans in Australia\nAnnular erythematous rash post-tick bite may indicate tick typhus (Rickettsia australis) or Spotted Fever. Australian 'Lyme-like' illness (DSCATT) is contested. Doxycycline is first-line for tick-borne rickettsioses. In-person assessment essential for rash requiring Gram stain or dermoscopy. Photo upload recommended. Amlodipine has no known interaction with doxycycline.`,
   },
   {
     id: "S04-mental-health-anxiety",
@@ -151,6 +159,7 @@ const SCENARIOS: BenchmarkScenario[] = [
     expectedKeywords: ["anxiety", "depression", "sertraline", "SSRI", "sleep", "alcohol", "psychologist", "mental health plan"],
     forbiddenPhrases: ["you are depressed", "you have GAD", "I diagnose"],
     expectedRedFlags: ["self-harm", "suicidal ideation", "safety", "alcohol", "lifeline", "beyond blue"],
+    ragContext: `## RACGP — Anxiety and Depression Management\nMental Health Treatment Plan (MHTP) enables 10 rebated psychology sessions per calendar year. SSRI first-line for GAD and depression: sertraline 50mg daily (titrate to 100–200mg). Screen for alcohol use disorder (AUDIT-C). Alcohol can worsen anxiety and interact with SSRIs. Refer: Lifeline 13 11 14, Beyond Blue 1300 22 4636. Always assess for suicidal ideation directly.`,
   },
   {
     id: "S05-lbp-acute",
@@ -172,6 +181,7 @@ const SCENARIOS: BenchmarkScenario[] = [
     expectedKeywords: ["lumbar", "radiculopathy", "ibuprofen", "NSAID", "codeine", "allergy", "physiotherapy"],
     forbiddenPhrases: ["you have a disc herniation", "you have sciatica", "I diagnose"],
     expectedRedFlags: ["cauda equina", "bladder", "bowel", "cancer", "neurological", "return if worsening"],
+    ragContext: `## RACGP — Acute Low Back Pain\nMost acute LBP resolves within 6 weeks. First-line: NSAIDs (ibuprofen 400mg TDS with food) + early mobilisation. Avoid opioids as first-line. Codeine-allergic patients: substitute paracetamol or tramadol. Physiotherapy referral recommended. Cauda equina red flags (bilateral leg weakness, saddle anaesthesia, urinary/bowel dysfunction) require urgent ED referral.`,
   },
   {
     id: "S06-chest-pain-emergency",
@@ -187,6 +197,7 @@ const SCENARIOS: BenchmarkScenario[] = [
     expectedKeywords: ["emergency", "000", "cardiac", "ACS", "myocardial"],
     forbiddenPhrases: [],
     expectedRedFlags: ["000", "emergency", "ambulance"],
+    ragContext: `## RACGP — Chest Pain: Acute Coronary Syndrome\nAcute chest pain with radiation to arm/jaw + dyspnoea in high-risk patient (DM, HTN, smoker) is ACS until proven otherwise. Immediately advise calling 000. Do not recommend driving to ED. Aspirin 300mg if not already taken and no allergy. Time-sensitive: door-to-balloon target <90 min for STEMI.`,
   },
   {
     id: "S07-paediatric-fever",
@@ -208,6 +219,7 @@ const SCENARIOS: BenchmarkScenario[] = [
     expectedKeywords: ["fever", "viral", "paracetamol", "ibuprofen", "hydration", "paediatric"],
     forbiddenPhrases: ["I diagnose", "she definitely has"],
     expectedRedFlags: ["seizure", "rash", "meningitis", "difficulty breathing", "000"],
+    ragContext: `## RACGP Red Book — Febrile Child Under 5\nMost febrile illness in vaccinated children is viral. Paracetamol 15mg/kg/dose 4-6 hourly PRN (max 4 doses/24h) or ibuprofen 10mg/kg/dose TDS. Ensure adequate fluid intake. Red flags requiring 000 or ED: febrile convulsion, neck stiffness, non-blanching rash, difficulty breathing, inconsolable crying, poor perfusion.`,
   },
   {
     id: "S08-vaginal-discharge",
@@ -229,6 +241,7 @@ const SCENARIOS: BenchmarkScenario[] = [
     expectedKeywords: ["candida", "thrush", "antifungal", "clotrimazole", "fluconazole", "antibiotic"],
     forbiddenPhrases: ["you have thrush", "I diagnose", "definitely candida"],
     expectedRedFlags: ["offensive odour", "pelvic pain", "fever", "STI", "worsening"],
+    ragContext: `## RACGP — Vulvovaginal Candidiasis\nPost-antibiotic candida is common. First-line: clotrimazole 2% cream or pessary (topical, OTC), or fluconazole 150mg oral single dose (PBS restricted). Amoxicillin-clavulanate is a common precipitant. Differentiate from BV (grey discharge, fishy odour, no itch) and trichomoniasis. If symptoms persist or recur >4 times/year, consider swab for MCS before treating.`,
   },
   {
     id: "S09-hypertension-management",
@@ -250,6 +263,7 @@ const SCENARIOS: BenchmarkScenario[] = [
     expectedKeywords: ["blood pressure", "hypertension", "perindopril", "amlodipine", "lifestyle", "diabetes", "metformin"],
     forbiddenPhrases: ["you have hypertensive crisis", "I diagnose"],
     expectedRedFlags: ["headache", "vision", "chest pain", "renal function", "emergency"],
+    ragContext: `## RACGP — Hypertension Management with Comorbid Type 2 Diabetes\nTarget BP in T2DM: <130/80 mmHg (Heart Foundation 2024). ACEi (perindopril) is preferred in T2DM for renoprotection. Addition of indapamide or spironolactone as third agent if uncontrolled on ACEi + CCB. Review metformin dose if eGFR declining. Lifestyle: sodium <2g/day, DASH diet, 150 min moderate exercise/week, limit alcohol.`,
   },
   {
     id: "S10-geriatric-falls",
@@ -269,6 +283,7 @@ const SCENARIOS: BenchmarkScenario[] = [
     expectedKeywords: ["falls", "orthostatic", "polypharmacy", "zopiclone", "furosemide", "dizziness", "medication review"],
     forbiddenPhrases: ["she has syncope", "I diagnose", "definitely orthostatic"],
     expectedRedFlags: ["injury", "hip fracture", "cardiac", "medication review", "falls risk"],
+    ragContext: `## RACGP — Falls Prevention in Older Adults\nFalls risk factors: sedatives (zopiclone Z-drug — deprescribe), loop diuretics (furosemide — postural hypotension), polypharmacy >5 medications, impaired vision. Orthostatic hypotension: BP drop >20/10 mmHg on standing. Medication review (pharmacist-led): prioritise deprescribing zopiclone and reviewing beta-blocker (atenolol) dose. Refer: physiotherapy for balance, occupational therapy for home hazards, ophthalmology for vision.`,
   },
 ];
 
@@ -452,11 +467,16 @@ interface CallResult {
   error?: string;
 }
 
-function buildUserMessage(scenario: BenchmarkScenario): string {
+function buildUserMessage(scenario: BenchmarkScenario, ragEnabled: boolean): string {
   const transcript = scenario.transcript
     .map((t) => `${t.speaker === "ai" ? "AI" : "PATIENT"}: ${t.text}`)
     .join("\n");
-  return `PATIENT CONTEXT:\n${scenario.patientContext}\n\nCONSULTATION TRANSCRIPT:\n${transcript}\n\nPRESENTING COMPLAINT: ${scenario.presentation}\n\nGenerate the clinical assessment JSON.`;
+
+  const ragBlock = ragEnabled
+    ? `\n\n## Retrieved Australian Clinical Guidelines\n${scenario.ragContext}`
+    : "";
+
+  return `PATIENT CONTEXT:\n${scenario.patientContext}\n\nCONSULTATION TRANSCRIPT:\n${transcript}\n\nPRESENTING COMPLAINT: ${scenario.presentation}${ragBlock}\n\nGenerate the clinical assessment JSON.`;
 }
 
 function safeParseJson(raw: string): Record<string, unknown> | null {
@@ -467,7 +487,7 @@ function safeParseJson(raw: string): Record<string, unknown> | null {
   }
 }
 
-async function callAnthropic(model: ModelConfig, scenario: BenchmarkScenario): Promise<CallResult> {
+async function callAnthropic(model: ModelConfig, scenario: BenchmarkScenario, ragEnabled: boolean): Promise<CallResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY not set in api/.env");
   const client = new Anthropic({ apiKey });
@@ -476,24 +496,24 @@ async function callAnthropic(model: ModelConfig, scenario: BenchmarkScenario): P
     model: model.apiModel,
     max_tokens: 2048,
     system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: buildUserMessage(scenario) }],
+    messages: [{ role: "user", content: buildUserMessage(scenario, ragEnabled) }],
   });
   const latencyMs = Date.now() - start;
   const raw = response.content[0]?.type === "text" ? response.content[0].text : "";
   return { rawOutput: raw, parsed: safeParseJson(raw), inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens, latencyMs };
 }
 
-async function callOpenAI(model: ModelConfig, scenario: BenchmarkScenario): Promise<CallResult> {
+async function callOpenAI(model: ModelConfig, scenario: BenchmarkScenario, ragEnabled: boolean): Promise<CallResult> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("OPENAI_API_KEY not set in api/.env");
   const client = new OpenAI({ apiKey });
   const start = Date.now();
   const response = await client.chat.completions.create({
     model: model.apiModel,
-    max_tokens: 2048,
+    max_completion_tokens: 2048,
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: buildUserMessage(scenario) },
+      { role: "user", content: buildUserMessage(scenario, ragEnabled) },
     ],
     response_format: { type: "json_object" },
   });
@@ -502,11 +522,11 @@ async function callOpenAI(model: ModelConfig, scenario: BenchmarkScenario): Prom
   return { rawOutput: raw, parsed: safeParseJson(raw), inputTokens: response.usage?.prompt_tokens ?? 0, outputTokens: response.usage?.completion_tokens ?? 0, latencyMs };
 }
 
-async function callGoogle(model: ModelConfig, scenario: BenchmarkScenario): Promise<CallResult> {
+async function callGoogle(model: ModelConfig, scenario: BenchmarkScenario, ragEnabled: boolean): Promise<CallResult> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("GEMINI_API_KEY not set in api/.env");
   const ai = new GoogleGenAI({ apiKey });
-  const userMessage = buildUserMessage(scenario);
+  const userMessage = buildUserMessage(scenario, ragEnabled);
   const start = Date.now();
   const response = await ai.models.generateContent({
     model: model.apiModel,
@@ -538,6 +558,7 @@ interface BenchmarkResult {
   scenarioTitle: string;
   modelId: string;
   modelName: string;
+  ragEnabled: boolean;
   score: ScoreBreakdown;
   inputTokens: number;
   outputTokens: number;
@@ -547,18 +568,18 @@ interface BenchmarkResult {
   error?: string;
 }
 
-async function runOne(scenario: BenchmarkScenario, model: ModelConfig): Promise<BenchmarkResult> {
+async function runOne(scenario: BenchmarkScenario, model: ModelConfig, ragEnabled: boolean): Promise<BenchmarkResult> {
   let result: CallResult;
   try {
-    if (model.provider === "anthropic") result = await callAnthropic(model, scenario);
-    else if (model.provider === "openai") result = await callOpenAI(model, scenario);
-    else result = await callGoogle(model, scenario);
+    if (model.provider === "anthropic") result = await callAnthropic(model, scenario, ragEnabled);
+    else if (model.provider === "openai") result = await callOpenAI(model, scenario, ragEnabled);
+    else result = await callGoogle(model, scenario, ragEnabled);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     process.stdout.write(` ERROR: ${message}\n`);
     return {
       scenarioId: scenario.id, scenarioTitle: scenario.title,
-      modelId: model.id, modelName: model.displayName,
+      modelId: model.id, modelName: model.displayName, ragEnabled,
       score: { soapCompleteness: 0, ahpraCompliance: 0, clinicalAccuracy: 0, latencyScore: 0, costScore: 0, total: 0 },
       inputTokens: 0, outputTokens: 0, estimatedCostUSD: 0, latencyMs: 0,
       parseSuccess: false, error: message,
@@ -573,11 +594,12 @@ async function runOne(scenario: BenchmarkScenario, model: ModelConfig): Promise<
   const cost = scoreCost(costUSD);
   const total = soap + ahpra + clinical + latency + cost;
 
-  process.stdout.write(` ${total}/100 (${(result.latencyMs / 1000).toFixed(1)}s, $${(costUSD * 1.55).toFixed(4)} AUD)\n`);
+  const ragLabel = ragEnabled ? "[RAG]" : "     ";
+  process.stdout.write(` ${ragLabel} ${total}/100 (${(result.latencyMs / 1000).toFixed(1)}s, $${(costUSD * 1.55).toFixed(4)} AUD)\n`);
 
   return {
     scenarioId: scenario.id, scenarioTitle: scenario.title,
-    modelId: model.id, modelName: model.displayName,
+    modelId: model.id, modelName: model.displayName, ragEnabled,
     score: { soapCompleteness: soap, ahpraCompliance: ahpra, clinicalAccuracy: clinical, latencyScore: latency, costScore: cost, total },
     inputTokens: result.inputTokens, outputTokens: result.outputTokens,
     estimatedCostUSD: costUSD, latencyMs: result.latencyMs,
@@ -586,37 +608,62 @@ async function runOne(scenario: BenchmarkScenario, model: ModelConfig): Promise<
 }
 
 function printSummary(results: BenchmarkResult[]) {
+  const ragComparison = results.some((r) => r.ragEnabled) && results.some((r) => !r.ragEnabled);
   const modelIds = [...new Set(results.map((r) => r.modelId))];
 
   console.log("\n" + "═".repeat(90));
-  console.log("BENCHMARK RESULTS — Nightingale Clinical AI  (PRD-031)");
+  console.log("BENCHMARK RESULTS — Nightingale Clinical AI  (PRD-031/032)");
   console.log("═".repeat(90));
   console.log("Scoring: SOAP(25) + AHPRA(25) + Clinical(25) + Latency(15) + Cost(10) = 100\n");
 
-  console.log(
+  const header =
     "Model".padEnd(28) +
+    (ragComparison ? " RAG " : "") +
     "SOAP".padStart(6) + "AHPRA".padStart(7) + "Clin".padStart(6) +
     "Lat".padStart(5) + "Cost".padStart(6) + " │ " +
-    "TOTAL".padStart(5) + "  Avg$/consult AUD".padStart(19) + "  Parse OK"
-  );
+    "TOTAL".padStart(5) + "  Avg$/consult AUD".padStart(19) + "  Parse OK";
+  console.log(header);
   console.log("-".repeat(90));
 
+  const ragModes: boolean[] = ragComparison ? [false, true] : [results[0]?.ragEnabled ?? false];
+
   for (const modelId of modelIds) {
-    const mrs = results.filter((r) => r.modelId === modelId && !r.error);
-    if (mrs.length === 0) {
-      const errResult = results.find((r) => r.modelId === modelId);
-      console.log(`${errResult?.modelName ?? modelId}`.padEnd(28) + "  — all runs errored");
-      continue;
+    for (const ragMode of ragModes) {
+      const mrs = results.filter((r) => r.modelId === modelId && r.ragEnabled === ragMode && !r.error);
+      if (mrs.length === 0) continue;
+      const avg = (k: keyof ScoreBreakdown) => (mrs.reduce((s, r) => s + r.score[k], 0) / mrs.length).toFixed(1).padStart(6);
+      const avgCostAUD = ((mrs.reduce((s, r) => s + r.estimatedCostUSD, 0) / mrs.length) * 1.55).toFixed(4);
+      const parseOk = mrs.filter((r) => r.parseSuccess).length;
+      const ragTag = ragComparison ? (ragMode ? " [+] " : " [-] ") : "";
+      console.log(
+        mrs[0].modelName.padEnd(28) + ragTag +
+        avg("soapCompleteness") + avg("ahpraCompliance") + avg("clinicalAccuracy") +
+        avg("latencyScore") + avg("costScore") + " │ " +
+        avg("total") + `  $${avgCostAUD}`.padStart(19) + `  ${parseOk}/${mrs.length}`
+      );
     }
-    const avg = (k: keyof ScoreBreakdown) => (mrs.reduce((s, r) => s + r.score[k], 0) / mrs.length).toFixed(1).padStart(6);
-    const avgCostAUD = ((mrs.reduce((s, r) => s + r.estimatedCostUSD, 0) / mrs.length) * 1.55).toFixed(4);
-    const parseOk = mrs.filter((r) => r.parseSuccess).length;
-    console.log(
-      mrs[0].modelName.padEnd(28) +
-      avg("soapCompleteness") + avg("ahpraCompliance") + avg("clinicalAccuracy") +
-      avg("latencyScore") + avg("costScore") + " │ " +
-      avg("total") + `  $${avgCostAUD}`.padStart(19) + `  ${parseOk}/${mrs.length}`
-    );
+
+    const allErr = results.filter((r) => r.modelId === modelId);
+    if (allErr.length > 0 && allErr.every((r) => r.error)) {
+      console.log(`${allErr[0].modelName}`.padEnd(28) + "  — all runs errored");
+    }
+  }
+
+  if (ragComparison) {
+    console.log("\n  [+] = with RAG context   [-] = without RAG context");
+    console.log("  Δ Clinical score isolates knowledge base contribution.\n");
+
+    for (const modelId of modelIds) {
+      const withRag = results.filter((r) => r.modelId === modelId && r.ragEnabled && !r.error);
+      const noRag = results.filter((r) => r.modelId === modelId && !r.ragEnabled && !r.error);
+      if (withRag.length === 0 || noRag.length === 0) continue;
+      const avgTotal = (rs: BenchmarkResult[]) => rs.reduce((s, r) => s + r.score.total, 0) / rs.length;
+      const avgClin = (rs: BenchmarkResult[]) => rs.reduce((s, r) => s + r.score.clinicalAccuracy, 0) / rs.length;
+      const delta = (avgTotal(withRag) - avgTotal(noRag)).toFixed(1);
+      const deltaClin = (avgClin(withRag) - avgClin(noRag)).toFixed(1);
+      const sign = parseFloat(delta) >= 0 ? "+" : "";
+      console.log(`  ${withRag[0].modelName.padEnd(28)} RAG Δtotal: ${sign}${delta}   Δclinical: ${sign}${deltaClin}`);
+    }
   }
 
   console.log("\n" + "─".repeat(90));
@@ -627,7 +674,8 @@ function printSummary(results: BenchmarkResult[]) {
     console.log(`${sid}: ${sr[0]?.scenarioTitle}`);
     for (const r of sr) {
       const status = r.error ? `ERR: ${r.error.slice(0, 40)}` : r.parseSuccess ? "JSON OK" : "PARSE FAIL";
-      console.log(`  ${r.modelName.padEnd(26)} ${r.score.total.toString().padStart(3)}/100  ${status}`);
+      const ragTag = ragComparison ? (r.ragEnabled ? "[RAG] " : "      ") : "";
+      console.log(`  ${r.modelName.padEnd(26)} ${ragTag}${r.score.total.toString().padStart(3)}/100  ${status}`);
     }
   }
 }
@@ -636,6 +684,9 @@ async function main() {
   const args = process.argv.slice(2);
   const scenarioFilter = args.includes("--scenario") ? args[args.indexOf("--scenario") + 1] : null;
   const modelFilter = args.includes("--model") ? args[args.indexOf("--model") + 1] : null;
+  // --rag-comparison: run each scenario twice — once with RAG context injected, once without.
+  // Compares scores to isolate what the knowledge base contributes (PRD-032 F-010).
+  const ragComparison = args.includes("--rag-comparison");
 
   const scenarios = scenarioFilter ? SCENARIOS.filter((s) => s.id === scenarioFilter) : SCENARIOS;
   const models = modelFilter ? MODELS.filter((m) => m.id === modelFilter) : MODELS;
@@ -643,8 +694,10 @@ async function main() {
   if (scenarios.length === 0) { console.error(`No scenario matches: ${scenarioFilter}`); process.exit(1); }
   if (models.length === 0) { console.error(`No model matches: ${modelFilter}`); process.exit(1); }
 
-  console.log(`\nNightingale LLM Benchmark — PRD-031`);
-  console.log(`Scenarios: ${scenarios.length}  │  Models: ${models.length}`);
+  const ragModes = ragComparison ? [false, true] : [true];
+
+  console.log(`\nNightingale LLM Benchmark — PRD-031/032`);
+  console.log(`Scenarios: ${scenarios.length}  │  Models: ${models.length}  │  RAG comparison: ${ragComparison}`);
   console.log(`Keys loaded from: api/.env\n`);
 
   const modelsWithKeys = models.filter((m) => {
@@ -660,11 +713,14 @@ async function main() {
 
   for (const scenario of scenarios) {
     console.log(`\n▶ ${scenario.id}: ${scenario.title}`);
-    for (const model of modelsWithKeys) {
-      process.stdout.write(`  ${model.displayName.padEnd(28)}`);
-      const r = await runOne(scenario, model);
-      results.push(r);
-      await new Promise((res) => setTimeout(res, 800)); // rate limit buffer
+    for (const ragEnabled of ragModes) {
+      if (ragComparison) console.log(`  ${ragEnabled ? "  [RAG context ON ]" : "  [RAG context OFF]"}`);
+      for (const model of modelsWithKeys) {
+        process.stdout.write(`    ${model.displayName.padEnd(28)}`);
+        const r = await runOne(scenario, model, ragEnabled);
+        results.push(r);
+        await new Promise((res) => setTimeout(res, 800)); // rate limit buffer
+      }
     }
   }
 
