@@ -43,10 +43,10 @@ export default function MarketingNav() {
 
         <div className="hidden md:flex items-center gap-4">
           <Link
-            href="/register"
+            href="?auth=1"
             className="bg-secondary text-white px-6 py-2.5 rounded-full font-label-sm hover:bg-secondary/90 scale-95 active:scale-90 transition-all"
           >
-            Get Started
+            Sign In
           </Link>
         </div>
 
@@ -86,11 +86,11 @@ export default function MarketingNav() {
           ))}
           <div className="mt-4">
             <Link
-              href="/register"
+              href="?auth=1"
               onClick={() => setOpen(false)}
               className="block w-full px-4 py-3 text-center font-semibold bg-secondary text-white rounded-full"
             >
-              Get Started
+              Sign In
             </Link>
           </div>
         </div>

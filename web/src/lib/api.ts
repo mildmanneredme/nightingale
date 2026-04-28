@@ -203,6 +203,13 @@ export function getConsultations(
   return apiFetch(`/api/v1/consultations?limit=${limit}&offset=${offset}`);
 }
 
+export async function checkEmail(email: string): Promise<{ exists: boolean }> {
+  return apiFetch("/api/v1/auth/check-email", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
 export function createConsultation(
   consultationType: "voice" | "text",
   presentingComplaint?: string

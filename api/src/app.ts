@@ -17,6 +17,7 @@ import webhooksRouter from "./routes/webhooks";
 import availabilityRouter from "./routes/availability";
 import renewalsRouter from "./routes/renewals";
 import followupRouter from "./routes/followup";
+import authRouter from "./routes/auth";
 import { requireAuth, requireRole } from "./middleware/auth";
 import { errorHandler } from "./middleware/errorHandler";
 
@@ -114,6 +115,8 @@ app.use(pinoHttp({
 }));
 
 app.use(healthRouter);
+// Public auth utilities (check-email for smart login flow)
+app.use("/api/v1/auth", authRouter);
 // OPS-001: Client-error reporting — no auth, rate-limited internally
 app.use("/api/v1/client-error", clientErrorRouter);
 app.use("/api/v1/patients", requireAuth, userWriteLimiter, userReadLimiter, patientRouter);
