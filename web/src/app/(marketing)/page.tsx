@@ -14,7 +14,7 @@ export default function HomePage() {
         <div className="absolute inset-0 z-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover object-top md:object-center"
             src="/landing-top-background.png"
             alt=""
           />
@@ -110,17 +110,20 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Who it's for — full-bleed background */}
-      <section className="relative py-32 overflow-hidden">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          className="absolute inset-0 w-full h-full object-cover"
-          src="/landing-hero-feature.png"
-          alt=""
-        />
-        {/* Gradient: clear on left, white on right so text is legible */}
-        <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/50 to-white/95" />
-        <div className="relative z-10 max-w-7xl mx-auto px-6 flex justify-end">
+      {/* Who it's for */}
+      <section className="relative overflow-hidden">
+        {/* Mobile: image strip at top; Desktop: full-bleed absolute background */}
+        <div className="relative h-72 md:absolute md:h-auto md:inset-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            className="w-full h-full object-cover object-left md:object-center"
+            src="/landing-hero-feature.png"
+            alt=""
+          />
+          {/* Mobile: fade to white at bottom; Desktop: fade to white on right */}
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white md:bg-gradient-to-r md:from-white/10 md:via-white/50 md:to-white/95" />
+        </div>
+        <div className="relative z-10 max-w-7xl mx-auto px-6 py-10 md:py-32 flex md:justify-end">
           <div className="max-w-lg space-y-stack-lg">
             <h2 className="font-display-xl text-display-xl text-primary">For patients, by doctors.</h2>
             <div className="space-y-8">

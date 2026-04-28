@@ -34,17 +34,20 @@ export default function ForDoctorsPage() {
   }
   return (
     <main className="pt-0">
-      {/* Hero Section: Full-bleed background */}
-      <section className="relative py-32 overflow-hidden min-h-[600px] flex items-center">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover"
-          src="/doctor-feature-page.png"
-        />
-        {/* Gradient: image shows on left, white fade on right for text legibility */}
-        <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/60 to-white" />
-        <div className="relative z-10 max-w-7xl mx-auto px-6 w-full flex justify-end">
+      {/* Hero Section */}
+      <section className="relative overflow-hidden md:min-h-[600px]">
+        {/* Mobile: image strip at top; Desktop: full-bleed absolute background */}
+        <div className="relative h-72 md:absolute md:h-auto md:inset-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            alt=""
+            className="w-full h-full object-cover object-left md:object-center"
+            src="/doctor-feature-page.png"
+          />
+          {/* Mobile: fade to white at bottom; Desktop: fade to white on right */}
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white md:bg-gradient-to-r md:from-white/10 md:via-white/60 md:to-white" />
+        </div>
+        <div className="relative z-10 max-w-7xl mx-auto px-6 py-10 md:py-32 w-full flex md:justify-end md:items-center">
           <div className="max-w-lg flex flex-col space-y-8">
             <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm w-fit">
               PRACTITIONER PLATFORM
