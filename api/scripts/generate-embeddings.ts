@@ -33,14 +33,16 @@ interface ChunkRow {
 
 async function main() {
   const dbUrl = process.env.DATABASE_URL;
+  const sslEnabled = (process.env.APP_ENV ?? "development") !== "development";
   const dbPool = dbUrl
-    ? new Pool({ connectionString: dbUrl })
+    ? new Pool({ connectionString: dbUrl, ssl: sslEnabled ? { rejectUnauthorized: false } : false })
     : new Pool({
         host: process.env.DB_HOST ?? "localhost",
         port: parseInt(process.env.DB_PORT ?? "5432", 10),
         database: process.env.DB_NAME ?? "nightingale",
         user: process.env.DB_USER ?? "nightingale_admin",
         password: process.env.DB_PASSWORD ?? "",
+        ssl: sslEnabled ? { rejectUnauthorized: false } : false,
       });
 
   if (DRY_RUN) {
