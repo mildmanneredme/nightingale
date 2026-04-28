@@ -54,6 +54,23 @@ export default function VoiceConsultationPage() {
   // Audio playback — scheduled gapless playback of PCM16 chunks from Gemini
   const playbackCtxRef = useRef<AudioContext | null>(null);
   const nextPlayTimeRef = useRef(0);
+  const pendingSourcesRef = useRef<AudioBufferSourceNode[]>([]);
+
+  // Keep a ref in sync with muted state so the onaudioprocess closure always
+  // sees the current value (closures over state capture the initial value only).
+  const mutedRef = useRef(muted);
+  useEffect(() => { mutedRef.current = muted; }, [muted]);
+
+  // Stop all scheduled audio sources and reset the playback queue.
+  // Called on barge-in interruption so the old AI utterance doesn't keep
+  // playing in the background while a new one starts.
+  const clearAudioQueue = useCallback(() => {
+    for (const src of pendingSourcesRef.current) {
+      try { src.stop(); } catch { /* already ended */ }
+    }
+    pendingSourcesRef.current = [];
+    nextPlayTimeRef.current = 0;
+  }, []);
 
   const playAudioChunk = useCallback((base64Data: string) => {
     const ctx = playbackCtxRef.current;
@@ -80,6 +97,12 @@ export default function VoiceConsultationPage() {
     const when = Math.max(ctx.currentTime, nextPlayTimeRef.current);
     source.start(when);
     nextPlayTimeRef.current = when + buffer.duration;
+
+    // Track so we can stop on barge-in
+    pendingSourcesRef.current.push(source);
+    source.onended = () => {
+      pendingSourcesRef.current = pendingSourcesRef.current.filter((s) => s !== source);
+    };
   }, []);
 
   useEffect(() => {
@@ -123,7 +146,7 @@ export default function VoiceConsultationPage() {
         processor.connect(muteGain);
         muteGain.connect(ctx.destination);
         processor.onaudioprocess = (e) => {
-          if (muted) return;
+          if (mutedRef.current) return;
           const float32 = e.inputBuffer.getChannelData(0);
           const int16 = new Int16Array(float32.length);
           for (let i = 0; i < float32.length; i++) {
@@ -156,8 +179,9 @@ export default function VoiceConsultationPage() {
             }]),
           onAudio: playAudioChunk,
           onInterrupted: () => {
-            // User started speaking — reset playback schedule so AI audio stops queuing
-            nextPlayTimeRef.current = 0;
+            // User started speaking — stop all queued AI audio immediately so
+            // the old utterance doesn't overlap the new response.
+            clearAudioQueue();
           },
           onEmergency: () => setIsEmergency(true),
           onSessionNotes: (notes) => {
@@ -183,6 +207,7 @@ export default function VoiceConsultationPage() {
 
     return () => {
       cancelled = true;
+      clearAudioQueue();
       socketRef.current?.disconnect();
       mediaStreamRef.current?.getTracks().forEach((t) => t.stop());
       playbackCtxRef.current?.close();
