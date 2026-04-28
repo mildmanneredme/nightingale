@@ -20,3 +20,4 @@ web/tsconfig.tsbuildinfo
 *.tfstate.lock.info
 infra/terraform/terraform.exe
 infra/terraform/modules/**/*.zip
+.vercel
