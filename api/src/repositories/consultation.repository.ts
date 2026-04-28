@@ -47,6 +47,7 @@ export interface ConsultationChatRow {
   status: string;
   consultation_type: string;
   transcript: unknown;
+  presenting_complaint: string | null;
 }
 
 export interface ConsultationPdfRow {
@@ -195,12 +196,19 @@ export async function findConsultationForChat(
   patientId: string
 ): Promise<ConsultationChatRow | undefined> {
   const { rows } = await pool.query<ConsultationChatRow>(
-    `SELECT id, status, consultation_type, transcript
+    `SELECT id, status, consultation_type, transcript, presenting_complaint
      FROM consultations
      WHERE id = $1 AND patient_id = $2`,
     [id, patientId]
   );
   return rows[0];
+}
+
+export async function backfillPresentingComplaint(id: string, complaint: string): Promise<void> {
+  await pool.query(
+    `UPDATE consultations SET presenting_complaint = $1 WHERE id = $2 AND presenting_complaint IS NULL`,
+    [complaint.slice(0, 500), id]
+  );
 }
 
 export async function updateConsultationChat(

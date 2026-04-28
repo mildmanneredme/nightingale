@@ -193,6 +193,10 @@ export default function VoiceConsultationPage() {
             if (!cancelled) setConnectError("Could not connect to session. Please go back and try again.");
           },
           onEnded: () => {
+            // Tear down mic and audio before navigating so nothing lingers
+            clearAudioQueue();
+            mediaStreamRef.current?.getTracks().forEach((t) => t.stop());
+            socketRef.current?.disconnect();
             setEnded(true);
             router.push(`/consultation/${id}/photos`);
           },

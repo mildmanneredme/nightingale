@@ -22,17 +22,31 @@ interface TranscriptTurn {
   timestamp_ms: number;
 }
 
-// Phrase the AI must say verbatim to signal end-of-interview. Detected in
-// output transcription — triggers a 3.5s grace period then auto-disconnect.
-const COMPLETION_TRIGGER = "I now have all the information needed";
+// Phrases that signal the AI has finished the interview. Any match in an AI
+// turn triggers a 5s grace period then auto-disconnect. Multiple variants
+// guard against Gemini paraphrasing the instruction.
+const COMPLETION_TRIGGERS = [
+  "I now have all the information",
+  "I have all the information",
+  "I've gathered all the information",
+  "I have everything I need",
+  "your doctor will be in touch soon",
+  "your case has been prepared for the doctor",
+];
+
+function isCompletionTurn(text: string): boolean {
+  const lower = text.toLowerCase();
+  return COMPLETION_TRIGGERS.some((t) => lower.includes(t.toLowerCase()));
+}
 
 const SYSTEM_PROMPT = `You are a clinical intake assistant for Nightingale, an Australian telehealth service.
 Your role is to conduct a structured clinical history-taking interview with the patient.
 Ask about their presenting complaint, symptom duration, severity (ask for a number out of 10), associated symptoms, relevant medical history, current medications, and allergies.
 Be empathetic, clear, and thorough. Use plain language (Grade 8 reading level).
+Ask only ONE question per response. Wait for the patient to answer before asking the next question. Never ask multiple questions in a single turn.
 If the patient describes symptoms that may be an emergency (chest pain with breathing difficulty, stroke symptoms, severe allergic reaction, suicidal ideation, loss of consciousness, uncontrolled bleeding), respond with immediate care advice and ask them to call 000.
 Never include disclaimers, caveats, or statements about the limits of your role. Do not tell the patient to see a doctor or that you cannot provide medical advice. The doctor review happens automatically after this call.
-When you have gathered sufficient information — typically after covering the presenting complaint, duration, severity, associated symptoms, relevant history, medications, and allergies (usually 5–8 patient responses) — conclude the conversation by saying: "${COMPLETION_TRIGGER} to prepare your case for the doctor's review. Thank you for sharing that with me. Your doctor will be in touch soon." Say this phrase verbatim when the interview is complete. Do not end early — ensure you have covered all key clinical areas before concluding.`;
+When you have gathered sufficient information — typically after covering the presenting complaint, duration, severity, associated symptoms, relevant history, medications, and allergies (usually 5–8 patient responses) — conclude the conversation by saying: "I now have all the information I need to prepare your case for the doctor's review. Thank you for sharing that with me. Your doctor will be in touch soon." Do not end early — ensure you have covered all key clinical areas before concluding.`;
 
 // ---------------------------------------------------------------------------
 // Session note extraction from patient utterances
@@ -296,10 +310,10 @@ export class GeminiLiveSession {
     }
 
     // PRD-029: detect AI completion trigger → auto-disconnect after audio finishes
-    if (speaker === "ai" && text.includes(COMPLETION_TRIGGER)) {
+    if (speaker === "ai" && isCompletionTurn(text)) {
       logger.info({ consultationId: this.consultationId }, "Completion trigger detected, auto-disconnecting");
-      // Allow 3.5s for the remaining audio to play on the client before closing
-      setTimeout(() => this.doEnd(), 3500);
+      // 5s grace lets the closing audio phrase finish playing on the client
+      setTimeout(() => this.doEnd(), 5000);
     }
   }
 
@@ -350,6 +364,21 @@ export class GeminiLiveSession {
       this.partialOutput = "";
     }
 
+    // Backfill presenting_complaint from the first patient turn if not already set.
+    // The new-consultation flow no longer collects a complaint upfront — the AI
+    // gathers it during the call, so we derive it here.
+    const firstPatientTurn = this.transcript.find((t) => t.speaker === "patient");
+    if (firstPatientTurn) {
+      pool
+        .query(
+          `UPDATE consultations
+           SET presenting_complaint = $1
+           WHERE id = $2 AND presenting_complaint IS NULL`,
+          [firstPatientTurn.text.slice(0, 500), this.consultationId]
+        )
+        .catch((err) => logger.error({ err }, "Failed to backfill presenting complaint"));
+    }
+
     // Persist transcript
     pool
       .query(
@@ -378,9 +407,14 @@ export class GeminiLiveSession {
 
     this.sendToBrowser({ type: "ended", consultationId: this.consultationId });
 
-    if (this.browserWs.readyState === WebSocket.OPEN) {
-      this.browserWs.close();
-    }
+    // Delay close so the browser has time to receive and process the "ended"
+    // message before the socket drops (ws.close() may flush before the client
+    // fires its onmessage handler).
+    setTimeout(() => {
+      if (this.browserWs.readyState === WebSocket.OPEN) {
+        this.browserWs.close();
+      }
+    }, 500);
   }
 
   // ---------------------------------------------------------------------------

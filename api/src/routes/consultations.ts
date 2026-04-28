@@ -24,6 +24,7 @@ import {
   findConsultationByIdAndPatient,
   endConsultation,
   findConsultationForChat,
+  backfillPresentingComplaint,
   updateConsultationChat,
   setConsultationAiFailed,
   findConsultationForPdf,
@@ -226,6 +227,13 @@ router.post("/:id/chat", validateBody(ChatMessageSchema), async (req, res, next)
       text: message.trim(),
       timestamp_ms: Date.now(),
     };
+
+    // Backfill presenting_complaint from the first patient message if not set.
+    if (history.length === 0 && consultation.presenting_complaint === null) {
+      backfillPresentingComplaint(req.params.id, message.trim()).catch(
+        (err) => logger.error({ err }, "Failed to backfill presenting complaint")
+      );
+    }
 
     // PRD-023 F-022: inject the patient baseline into the system prompt only
     // on the first turn — once history exists Gemini already has the context.
