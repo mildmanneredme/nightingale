@@ -12,6 +12,7 @@ import { config } from "../config";
 import { detectRedFlag } from "./redFlagDetector";
 import { getPatientPreContext, renderPreContextPrompt } from "./patientPreContext";
 import { recordUsage } from "./llmUsageTracker";
+import { callClaude } from "./anthropicClient";
 import { pool } from "../db";
 import { logger } from "../logger";
 import { WsClientMessage, WsServerMessage, SessionNotes } from "../types/ws-messages";
@@ -405,6 +406,9 @@ export class GeminiLiveSession {
       });
     }
 
+    // Fire-and-forget AI complaint summary — doesn't block session teardown
+    void this.generateAndSaveComplaint();
+
     this.sendToBrowser({ type: "ended", consultationId: this.consultationId });
 
     // Delay close so the browser has time to receive and process the "ended"
@@ -424,6 +428,33 @@ export class GeminiLiveSession {
   private sendToBrowser(msg: WsServerMessage): void {
     if (this.browserWs.readyState === WebSocket.OPEN) {
       this.browserWs.send(JSON.stringify(msg));
+    }
+  }
+
+  private async generateAndSaveComplaint(): Promise<void> {
+    const patientText = this.transcript
+      .filter((t) => t.speaker === "patient")
+      .slice(0, 4)
+      .map((t) => t.text)
+      .join(" … ");
+
+    if (!patientText.trim()) return;
+
+    try {
+      const { content } = await callClaude(
+        "You are a clinical scribe. Extract a concise chief complaint from the patient's opening words. Respond with 5–12 words in plain clinical style (e.g. \"Headache and nausea for 3 days\", \"Chest pain since this morning\"). No punctuation at the end. Output only the chief complaint.",
+        [{ role: "user", content: `Patient said: "${patientText}"` }]
+      );
+      const summary = content.trim().replace(/\.$/, "");
+      if (summary) {
+        await pool.query(
+          `UPDATE consultations SET presenting_complaint = $1 WHERE id = $2`,
+          [summary, this.consultationId]
+        );
+        logger.info({ consultationId: this.consultationId, summary }, "Complaint summary saved");
+      }
+    } catch (err) {
+      logger.warn({ err, consultationId: this.consultationId }, "Complaint summary failed — transcript fallback applies");
     }
   }
 
