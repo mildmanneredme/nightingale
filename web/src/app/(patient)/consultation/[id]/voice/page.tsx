@@ -44,7 +44,7 @@ export default function VoiceConsultationPage() {
   const [connectError, setConnectError] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
   const [sessionNotes, setSessionNotes] = useState<SessionNotes>(EMPTY_NOTES);
-  const [notesExpanded, setNotesExpanded] = useState(false);
+  const [notesExpanded, setNotesExpanded] = useState(true);
 
   const socketRef = useRef<ConsultationSocket | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -186,8 +186,6 @@ export default function VoiceConsultationPage() {
           onEmergency: () => setIsEmergency(true),
           onSessionNotes: (notes) => {
             setSessionNotes(notes);
-            // Auto-expand the notes panel on first note captured
-            setNotesExpanded(true);
           },
           onError: () => {
             if (!cancelled) setConnectError("Could not connect to session. Please go back and try again.");
@@ -294,45 +292,52 @@ export default function VoiceConsultationPage() {
       </div>
 
       {/* Real-time session notes panel (PRD-029) */}
-      {notesCaptured && (
-        <div className="mx-4 mb-3 rounded-xl border border-secondary/30 bg-white/5 overflow-hidden">
-          <button
-            onClick={() => setNotesExpanded((v) => !v)}
-            className="w-full flex items-center justify-between px-4 py-2.5 text-left"
-          >
-            <span className="flex items-center gap-2 font-label-sm text-secondary text-xs uppercase tracking-widest font-semibold">
-              <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>assignment</span>
-              Notes captured
-            </span>
-            <span className="material-symbols-outlined text-white/40 text-sm">
-              {notesExpanded ? "expand_less" : "expand_more"}
-            </span>
-          </button>
+      <div className="mx-4 mb-3 rounded-xl border border-secondary/30 bg-white/5 overflow-hidden">
+        <button
+          onClick={() => setNotesExpanded((v) => !v)}
+          className="w-full flex items-center justify-between px-4 py-2.5 text-left"
+        >
+          <span className="flex items-center gap-2 font-label-sm text-secondary text-xs uppercase tracking-widest font-semibold">
+            <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>assignment</span>
+            {notesCaptured ? "Notes captured" : "Clinical notes"}
+          </span>
+          <span className="material-symbols-outlined text-white/40 text-sm">
+            {notesExpanded ? "expand_less" : "expand_more"}
+          </span>
+        </button>
 
-          {notesExpanded && (
-            <div className="px-4 pb-4 space-y-2">
-              {sessionNotes.symptoms.length > 0 && (
-                <NoteRow icon="symptoms" label="Symptoms" items={sessionNotes.symptoms} />
-              )}
-              {sessionNotes.duration && (
-                <NoteRow icon="schedule" label="Duration" items={[sessionNotes.duration]} />
-              )}
-              {sessionNotes.severity && (
-                <NoteRow icon="vital_signs" label="Severity" items={[sessionNotes.severity]} />
-              )}
-              {sessionNotes.medications.length > 0 && (
-                <NoteRow icon="medication" label="Medications" items={sessionNotes.medications} />
-              )}
-              {sessionNotes.allergies.length > 0 && (
-                <NoteRow icon="warning" label="Allergies" items={sessionNotes.allergies} />
-              )}
-              {sessionNotes.conditions.length > 0 && (
-                <NoteRow icon="medical_information" label="Conditions" items={sessionNotes.conditions} />
-              )}
-            </div>
-          )}
-        </div>
-      )}
+        {notesExpanded && (
+          <div className="px-4 pb-4 space-y-2">
+            {!notesCaptured ? (
+              <div className="flex items-center gap-2 text-white/40 text-xs py-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse inline-block shrink-0" />
+                Listening for clinical details…
+              </div>
+            ) : (
+              <>
+                {sessionNotes.symptoms.length > 0 && (
+                  <NoteRow icon="symptoms" label="Symptoms" items={sessionNotes.symptoms} />
+                )}
+                {sessionNotes.duration && (
+                  <NoteRow icon="schedule" label="Duration" items={[sessionNotes.duration]} />
+                )}
+                {sessionNotes.severity && (
+                  <NoteRow icon="vital_signs" label="Severity" items={[sessionNotes.severity]} />
+                )}
+                {sessionNotes.medications.length > 0 && (
+                  <NoteRow icon="medication" label="Medications" items={sessionNotes.medications} />
+                )}
+                {sessionNotes.allergies.length > 0 && (
+                  <NoteRow icon="warning" label="Allergies" items={sessionNotes.allergies} />
+                )}
+                {sessionNotes.conditions.length > 0 && (
+                  <NoteRow icon="medical_information" label="Conditions" items={sessionNotes.conditions} />
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Transcript */}
       <div className="flex-1 overflow-y-auto px-4 space-y-3 pb-4">

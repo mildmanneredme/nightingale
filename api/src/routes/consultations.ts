@@ -8,6 +8,7 @@ import { WsServerMessage } from "../types/ws-messages";
 import { sendTextMessage, TextTurn } from "../services/textConsultation";
 import { getPatientPreContext, renderPreContextPrompt } from "../services/patientPreContext";
 import { runEngine } from "../services/clinicalAiEngine";
+import { callClaude } from "../services/anthropicClient";
 import { getResponseTimeEstimate } from "./availability";
 import { validateBody } from "../middleware/validate";
 import {
@@ -15,6 +16,7 @@ import {
   EndConsultationSchema,
   ChatMessageSchema,
 } from "../schemas/consultation.schema";
+import { pool } from "../db";
 import {
   findPatientIdBySub,
   findExistingConsultationByIdempotencyKey,
@@ -258,6 +260,26 @@ router.post("/:id/chat", validateBody(ChatMessageSchema), async (req, res, next)
     // Trigger the clinical AI engine when the text consultation reaches transcript_ready
     if (newStatus === "transcript_ready") {
       triggerEngine(req.params.id);
+      // Fire-and-forget AI complaint summary from first patient turns
+      const patientText = finalHistory
+        .filter((t) => t.speaker === "patient")
+        .slice(0, 4)
+        .map((t) => t.text)
+        .join(" … ");
+      if (patientText.trim()) {
+        callClaude(
+          "You are a clinical scribe. Extract a concise chief complaint from the patient's opening words. Respond with 5–12 words in plain clinical style (e.g. \"Headache and nausea for 3 days\"). No punctuation at the end. Output only the chief complaint.",
+          [{ role: "user", content: `Patient said: "${patientText}"` }]
+        ).then(({ content }) => {
+          const summary = content.trim().replace(/\.$/, "");
+          if (summary) {
+            return pool.query(
+              `UPDATE consultations SET presenting_complaint = $1 WHERE id = $2`,
+              [summary, req.params.id]
+            );
+          }
+        }).catch((err) => logger.warn({ err }, "Text complaint summary failed"));
+      }
     }
 
     res.status(200).json({
